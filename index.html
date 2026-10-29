@@ -2092,7 +2092,7 @@ function renderBk(){
   if(bkConfirm){
     const c=bkConfirm;
     const nset=c.snap.projects.lib&&c.snap.projects.lib.sets?c.snap.projects.lib.sets.length:Object.keys(c.snap.projects).filter(k=>k!=='lib').length;
-    h+='<div class="cfm">Backup from <b>'+when(c.snap.at)+'</b> with <b>'+countQ(c.snap)+' questions</b> in '+nset+' set'+(nset===1?'':'s')+(c.files?', including the PDFs':'')+'.<br>Restoring replaces the marks in this browser with the ones in the backup.</div>';
+    h+='<div class="cfm">Backup from <b>'+when(c.snap.at)+'</b> with <b>'+countQ(c.snap)+' questions</b> in '+nset+' set'+(nset===1?'':'s')+(c.files?', including the PDFs':'')+'.<br>Restoring adds the sets in this backup and updates their marks. <b>Your other sets stay as they are.</b></div>';
     h+='<div class="row2"><button class="btn ghost" data-b="cancel">Cancel</button><button class="btn" data-b="restore">Restore</button></div>';
   }else{
     if(canFolder){
@@ -2153,7 +2153,14 @@ async function readBackup(f){
 }
 async function doRestore(c){
   await idbPut('before-restore',snapshot());   // a safety copy of what was here
-  for(const k in c.snap.projects)LS.set('pp:'+k,c.snap.projects[k]);
+  for(const k in c.snap.projects){
+    // the library list is merged, not replaced: sets in the backup are added or updated, sets only on this device stay
+    if(k==='lib'){const cur=LS.get('pp:lib'),inc=c.snap.projects.lib||{};
+      if(cur&&cur.sets&&cur.sets.length){const m=Object.assign({},cur,{subjects:[...new Set([...(cur.subjects||[]),...(inc.subjects||[])])],sets:[...cur.sets]});
+        for(const x of inc.sets||[]){const i=m.sets.findIndex(y=>y.key===x.key);if(i<0)m.sets.push(x);else m.sets[i]=x}
+        LS.set('pp:lib',m);continue}}
+    LS.set('pp:'+k,c.snap.projects[k]);
+  }
   for(const k in (c.snap.pos||{}))LS.set('pos:'+k,c.snap.pos[k]);
   if(c.files&&c.files.blobs)for(const id in c.files.blobs)await idbPut('blob:'+id,c.files.blobs[id]);
   LIB=Object.assign({subjects:['FR','AFM','Audit'],sets:[],cur:null},LS.get('pp:lib')||{});
