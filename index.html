@@ -2792,16 +2792,22 @@ function tvNext(inp,k){
   if(k==='ch'){$('input[data-k="tp"]',row).focus();return}
   const nx=row.nextElementSibling;if(nx&&nx.classList.contains('tvr')){const i=$('input[data-k="ch"]',nx);i.focus();i.scrollIntoView({block:'nearest'})}else inp.blur();
 }
+function tvMove(inp,d){ // same box in the next / previous question
+  const row=inp.closest('.tvr');let r=d>0?row.nextElementSibling:row.previousElementSibling;
+  if(!r||!r.classList.contains('tvr'))return;const i=$('input[data-k="'+inp.dataset.k+'"]',r);i.focus();i.scrollIntoView({block:'nearest'})}
 function tvPick(x){if(!tvCtx)return;const {inp,n,k}=tvCtx;inp.value=x;$('#tvSug').hidden=true;tvCommit(inp,n,k);tvNext(inp,k)}
 function tvWire(inp,n,k){
-  inp.addEventListener('focus',()=>{if(n!==activeN&&!PH)openPair(n);tvShow(inp,n,k);const row=inp.closest('.tvr');$$('.tvr').forEach(x=>x.classList.toggle('act',x===row))});
+  inp.addEventListener('focus',()=>{if(n!==activeN&&!PH)openPair(n);$('#tvSug').hidden=true;tvCtx={inp,n,k,hi:-1};const row=inp.closest('.tvr');$$('.tvr').forEach(x=>x.classList.toggle('act',x===row))});
   inp.addEventListener('input',()=>tvShow(inp,n,k));
   inp.addEventListener('blur',()=>{setTimeout(()=>{if(tvCtx&&tvCtx.inp===inp)$('#tvSug').hidden=true},120);tvCommit(inp,n,k)});
   inp.addEventListener('keydown',e=>{
     e.stopPropagation();const box=$('#tvSug'),ds=[...box.children],open=!box.hidden&&ds.length;
-    if(e.key==='ArrowDown'&&!inp.value&&tvCtx.hi<0&&(()=>{const pr=inp.closest('.tvr').previousElementSibling;const x=pr&&pr.classList.contains('tvr')&&$('input[data-k="'+k+'"]',pr);return x&&x.value})()){ // empty box: copy from the row above
-      e.preventDefault();const pr=inp.closest('.tvr').previousElementSibling;const src=pr&&$('input[data-k="'+k+'"]',pr);if(src&&src.value){$('#tvSug').hidden=true;inp.value=src.value;tvCommit(inp,n,k);if(k==='ch'){const t=$('input[data-k="tp"]',inp.closest('.tvr'));const st2=$('input[data-k="tp"]',pr);if(!t.value&&st2.value){t.value=st2.value;tvCommit(t,n,'tp')}}tvNext(inp,'tp')}return}
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='d'){ // fill down: copy chapter and topic from the row above
+      e.preventDefault();const pr=inp.closest('.tvr').previousElementSibling;if(!pr||!pr.classList.contains('tvr'))return;$('#tvSug').hidden=true;
+      for(const kk of ['ch','tp']){const a=$('input[data-k="'+kk+'"]',pr),me=$('input[data-k="'+kk+'"]',inp.closest('.tvr'));if(a.value){me.value=a.value;tvCommit(me,n,kk)}}
+      tvMove(inp,1);return}
     if((e.key==='ArrowDown'||e.key==='ArrowUp')&&open){e.preventDefault();tvCtx.hi=clamp(tvCtx.hi+(e.key==='ArrowDown'?1:-1),0,ds.length-1);ds.forEach((d,i)=>d.classList.toggle('h',i===tvCtx.hi));ds[tvCtx.hi].scrollIntoView({block:'nearest'});return}
+    if((e.key==='ArrowDown'||e.key==='ArrowUp')&&!open){e.preventDefault();tvMove(inp,e.key==='ArrowDown'?1:-1);return}
     if(e.key==='Enter'){e.preventDefault();if(open&&tvCtx.hi>=0){tvPick(ds[tvCtx.hi].textContent);return}box.hidden=true;tvCommit(inp,n,k);tvNext(inp,k);return}
     if(e.key==='Escape'){e.preventDefault();box.hidden=true;inp.blur()}
   });
