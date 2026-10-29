@@ -534,6 +534,22 @@ select.tin{appearance:auto}
 .flipL{animation:flipL .22s ease-out}.flipR{animation:flipR .22s ease-out}
 @keyframes flipL{from{transform:translateX(40px);opacity:.3}to{transform:none;opacity:1}}
 @keyframes flipR{from{transform:translateX(-40px);opacity:.3}to{transform:none;opacity:1}}
+
+/* tag view in the index */
+#app.tagv #side{width:420px}
+.tvb.on{background:var(--ink);color:var(--panel)}
+.tvh,.tvr{display:grid;grid-template-columns:30px minmax(0,1fr) minmax(0,1fr);gap:6px;align-items:center}
+.tvh{font:600 10.5px var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--mut);padding:2px 4px 6px;position:sticky;top:0;background:var(--panel);z-index:2}
+.tvr{padding:3px 4px;border-radius:8px}
+.tvr.act{background:var(--on)}
+.tvr .badge{cursor:pointer}
+.tvr input{width:100%;min-width:0;font:inherit;font-size:13px;color:var(--ink);background:var(--chrome);border:1px solid var(--line);border-radius:7px;padding:6px 8px}
+.tvr input:focus{outline:2px solid #4c8dff;outline-offset:0;background:var(--panel);border-color:transparent}
+#tvSug{position:fixed;z-index:61;background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 20px rgba(0,0,0,.18);max-height:220px;overflow-y:auto;font-size:13px}
+#tvSug[hidden]{display:none}
+#tvSug div{padding:6px 10px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#tvSug div.h{background:color-mix(in srgb,var(--bm) 14%,transparent)}
+#app.phone .tvr input{font-size:16px;padding:8px}
 @media (prefers-reduced-motion:reduce){.flipL,.flipR{animation:none}.stk.flash{animation:none}#toast{transition:none}}
 </style>
 
@@ -541,7 +557,7 @@ select.tin{appearance:auto}
   <aside id="side" aria-label="Index">
     <button class="setl" id="setl" title="Open your library (L)"><span class="ty mod">SET</span><span class="nm">No set open</span><span class="sb"></span></button>
     <div class="sh"><div class="tabs"><button class="tab on" data-tab="pairs" id="cnt">Index</button><button class="tab" data-tab="bm" id="bmcnt">Bookmarks</button></div>
-      <button class="ib" id="hideSide" title="Hide index (I)" aria-label="Hide index">«</button></div>
+      <button class="ib tvb" id="tagView" title="Tag view: type chapter and topic beside each question" aria-label="Tag view">🏷</button><button class="ib" id="hideSide" title="Hide index (I)" aria-label="Hide index">«</button></div>
     <div class="srch"><input id="isearch" type="search" placeholder="Search name, chapter or topic" aria-label="Search questions"></div>
     <div id="list"></div>
     <div id="bulk" hidden><span id="bulkN"></span><button class="btn ghost" id="bulkClear">Clear</button><button class="btn" id="bulkSet">Set chapter / topic</button></div>
@@ -688,6 +704,7 @@ select.tin{appearance:auto}
   <div id="phDrop" class="ph"><b id="phDc"></b><span id="phDs"></span><button id="phDx">✕ Exit revision</button></div>
   <div id="phPill" class="ph"><button id="ppAg" aria-label="Revise again">↻</button><button id="ppOk" aria-label="Revised">✓</button><button id="ppNx" aria-label="Skip">›</button></div>
   <div id="phRv" class="ph"><span class="grab"></span><button id="prPrev" aria-label="Previous">‹</button><button id="prShow" class="big">Show answer</button><button id="prHide" aria-label="Hide answer">⌄</button><button id="prCon" aria-label="Concept">📖</button><button id="prOk" class="rok">✓ Revised</button><button id="prAg" class="rag">↻ Again</button><button id="prNext" aria-label="Next">›</button></div>
+  <div id="tvSug" hidden></div>
   <div id="toast" role="status"></div>
 </div>
 
@@ -1145,6 +1162,7 @@ function updIndex(){
   const shown=ns.filter(hit);
   list.innerHTML='';shownOrder=[];
   if(!shown.length){list.innerHTML='<div class="empty">Nothing matches “'+q.replace(/[<&]/g,'')+'”.</div>';return}
+  if(prefs.tagView){renderTagView(shown);return}
   const tagged=ns.some(n=>meta(n).ch||meta(n).tp);
   if(!tagged){shown.forEach(n=>{list.append(mkRow(n));shownOrder.push(n)});return}
   const fold=prefs.fold||(prefs.fold={});
@@ -2734,9 +2752,65 @@ document.addEventListener('pointerup',()=>{
 })();
 window.__ppPh={get PH(){return PH},applyPh,updPh,phFlip,toggleFan,openMore,phShowAns};
 
+
+/* ---------- tag view: chapter and topic boxes beside each question ---------- */
+function setTagView(on){prefs.tagView=!!on;savePrefs();$('#app').classList.toggle('tagv',!!on);$('#tagView').classList.toggle('on',!!on);$('#tvSug').hidden=true;updIndex()}
+$('#tagView').addEventListener('click',()=>setTagView(!prefs.tagView));
+function renderTagView(shown){
+  const list=$('#list');list.innerHTML='';shownOrder=[];
+  const h=document.createElement('div');h.className='tvh';h.innerHTML='<span></span><span>Chapter</span><span>Topic</span>';list.append(h);
+  for(const n of shown){
+    const r=document.createElement('div');r.className='tvr'+(n===activeN?' act':'');r.dataset.n=n;
+    const b=document.createElement('span');b.className='badge'+(findS('q',n)&&findS('a',n)?'':' half');b.textContent=n;b.title=label(n)+'  (click to open)';
+    b.addEventListener('click',()=>{openPair(n);$$('.tvr').forEach(x=>x.classList.toggle('act',+x.dataset.n===n));if(PH)setSide(false)});
+    const mk=k=>{const i=document.createElement('input');i.dataset.k=k;i.value=meta(n)[k]||'';i.placeholder=k==='ch'?'chapter…':'topic…';i.title=label(n);i.autocomplete='off';tvWire(i,n,k);return i};
+    r.append(b,mk('ch'),mk('tp'));list.append(r);shownOrder.push(n);
+  }
+}
+let tvCtx=null;
+function tvCommit(inp,n,k){
+  const v=inp.value.trim();const canon=(x,l)=>l.find(y=>y.toLowerCase()===x.toLowerCase())||x;
+  const val=k==='ch'?canon(v,allChapters()):canon(v,allTopics(''));
+  if((meta(n)[k]||'')===val){inp.value=val;return}
+  pushUndo();setMeta(n,{[k]:val});inp.value=val;
+  if(k==='ch'&&val)st.lastCh=val;
+  if(k==='tp'&&val)st.recentTp=[{ch:meta(n).ch||'',tp:val},...(st.recentTp||[]).filter(r=>r.tp!==val)].slice(0,8);
+  save();renderAnn('q');renderAnn('a');
+}
+function tvShow(inp,n,k){
+  const box=$('#tvSug');const v=inp.value.trim().toLowerCase();
+  const src=k==='ch'?allChapters():allTopics(meta(n).ch||'');
+  const items=src.filter(x=>x.toLowerCase()!==v&&(!v||x.toLowerCase().includes(v)));
+  box.innerHTML='';tvCtx={inp,n,k,hi:-1};
+  items.forEach(x=>{const d=document.createElement('div');d.textContent=x;d.addEventListener('mousedown',e=>{e.preventDefault();tvPick(x)});box.append(d)});
+  if(!items.length){box.hidden=true;return}
+  const r=inp.getBoundingClientRect();box.style.left=r.left+'px';box.style.width=Math.max(r.width,240)+'px';
+  box.hidden=false;const below=innerHeight-r.bottom;box.style.top=(below>230?r.bottom+2:Math.max(8,r.top-2-Math.min(220,box.scrollHeight)))+'px';
+}
+function tvNext(inp,k){
+  const row=inp.closest('.tvr');
+  if(k==='ch'){$('input[data-k="tp"]',row).focus();return}
+  const nx=row.nextElementSibling;if(nx&&nx.classList.contains('tvr')){const i=$('input[data-k="ch"]',nx);i.focus();i.scrollIntoView({block:'nearest'})}else inp.blur();
+}
+function tvPick(x){if(!tvCtx)return;const {inp,n,k}=tvCtx;inp.value=x;$('#tvSug').hidden=true;tvCommit(inp,n,k);tvNext(inp,k)}
+function tvWire(inp,n,k){
+  inp.addEventListener('focus',()=>{if(n!==activeN&&!PH)openPair(n);tvShow(inp,n,k);const row=inp.closest('.tvr');$$('.tvr').forEach(x=>x.classList.toggle('act',x===row))});
+  inp.addEventListener('input',()=>tvShow(inp,n,k));
+  inp.addEventListener('blur',()=>{setTimeout(()=>{if(tvCtx&&tvCtx.inp===inp)$('#tvSug').hidden=true},120);tvCommit(inp,n,k)});
+  inp.addEventListener('keydown',e=>{
+    e.stopPropagation();const box=$('#tvSug'),ds=[...box.children],open=!box.hidden&&ds.length;
+    if(e.key==='ArrowDown'&&!inp.value&&tvCtx.hi<0&&(()=>{const pr=inp.closest('.tvr').previousElementSibling;const x=pr&&pr.classList.contains('tvr')&&$('input[data-k="'+k+'"]',pr);return x&&x.value})()){ // empty box: copy from the row above
+      e.preventDefault();const pr=inp.closest('.tvr').previousElementSibling;const src=pr&&$('input[data-k="'+k+'"]',pr);if(src&&src.value){$('#tvSug').hidden=true;inp.value=src.value;tvCommit(inp,n,k);if(k==='ch'){const t=$('input[data-k="tp"]',inp.closest('.tvr'));const st2=$('input[data-k="tp"]',pr);if(!t.value&&st2.value){t.value=st2.value;tvCommit(t,n,'tp')}}tvNext(inp,'tp')}return}
+    if((e.key==='ArrowDown'||e.key==='ArrowUp')&&open){e.preventDefault();tvCtx.hi=clamp(tvCtx.hi+(e.key==='ArrowDown'?1:-1),0,ds.length-1);ds.forEach((d,i)=>d.classList.toggle('h',i===tvCtx.hi));ds[tvCtx.hi].scrollIntoView({block:'nearest'});return}
+    if(e.key==='Enter'){e.preventDefault();if(open&&tvCtx.hi>=0){tvPick(ds[tvCtx.hi].textContent);return}box.hidden=true;tvCommit(inp,n,k);tvNext(inp,k);return}
+    if(e.key==='Escape'){e.preventDefault();box.hidden=true;inp.blur()}
+  });
+}
+$('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true});
 window.__ppLib={get LIB(){return LIB},findConcept,toggleConcept,get activeTid(){return activeTid},openSet,startRv,qRows,openLib,get RV(){return RV}};
 /* ---------- boot ---------- */
 setRatio(prefs.rq);setSwap(prefs.swap);setSide(prefs.side);setView(prefs.view);
+if(prefs.tagView){$('#app').classList.add('tagv');$('#tagView').classList.add('on')}
 const t0=prefs.tool;prefs.tool='';setTool(t0||'sticker');updBar();updIndex();
 ['q','a'].forEach(s=>{P[s].fn.textContent='No file';updChip(P[s])});
 if((PH||matchMedia('(max-width:720px)').matches)&&prefs.side)setSide(false);
