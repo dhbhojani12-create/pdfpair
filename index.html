@@ -482,16 +482,22 @@ select.tin{appearance:auto}
 #phMg button[hidden]{display:none}
 #phMg .mon b{color:var(--bm)}
 /* phone revise */
-#app.phone #rvbar{height:calc(44px + env(safe-area-inset-top,0px));padding-top:env(safe-area-inset-top,0px);gap:8px;padding-left:10px;padding-right:6px}
-#app.phone.rv{padding-top:calc(44px + env(safe-area-inset-top,0px))}
-#app.phone #rvbar .crumb{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
-#app.phone #rvbar .sp,#app.phone #rvSrc,#app.phone #rvSeg,#app.phone #rvOk,#app.phone #rvAg{display:none!important}
-#app.phone #rvExit{padding:7px 10px}
-#app.phone.rvq #pane-a,#app.phone.rvq #pane-c{display:none!important}
+#app.phone #rvbar{display:none!important}
+#app.phone.rv{padding-top:0}
+#phLab{position:absolute;z-index:33;top:calc(8px + env(safe-area-inset-top,0px));left:8px;max-width:calc(100% - 150px);align-items:center;gap:8px;background:rgba(27,30,35,.88);color:#fff;border-radius:16px;padding:6px 12px;font-size:12.5px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+#phLt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}#phLp{font:500 11.5px var(--mono);opacity:.75;white-space:nowrap}
+#app.phone.rv:not(.rvclean) #phLab{display:flex!important}
+#phDrop{position:absolute;z-index:36;top:calc(46px + env(safe-area-inset-top,0px));left:8px;width:min(320px,calc(100% - 16px));background:var(--panel);color:var(--ink);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.3);padding:12px;flex-direction:column;gap:4px;font-size:13px}
+#app.phone.rv #phDrop.open{display:flex!important}#phDrop span{color:var(--mut);font-size:12px}#phDrop button{margin-top:8px;padding:9px;border:1px solid var(--line);border-radius:9px;font-weight:600}
+#phPill{position:absolute;z-index:33;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom,0px));background:rgba(27,30,35,.92);border-radius:28px;gap:5px;padding:5px;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+#app.phone.rv:not(.ans):not(.rvclean) #phPill{display:flex!important}
+#phPill button{width:52px;height:44px;border-radius:22px;color:#fff;font-size:19px;display:grid;place-items:center;background:rgba(255,255,255,.08)}
+#phPill #ppAg{background:#b8333a}#phPill #ppOk{background:#23784a}#phPill .on{box-shadow:inset 0 0 0 3px #fff}
+#app.phone.rv.rvclean.tnone #fab{display:none!important}
 #app.phone.rvq.ans:not(.cv) #pane-a,#app.phone.rvq.ans.cv #pane-c{display:flex!important;position:absolute;left:0;right:0;bottom:0;height:var(--sh,55%);z-index:26;box-shadow:0 -6px 22px rgba(0,0,0,.25)}
 #app.phone.rvq.ans #pane-a .pages,#app.phone.rvq.ans #pane-c .pages{padding-top:6px}
 #phRv{position:absolute;left:0;right:0;bottom:0;z-index:33;background:var(--panel);align-items:center;gap:6px;padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);box-shadow:0 -4px 16px rgba(0,0,0,.12);touch-action:none}
-#app.phone.rv #phRv{display:flex!important}
+#app.phone.rv.ans #phRv{display:flex!important}
 #app.phone.rv.ans #phRv{bottom:var(--sh,55%);border-radius:16px 16px 0 0;padding-top:16px;padding-bottom:8px}
 #phRv .grab{position:absolute;left:50%;top:5px;margin:0 0 0 -20px;display:none}
 #app.phone.rv.ans #phRv .grab{display:block}
@@ -655,6 +661,9 @@ select.tin{appearance:auto}
   <button id="fab" class="ph" aria-label="Tools"></button>
   <div id="fan" class="ph"></div>
   <div id="phMore" class="ph"><div class="sbody"><span class="grab"></span><div id="phMg"></div></div></div>
+  <div id="phLab" class="ph"><b id="phLt"></b><span id="phLp"></span></div>
+  <div id="phDrop" class="ph"><b id="phDc"></b><span id="phDs"></span><button id="phDx">✕ Exit revision</button></div>
+  <div id="phPill" class="ph"><button id="ppAg" aria-label="Revise again">↻</button><button id="ppOk" aria-label="Revised">✓</button><button id="ppNx" aria-label="Skip">›</button></div>
   <div id="phRv" class="ph"><span class="grab"></span><button id="prPrev" aria-label="Previous">‹</button><button id="prShow" class="big">Show answer</button><button id="prHide" aria-label="Hide answer">⌄</button><button id="prCon" aria-label="Concept">📖</button><button id="prOk" class="rok">✓ Revised</button><button id="prAg" class="rag">↻ Again</button><button id="prNext" aria-label="Next">›</button></div>
   <div id="toast" role="status"></div>
 </div>
@@ -1339,7 +1348,7 @@ function rename(row,n){
 }
 
 /* ---------- views & tools ---------- */
-function isShown(side){if(side==='a'&&isCset())return false;if(PH&&side==='a'&&RV&&RV.kind==='q')return $('#app').classList.contains('ans');if(side==='q'&&isCset())return true;return prefs.view==='split'||prefs.view===side}
+function isShown(side){if(side==='a'&&isCset())return false;if(PH&&side==='a'&&RV&&RV.kind==='q'&&$('#app').classList.contains('ans'))return true;if(side==='q'&&isCset())return true;return prefs.view==='split'||prefs.view===side}
 function setView(v){
   if(PH&&v==='split')v=prefs.view==='a'?'a':'q';
   prefs.view=v;savePrefs();
@@ -1698,12 +1707,13 @@ $('#setl').addEventListener('click',()=>openLib());
 let RV=null;
 function startRv(rows,lab){
   if(!rows.length){toast('No questions here');return}
+  if(PH&&!prefs.rvHint){prefs.rvHint=1;savePrefs();setTimeout(()=>toast('Swipe ← to see the answer. ✓ revised, ↻ again, › skip. Tap the page for a clean view.'),1500)}
   RV={kind:'q',q:rows.map(r=>({id:r.set.id,n:r.n,ch:r.ch,tp:r.tp})),i:0,label:lab,sub:libSub};
   closeLib(true);$('#rvbar').hidden=false;$('#app').classList.add('rv');goRv(0);
 }
-function stopRv(){RV=null;$('#rvbar').hidden=true;$('#app').classList.remove('rv','ans');updPh()}
+function stopRv(){RV=null;$('#rvbar').hidden=true;$('#app').classList.remove('rv','ans','rvclean');$('#phDrop').classList.remove('open');updPh()}
 async function goRv(i){
-  if(!RV)return;RV.i=i;if(PH){$('#app').classList.remove('ans');if(conceptShown()){conceptPref=false;hideConcept()}if(RV.kind==='q'&&prefs.view!=='q')setView('q')}const it=RV.q[i];
+  if(!RV)return;RV.i=i;if(PH){$('#app').classList.toggle('ans',!!prefs.rvBoth&&RV.kind==='q');$('#phDrop').classList.remove('open');if(conceptShown()){conceptPref=false;hideConcept()}if(RV.kind==='q'&&prefs.view!=='q')setView('q')}const it=RV.q[i];
   if(LIB.cur!==it.id)await openSet(it.id);
   if(!RV)return;
   if(RV.kind==='c'){goTopic(it.tid);updRv();return}
@@ -2424,7 +2434,11 @@ function updPh(){
     if(fanOpen())f.textContent='×';else if(t==='sticker'){f.classList.add('stk2');f.textContent=st.next}
     else if(t==='hl'){f.innerHTML='▬<i style="background:'+['#ffd400','#5ad66d','#ff6fa5'][prefs.color]+'"></i>'}
     else f.textContent={star:'★',erase:'⌫',topic:'📖'}[t]||'✎';
+    phCls('tnone',t==='none');
     if(RV){const it=RV.q[RV.i];const v=it?(RV.kind==='c'?(st.crev||{})[it.tid]:(st.rev||{})[it.n]):null;
+      $('#phLt').textContent=it?(it.tp||it.ch||RV.label||''):'';$('#phLp').textContent=(RV.i+1)+' / '+RV.q.length;
+      $('#phDc').textContent=$('#rvCrumb').textContent;$('#phDs').textContent=$('#rvSrc').textContent;
+      $('#ppOk').classList.toggle('on',v==='done');$('#ppAg').classList.toggle('on',v==='again');
       $('#prOk').classList.toggle('on',v==='done');$('#prAg').classList.toggle('on',v==='again');
       $('#prCon').hidden=RV.kind!=='q'||!hasConcepts();$('#prCon').classList.toggle('on',conceptShown())}
     placeFab();
@@ -2446,7 +2460,7 @@ function phBoot(){
 }
 // flip Q / A with a small slide
 function phFlip(v,dir){
-  if(isCset()||RV)return;
+  if(isCset()||(RV&&(RV.kind!=='q'||APP.classList.contains('ans'))))return;
   if(v===prefs.view)return;
   setView(v);
   if(v==='a'&&conceptPref&&activeN!=null)showConcept(activeN,true);
@@ -2460,9 +2474,11 @@ function phFlip(v,dir){
   p.sc.addEventListener('pointerdown',e=>{if(!PH)return;d=e.isPrimary?{x:e.clientX,y:e.clientY,t:Date.now(),el:e.target}:null},true);
   p.sc.addEventListener('pointerup',e=>{
     if(!PH||!d||!e.isPrimary)return;const q=d;d=null;
-    if(multi||RV||Math.hypot(e.clientX-q.x,e.clientY-q.y)>10||Date.now()-q.t>450)return;
+    if(multi||Math.hypot(e.clientX-q.x,e.clientY-q.y)>10||Date.now()-q.t>450)return;
     if((prefs.tool||'none')!=='none')return;
     if(q.el.closest&&q.el.closest('.stk,.star,.rib,.tmk,.chip,.grid,button,input,a'))return;
+    if($('#phDrop').classList.contains('open')){$('#phDrop').classList.remove('open');return}
+    if(RV){phCls('rvclean',!APP.classList.contains('rvclean'));return}
     phCls('ui',!APP.classList.contains('ui'));
   });
   p.sc.addEventListener('touchstart',e=>{if(e.touches.length>1){multi=true;sw=null;return}multi=false;const t=e.touches[0];sw={x:t.clientX,y:t.clientY,t:Date.now()}},{passive:true});
@@ -2492,7 +2508,7 @@ function fabCorner(){return prefs.fab||'br'}
 function placeFab(){
   const f=$('#fab');if(!PH||f.classList.contains('drag'))return;
   const c=fabCorner(),rv=!!RV,ans=APP.classList.contains('ans');
-  const top=(rv?56:14),bot=(rv&&!ans?78:18);
+  const top=(rv?52:14),bot=14;
   f.style.left=f.style.right=f.style.top=f.style.bottom='';
   if(c[1]==='r')f.style.right='14px';else f.style.left='14px';
   if(c[0]==='b')f.style.bottom='calc('+bot+'px + env(safe-area-inset-bottom,0px))';else f.style.top='calc('+top+'px + env(safe-area-inset-top,0px))';
@@ -2518,7 +2534,12 @@ function buildFan(){
   const pick=x=>()=>{if(prefs.tool!==x)setTool(x);closeFan()};
   const items=[]; // nearest to the round button first
   if(t!=='none')items.push(['✓ Done',false,()=>{setTool('none');closeFan();phCls('ui',false)}]);
-  if(!isCset()&&!RV){const to=prefs.view==='a'?'q':'a';items.push(['⇄ Go to '+(to==='a'?'answer':'question'),false,()=>{closeFan();phFlip(to,to==='a'?-1:1)}])}
+  if(RV&&RV.kind==='q'){
+    if(APP.classList.contains('ans'))items.push(['⇄ One at a time (swipe)',false,()=>{closeFan();prefs.rvBoth=false;savePrefs();phShowAns(false)}]);
+    else items.push(['⧉ See Q and A together',false,()=>{closeFan();prefs.rvBoth=true;savePrefs();if(conceptShown()){conceptPref=false;hideConcept()}setView('q');phShowAns(true)}]);
+    if(hasConcepts())items.push(['📖 '+(conceptShown()?'Hide concept':'Concept'),conceptShown(),async()=>{closeFan();await toggleConcept(!conceptShown());if(conceptShown()&&!APP.classList.contains('ans')){setView('a');layout(P.c)}if(APP.classList.contains('ans'))phShowAns(true);updPh()}]);
+  }
+  if(!isCset()&&!(RV&&(RV.kind!=='q'||APP.classList.contains('ans')))){const to=prefs.view==='a'?'q':'a';items.push(['⇄ Go to '+(to==='a'?'answer':'question'),false,()=>{closeFan();phFlip(to,to==='a'?-1:1)}])}
   items.push(['↶ Undo',false,()=>{undo()}]);
   if(t==='hl')items.push(['dots']);
   if(t==='sticker')items.push(['<span class="nb">'+st.next+'</span> Change number',false,()=>{closeFan();setTimeout(()=>$('#bNum').click(),0)}]);
@@ -2580,7 +2601,10 @@ function phShowAns(on){
   updPh();
 }
 $('#prShow').addEventListener('click',()=>phShowAns(true));
-$('#prHide').addEventListener('click',()=>phShowAns(false));
+$('#prHide').addEventListener('click',()=>{prefs.rvBoth=false;savePrefs();phShowAns(false)});
+$('#ppOk').addEventListener('click',()=>markRv('done'));$('#ppAg').addEventListener('click',()=>markRv('again'));$('#ppNx').addEventListener('click',()=>stepQ(1));
+$('#phLab').addEventListener('click',e=>{e.stopPropagation();$('#phDrop').classList.toggle('open')});
+$('#phDx').addEventListener('click',()=>{$('#phDrop').classList.remove('open');$('#rvExit').click()});
 $('#prCon').addEventListener('click',async()=>{await toggleConcept(!conceptShown());if(conceptShown())layout(P.c);else{const p=P.a;layout(p);if(p.pending){const x=p.pending;p.pending=null;scrollToSticker('a',x,false)}}updPh()});
 $('#prOk').addEventListener('click',()=>markRv('done'));
 $('#prAg').addEventListener('click',()=>markRv('again'));
