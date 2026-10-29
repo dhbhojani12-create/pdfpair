@@ -1497,6 +1497,36 @@ const TSHORT={mod:'MOD',mtp:'MTP',rtp:'RTP',pyq:'PYQ',oth:'OTH',con:'CON'};
 function isCset(){const c=typeof curSet==='function'&&curSet();return !!(c&&c.type==='con')}
 let LIB=Object.assign({subjects:['FR','AFM','Audit'],sets:[],cur:null},LS.get('pp:lib')||{});
 function saveLib(){LS.set('pp:lib',LIB)}
+async function idbKeys(){try{const db=await idb();return await new Promise(res=>{const r=db.transaction('files').objectStore('files').getAllKeys();r.onsuccess=()=>res(r.result||[]);r.onerror=()=>res([])})}catch(e){return []}}
+// put back sets whose marks and PDFs are still on this device but are missing from the library list
+async function recoverSets(){
+  const have=new Set(LIB.sets.map(x=>x.key));let added=0;
+  const blobOk=async fs=>{for(const f of fs){if(!(await idbGet('blob:'+f.id)))return false}return true};
+  const br=await idbGet('before-restore');const bl=br&&br.projects&&br.projects.lib;
+  for(const x of (bl&&bl.sets)||[]){if(have.has(x.key))continue;if(!(await blobOk([...x.files.q,...x.files.a]))&&!localStorage.getItem('pp:'+x.key))continue;
+    LIB.sets.push(x);have.add(x.key);added++;
+    if(!localStorage.getItem('pp:'+x.key)&&br.projects[x.key])LS.set('pp:'+x.key,br.projects[x.key])}
+  for(const x of (bl&&bl.subjects)||[])if(!LIB.subjects.includes(x))LIB.subjects.push(x);
+  const orphans=[];try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith('pp:')&&k.slice(3).includes('::')&&!have.has(k.slice(3)))orphans.push(k.slice(3))}}catch(e){}
+  if(orphans.length){
+    const sizes={};for(const k of await idbKeys()){if(typeof k!=='string'||!k.startsWith('blob:'))continue;const b=await idbGet(k);if(b&&b.size!=null)(sizes[b.size]=sizes[b.size]||[]).push(k.slice(5))}
+    for(const key of orphans){
+      const p=LS.get('pp:'+key)||{};const hasMarks=(p.stickers&&(p.stickers.q.length||p.stickers.a.length))||(p.topics&&p.topics.length);if(!hasMarks)continue;
+      const part=t=>{if(t==='-')return null;const i=t.lastIndexOf('|');return {name:t.slice(0,i),size:+t.slice(i+1)}};
+      const [q,a]=key.split('::').map(part);if(!q)continue;
+      const fq=(sizes[q.size]||[])[0];if(!fq)continue;
+      const fa=a?(a.size===q.size&&a.name===q.name?fq:(sizes[a.size]||[])[0]):null;if(a&&!fa)continue;
+      const nm=q.name.replace(/\.pdf$/i,'');
+      const type=!a?'con':/rtp/i.test(nm)?'rtp':/suggested|past/i.test(nm)?'pyq':/mtp/i.test(nm)?'mtp':'mod';
+      const name=/RTP/i.test(nm)?'FR RTP':/Suggested/i.test(nm)?'FR Past Paper':/^FR MTP/.test(nm)?'FR MTP':nm;
+      const fl={id:fq,name:q.name,size:q.size};
+      LIB.sets.push({id:uid(),name,subject:LIB.subjects[0]||'FR',type,key,files:{q:[fl],a:a?[fa===fq?fl:{id:fa,name:a.name,size:a.size}]:[]},same:!!(a&&fa===fq),at:Date.now()});
+      have.add(key);added++;
+    }
+  }
+  if(added){saveLib();toast('Found '+added+' set'+(added===1?'':'s')+' missing from your library and put '+(added===1?'it':'them')+' back')}
+  return added;
+}
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const keyOf=(q,a)=>(q?q.name+'|'+q.size:'-')+'::'+(a?a.name+'|'+a.size:'-');
 function curSet(){return LIB.sets.find(x=>x.id===LIB.cur)||null}
@@ -2164,6 +2194,7 @@ async function doRestore(c){
   for(const k in (c.snap.pos||{}))LS.set('pos:'+k,c.snap.pos[k]);
   if(c.files&&c.files.blobs)for(const id in c.files.blobs)await idbPut('blob:'+id,c.files.blobs[id]);
   LIB=Object.assign({subjects:['FR','AFM','Audit'],sets:[],cur:null},LS.get('pp:lib')||{});
+  try{await recoverSets()}catch(e){}
   if(c.files&&c.files.q&&(c.files.q.length||c.files.a.length))await adoptPair(c.files.q,c.files.a);   // backups made before the library existed
   else{const id=(curSet()||LIB.sets[0]||{}).id;if(id)await openSet(id)}
   if(!$('#lib').hidden)renderLib();
@@ -2712,6 +2743,7 @@ if((PH||matchMedia('(max-width:720px)').matches)&&prefs.side)setSide(false);
 phBoot();
 (async()=>{
   if(!window.pdfjsLib){toast('The PDF reader could not load. Check your internet connection and reload.');return}
+  try{await recoverSets()}catch(e){}
   if(!LIB.sets.length){
     const q=await idbGet('q'),a=await idbGet('a');const has=x=>x&&(!Array.isArray(x)||x.length);
     if(has(q)||has(a)){await adoptPair(q,a);await idbPut('q',null);await idbPut('a',null);
