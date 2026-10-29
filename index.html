@@ -2566,10 +2566,11 @@ $('#phMoreB').addEventListener('click',openMore);
 $('#phMore').addEventListener('click',e=>{if(e.target.id==='phMore')closeMore()});
 function phFull(){
   const de=document.documentElement;
-  if(document.fullscreenElement||document.webkitFullscreenElement){(document.exitFullscreen||document.webkitExitFullscreen).call(document);return}
+  if(document.fullscreenElement||document.webkitFullscreenElement){prefs.autoFs=false;savePrefs();(document.exitFullscreen||document.webkitExitFullscreen).call(document);toast('Full screen is off. Tap ⛶ in More to turn it back on');return}
+  prefs.autoFs=true;savePrefs();
   const go=de.requestFullscreen||de.webkitRequestFullscreen;
   if(!go){toast('This browser has no full screen. Use “Add to Home screen” instead.');return}
-  try{const r=go.call(de);if(r&&r.catch)r.catch(()=>toast('Full screen is blocked here. Use “Add to Home screen” instead.'))}catch(e){toast('Full screen is blocked here. Use “Add to Home screen” instead.')}
+  try{const r=go.call(de,{navigationUI:'hide'});if(r&&r.catch)r.catch(()=>toast('Full screen is blocked here. Use “Add to Home screen” instead.'))}catch(e){toast('Full screen is blocked here. Use “Add to Home screen” instead.')}
 }
 
 // revise on the phone: question full screen, answer slides up
@@ -2592,6 +2593,12 @@ $('#prNext').addEventListener('click',()=>stepQ(1));
   const end=()=>{if(!s)return;const sh=s.sh;s=null;if(sh!=null&&sh<110){phShowAns(false);APP.style.removeProperty('--sh')}else{layout(P.a);layout(P.c);updPh()}};
   h.addEventListener('pointerup',end);h.addEventListener('pointercancel',end);
 })();
+// on phones, hide the status bar and navigation bar on the first touch (and again after coming back to the app)
+document.addEventListener('pointerup',()=>{
+  if(!PH||prefs.autoFs===false||document.fullscreenElement||document.webkitFullscreenElement)return;
+  const de=document.documentElement,go=de.requestFullscreen||de.webkitRequestFullscreen;if(!go)return;
+  try{const r=go.call(de,{navigationUI:'hide'});if(r&&r.catch)r.catch(()=>{})}catch(e){}
+},true);
 window.__ppPh={get PH(){return PH},applyPh,updPh,phFlip,toggleFan,openMore,phShowAns};
 
 window.__ppLib={get LIB(){return LIB},findConcept,toggleConcept,get activeTid(){return activeTid},openSet,startRv,qRows,openLib,get RV(){return RV}};
