@@ -428,6 +428,7 @@ select.tin{appearance:auto}
 #app.phone #side .ib{width:40px;height:40px;font-size:20px}
 #app.phone #side .row{min-height:44px}
 #app.phone .pop{left:8px!important;right:8px!important;top:auto!important;bottom:calc(12px + env(safe-area-inset-bottom,0px))!important;width:auto!important;z-index:48}
+#app.wlock .sc{overflow-x:hidden}
 #app.phone .acts{flex-wrap:wrap}#app.phone .acts .priv{flex-basis:100%}
 #app.phone .tagpop{left:8px!important;right:8px!important;top:calc(10px + env(safe-area-inset-top,0px))!important;width:auto}
 #app.phone #toast{bottom:calc(28px + env(safe-area-inset-bottom,0px))}
@@ -458,9 +459,10 @@ select.tin{appearance:auto}
 #fab i{position:absolute;right:3px;bottom:3px;width:15px;height:15px;border-radius:50%;border:2px solid #1b1e23}
 #fab.drag{opacity:.85;transition:none}
 #app.phone.marking #fab,#app.phone.rv #fab{display:grid!important}
-#fan{position:absolute;z-index:35;flex-direction:column;gap:8px}
+#fan{position:absolute;z-index:35;flex-direction:column;gap:8px;align-content:flex-start}
 #app.phone #fan.open{display:flex!important}
 #fan.r{align-items:flex-end}#fan.l{align-items:flex-start}
+@media (max-height:520px){#fan button,#fan .dots{padding:7px 12px;font-size:13px}#fan .dots{padding:4px 7px}#fan .dots button{width:26px;height:26px}}
 #fan button,#fan .dots{background:rgba(27,30,35,.94);color:#fff;border-radius:24px;padding:10px 15px;font-size:14px;font-weight:600;display:flex;gap:8px;align-items:center;box-shadow:0 3px 12px rgba(0,0,0,.3);white-space:nowrap}
 #fan button.on{background:#fff;color:#1b1f26}
 #fan .dots{padding:7px 9px;gap:6px}
@@ -726,7 +728,7 @@ const P={};
 ['q','a','c'].forEach(side=>{
   const el=$('#pane-'+side);
   const p=P[side]={side,el,sc:$('.sc',el),pg:$('.pages',el),fn:$('.fn',el),pc:$('.pc',el),zp:$('.zp',el),
-    pages:[],doc:null,W:0,zoom:prefs.zoom[side]||1,rendered:new Set(),pending:null,name:''};
+    pages:[],doc:null,W:0,zoom:(isFinite(prefs.zoom[side])&&prefs.zoom[side]>=.5&&prefs.zoom[side]<=3)?prefs.zoom[side]:1,rendered:new Set(),pending:null,name:''};
   p.io=new IntersectionObserver(es=>{es.forEach(e=>{const pg=p.pages[+e.target.dataset.n-1];if(!pg)return;pg.vis=e.isIntersecting;if(pg.vis)queueRender(p,pg)})},{root:p.sc,rootMargin:'700px 300px'});
   let rt=0;new ResizeObserver(()=>{clearTimeout(rt);rt=setTimeout(()=>layout(p),120)}).observe(p.sc);
   let sr=0;p.sc.addEventListener('scroll',()=>{if(sr)return;sr=requestAnimationFrame(()=>{sr=0;updChip(p);savePosSoon()})},{passive:true});
@@ -744,10 +746,10 @@ const P={};
   }
   $$('.zm button[data-z]',el).forEach(b=>b.addEventListener('click',()=>zoomStep(p,+b.dataset.z)));
   let pz=null;
-  p.sc.addEventListener('touchstart',e=>{if(e.touches.length===2){const[a,b]=e.touches;pz={d:Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY),z:p.zoom,mx:(a.clientX+b.clientX)/2,my:(a.clientY+b.clientY)/2}}},{passive:true});
+  p.sc.addEventListener('touchstart',e=>{if(e.touches.length===2){const[a,b]=e.touches;pz={d:Math.max(20,Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY)),_:Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY),z:p.zoom,mx:(a.clientX+b.clientX)/2,my:(a.clientY+b.clientY)/2}}},{passive:true});
   p.sc.addEventListener('touchmove',e=>{if(pz&&e.touches.length===2){e.preventDefault();const[a,b]=e.touches;
-    const d=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY),mx=(a.clientX+b.clientX)/2,my=(a.clientY+b.clientY)/2;zoomTo(p,pz.z*d/pz.d,mx,my);
-    p.sc.scrollLeft-=mx-pz.mx;p.sc.scrollTop-=my-pz.my;pz.mx=mx;pz.my=my}},{passive:false});
+    const d=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY),mx=(a.clientX+b.clientX)/2,my=(a.clientY+b.clientY)/2;if(!prefs.wlock)zoomTo(p,pz.z*d/pz.d,mx,my);
+    if(!prefs.wlock)p.sc.scrollLeft-=mx-pz.mx;p.sc.scrollTop-=my-pz.my;pz.mx=mx;pz.my=my}},{passive:false});
   p.sc.addEventListener('touchend',e=>{if(e.touches.length<2)pz=null},{passive:true});
   p.pg.addEventListener('pointerdown',e=>onDown(e,p));
   p.pg.addEventListener('contextmenu',e=>{
@@ -767,6 +769,7 @@ function zoomStep(p,d){
 }
 // zoom so the point under (cx,cy) stays put; default is the centre of the pane
 function zoomTo(p,z,cx,cy){
+  if(!isFinite(z))return;if(prefs.wlock)z=1;
   z=clamp(z,.5,3);
   if(!p.pages.length||Math.abs(z-p.zoom)<.001){p.zoom=z;updChip(p);return}
   const r=p.sc.getBoundingClientRect();
@@ -859,6 +862,7 @@ function setAnchor(p,a){const pg=a&&p.pages[a.n-1];if(pg)p.sc.scrollTop=pg.div.o
 
 function layout(p,keep=true){
   if(!p.pages.length||!p.sc.clientWidth){updChip(p);return}
+  if(!(isFinite(p.zoom)&&p.zoom>=.5&&p.zoom<=3))p.zoom=1;
   const W=Math.round(Math.max(160,p.sc.clientWidth-(PH?8:32))*p.zoom);
   if(W===p.W&&keep){updChip(p);return}
   const a=keep?getAnchor(p):null;
@@ -2436,6 +2440,7 @@ function applyPh(){
   ['q','a','c'].forEach(s=>layout(P[s],false));updPh();
 }
 function phBoot(){
+  APP.classList.toggle('wlock',!!prefs.wlock);
   applyPh();phMQ.addEventListener?phMQ.addEventListener('change',applyPh):phMQ.addListener(applyPh);
   if(PH&&!prefs.phHint){prefs.phHint=1;savePrefs();setTimeout(()=>toast('Tap the page to show or hide tools. Swipe sideways to flip Q / A.'),1200)}
 }
@@ -2511,14 +2516,14 @@ function buildFan(){
   const fn=$('#fan'),t=prefs.tool||'none',c=fabCorner();fn.innerHTML='';
   const add=(h,on,cb)=>{const b=document.createElement('button');b.innerHTML=h;if(on)b.classList.add('on');b.addEventListener('click',e=>{e.stopPropagation();cb(b)});fn.append(b);return b};
   const pick=x=>()=>{if(prefs.tool!==x)setTool(x);closeFan()};
-  const items=[];
+  const items=[]; // nearest to the round button first
   if(t!=='none')items.push(['✓ Done',false,()=>{setTool('none');closeFan();phCls('ui',false)}]);
+  if(!isCset()&&!RV){const to=prefs.view==='a'?'q':'a';items.push(['⇄ Go to '+(to==='a'?'answer':'question'),false,()=>{closeFan();phFlip(to,to==='a'?-1:1)}])}
   items.push(['↶ Undo',false,()=>{undo()}]);
   if(t==='hl')items.push(['dots']);
   if(t==='sticker')items.push(['<span class="nb">'+st.next+'</span> Change number',false,()=>{closeFan();setTimeout(()=>$('#bNum').click(),0)}]);
-  items.push(['⌫ Erase',t==='erase',pick('erase')],['<span style="color:#f5b400">★</span> Star',t==='star',pick('star')],['▬ Highlight',t==='hl',pick('hl')]);
   items.push(isCset()?['📖 Topic',t==='topic',pick('topic')]:['<span class="nb">'+st.next+'</span> Sticker',t==='sticker',pick('sticker')]);
-  if(c[0]==='t')items.reverse();
+  items.push(['▬ Highlight',t==='hl',pick('hl')],['<span style="color:#f5b400">★</span> Star',t==='star',pick('star')],['⌫ Erase',t==='erase',pick('erase')]);
   items.forEach(it=>{
     if(it[0]==='dots'){const d=document.createElement('div');d.className='dots';
       ['#ffd400','#5ad66d','#ff6fa5'].forEach((col,i)=>{const b=document.createElement('button');b.innerHTML='<span style="background:'+col+'"></span>';if(prefs.color===i)b.classList.add('on');
@@ -2530,6 +2535,9 @@ function buildFan(){
   const fr=$('#fab').getBoundingClientRect(),a=APP.getBoundingClientRect();
   if(c[1]==='r')fn.style.right=(a.right-fr.right)+'px';else fn.style.left=(fr.left-a.left)+'px';
   if(c[0]==='b')fn.style.bottom=(a.bottom-fr.top+10)+'px';else fn.style.top=(fr.bottom-a.top+10)+'px';
+  // short screens (landscape): wrap into extra columns instead of running off the screen
+  fn.style.flexDirection=c[0]==='b'?'column-reverse':'column';fn.style.flexWrap=c[1]==='r'?'wrap-reverse':'wrap';
+  fn.style.maxHeight=Math.max(120,(c[0]==='b'?fr.top-a.top:a.bottom-fr.bottom)-20)+'px';
 }
 // tapping anywhere else closes the menu (and does nothing else)
 window.addEventListener('pointerdown',e=>{if(!PH||!fanOpen())return;if(e.target.closest('#fan,#fab'))return;e.stopPropagation();e.preventDefault();closeFan()},true);
@@ -2549,6 +2557,7 @@ function openMore(){
   add('☁','Backup',()=>setTimeout(()=>$('#bBk').click(),0));
   add('📚','Library',()=>openLib());
   add('＋','Add PDF below',()=>$('.abtn',p.el)&&$('.abtn',p.el).click(),false,p.side==='c');
+  add('🔒',prefs.wlock?'Unlock width':'Lock width',()=>{prefs.wlock=!prefs.wlock;savePrefs();APP.classList.toggle('wlock',!!prefs.wlock);['q','a','c'].forEach(s=>{const x=P[s];if(prefs.wlock&&x.zoom!==1){x.zoom=1;prefs.zoom[s]=1;layout(x,false)}x.sc.scrollLeft=0});toast(prefs.wlock?'Width locked: pages stay fitted to the screen, pinch and sideways moves are off':'Width unlocked: pinch to zoom again')},!!prefs.wlock);
   add('⊙','Fit width',()=>zoomTo(p,1));
   add(document.fullscreenElement?'⤡':'⛶',document.fullscreenElement?'Exit full screen':'Full screen',phFull);
   $('#phMore').classList.add('open');
