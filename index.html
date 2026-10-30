@@ -824,8 +824,8 @@ const P={};
   let pz=null;
   p.sc.addEventListener('touchstart',e=>{if(e.touches.length===2){const[a,b]=e.touches;pz={d:Math.max(20,Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY)),_:Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY),z:p.zoom,mx:(a.clientX+b.clientX)/2,my:(a.clientY+b.clientY)/2}}},{passive:true});
   p.sc.addEventListener('touchmove',e=>{if(pz&&e.touches.length===2){e.preventDefault();const[a,b]=e.touches;
-    const d=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY),mx=(a.clientX+b.clientX)/2,my=(a.clientY+b.clientY)/2;if(!prefs.wlock)zoomTo(p,pz.z*d/pz.d,mx,my);
-    if(!prefs.wlock)p.sc.scrollLeft-=mx-pz.mx;p.sc.scrollTop-=my-pz.my;pz.mx=mx;pz.my=my}},{passive:false});
+    const d=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY),mx=(a.clientX+b.clientX)/2,my=(a.clientY+b.clientY)/2;if(!widthLocked())zoomTo(p,pz.z*d/pz.d,mx,my);
+    if(!widthLocked())p.sc.scrollLeft-=mx-pz.mx;p.sc.scrollTop-=my-pz.my;pz.mx=mx;pz.my=my}},{passive:false});
   p.sc.addEventListener('touchend',e=>{if(e.touches.length<2)pz=null},{passive:true});
   p.pg.addEventListener('pointerdown',e=>onDown(e,p));
   p.pg.addEventListener('contextmenu',e=>{
@@ -836,6 +836,8 @@ const P={};
 let lastPane=null;
 function activePane(){return (lastPane&&lastPane.side!=='c'&&isShown(lastPane.side))?lastPane:(isShown('q')?P.q:P.a)}
 const STEPS=[.5,.6,.7,.8,.9,1,1.1,1.25,1.5,1.75,2,2.5,3];
+// width lock: on by choice, and always on a phone that is linked to the laptop
+function widthLocked(){return !!prefs.wlock||(prefs.linkRole==='phone'&&!!prefs.room&&typeof PH!=='undefined'&&PH)}
 function zoomStep(p,d){
   let z;
   if(d===0)z=1;
@@ -845,7 +847,7 @@ function zoomStep(p,d){
 }
 // zoom so the point under (cx,cy) stays put; default is the centre of the pane
 function zoomTo(p,z,cx,cy){
-  if(!isFinite(z))return;if(prefs.wlock)z=1;
+  if(!isFinite(z))return;if(widthLocked())z=1;
   z=clamp(z,.5,3);
   if(!p.pages.length||Math.abs(z-p.zoom)<.001){p.zoom=z;updChip(p);return}
   const r=p.sc.getBoundingClientRect();
@@ -2892,7 +2894,8 @@ function linkStart(){
 }
 function updLinkUI(){
   const ph=SY.role()==='phone'&&syncOk(),lp=SY.role()==='laptop'&&syncOk();
-  $('#app').classList.toggle('linked',ph);
+  $('#app').classList.toggle('linked',ph);$('#app').classList.toggle('wlock',!!prefs.wlock||ph);
+  if(ph)['q','a','c'].forEach(sd=>{const x=P[sd];if(x.zoom!==1){x.zoom=1;layout(x,false)}x.sc.scrollLeft=0});
   const b=$('#bLink');if(b){b.classList.toggle('on',lp);$('#bLinkT').textContent=lp?(Date.now()-lkPeer<45000?'Phone linked':'Phone linked (away)'):'Link phone'}
   if(ph&&window.__dkShowCol)setTimeout(()=>{try{__dkShowCol()}catch(e){}},50);else if(!ph)$('#dkCol').classList.remove('open');
   if(ph){const fresh=Date.now()-lkFollowT<45000;$('#lkStat').classList.toggle('wait',!fresh);$('#lkTxt').textContent=fresh?'● Following laptop':'Waiting for your laptop…'}
