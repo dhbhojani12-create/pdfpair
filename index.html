@@ -1057,6 +1057,15 @@ function stepQ(d){
 }
 $('#bPrev').addEventListener('click',()=>stepQ(-1));
 $('#bNext').addEventListener('click',()=>stepQ(1));
+// after switching sets the pages are still settling and the set's last reading spot is being restored:
+// stop that restore, go to the pair, and check again shortly in case the layout moved
+function openPairSettled(n){
+  userMoved=true;openPair(n);let moved=false;const evs=['wheel','touchstart','pointerdown','keydown'];const mark=()=>{moved=true};
+  setTimeout(()=>evs.forEach(ev=>document.addEventListener(ev,mark,{capture:true,passive:true})),50);
+  const fix=()=>{if(moved||activeN!==n)return;['q','a'].forEach(sd=>{const s=findS(sd,n),p=P[sd];if(!s||!isShown(sd)||!p.W)return;const pg=p.pages[s.page-1];if(!pg)return;
+    const top=Math.max(0,pg.div.offsetTop+s.y*p.W-p.sc.clientHeight*.22);if(Math.abs(p.sc.scrollTop-top)>30)p.sc.scrollTo({top,behavior:'auto'})})};
+  [300,800,1500].forEach(t=>setTimeout(fix,t));setTimeout(()=>evs.forEach(ev=>document.removeEventListener(ev,mark,{capture:true})),1600);
+}
 function openPair(n){
   setActive(n);
   const q=findS('q',n),a=findS('a',n);
@@ -1768,7 +1777,7 @@ function qRowEl(r){
   b.innerHTML='<span class="badge">'+r.n+'</span><span class="nm"></span><span class="src"><span class="ty '+r.set.type+'">'+TSHORT[r.set.type]+'</span><span></span></span><span class="pgs">'+(r.qp?'p'+r.qp:'?')+' → '+(r.ap?'p'+r.ap:'?')+'</span><span class="pill '+(r.rev||'not')+'">'+(r.rev==='done'?'Revised':r.rev==='again'?'Again':'Not yet')+'</span>';
   $('.nm',b).textContent=r.name;if(r.stars){const t=document.createElement('span');t.className='stc';t.textContent=' ★'+r.stars;$('.nm',b).append(t)}
   $('.src span:last-child',b).textContent=r.set.name;b.title=r.name+' · '+r.set.name+(r.stars?' · '+r.stars+' star'+(r.stars===1?'':'s'):'');
-  b.addEventListener('click',async()=>{closeLib(true);stopRv();await openSet(r.set.id);openPair(r.n)});
+  b.addEventListener('click',async()=>{closeLib(true);stopRv();await openSet(r.set.id);openPairSettled(r.n)});
   return b;
 }
 $('#libClose').addEventListener('click',()=>closeLib());
@@ -1789,7 +1798,7 @@ async function goRv(i){
   if(LIB.cur!==it.id)await openSet(it.id);
   if(!RV)return;
   if(RV.kind==='c'){goTopic(it.tid);updRv();return}
-  openPair(it.n);updRv();
+  openPairSettled(it.n);updRv();
 }
 function updRv(){
   if(!RV)return;const it=RV.q[RV.i],set=LIB.sets.find(x=>x.id===it.id);
