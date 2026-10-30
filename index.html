@@ -551,7 +551,7 @@ select.tin{appearance:auto}
 #lkStat button{width:24px;height:24px;border-radius:12px;color:#fff;font-size:12px;background:rgba(255,255,255,.15)}
 #app.phone.linked #lkStat{display:flex!important}
 #app.phone.linked.linked:not(.zz) #phNav,#app.phone.linked.linked:not(.zz) #phPill,#app.phone.linked.linked:not(.zz) #phLab,#app.phone.linked.linked:not(.zz) #fab{display:none!important}
-#app.phone.linked #dock [data-dt]:not([data-dt="hl"]):not([data-dt="erase"]),#app.phone.linked #dkFlip,#app.phone.linked #dkMore,#app.phone.linked #dock .dsep{display:none!important}
+#app.phone.linked #dock [data-dt]:not([data-dt="hl"]):not([data-dt="erase"]),#app.phone.linked #dkMore,#app.phone.linked #dock .dsep{display:none!important}
 #app.phone.linked #dock{display:flex!important;opacity:1}
 #app.phone.linked #dkUndo,#app.phone.linked #dkEr{display:grid!important}
 #dkQp,#dkQn{display:none!important;font-size:24px!important;font-weight:600}
@@ -2550,7 +2550,7 @@ function startCRv(rows,lab){
 }
 
 /* ---------- phone layout ---------- */
-var PH=false,hlAbort=null;
+var PH=false,hlAbort=null,phFlipT=0;
 const phMQ=matchMedia('(max-width:760px), (pointer:coarse) and (max-height:520px)');
 const APP=$('#app');
 function phCls(c,on){APP.classList.toggle(c,on)}
@@ -2604,6 +2604,7 @@ function phBoot(){
 // flip Q / A with a small slide
 function phFlip(v,dir){
   if(isCset()||(RV&&(RV.kind!=='q'||APP.classList.contains('ans'))))return;
+  if(APP.classList.contains('linked')){phFlipT=Date.now();try{fbReq('POST','rooms/'+SY.room()+'/cmd',{op:'side',s:v,t:{'.sv':'timestamp'}}).catch(()=>{})}catch(e){}}
   if(v===prefs.view)return;
   setView(v);
   if(v==='a'&&conceptPref&&activeN!=null)showConcept(activeN,true);
@@ -2963,7 +2964,9 @@ function laptopCmd(d){
   if(d.data==null)return;const items=d.path==='/'?d.data:{[d.path.slice(1)]:d.data};
   for(const id in items){const c=items[id];if(!c||lkSeen.has(id))continue;lkSeen.add(id);fbReq('DELETE','rooms/'+SY.room()+'/cmd/'+id).catch(()=>{});
     if(Date.now()-(c.t||0)>30000)continue;   // ignore old taps
-    if(c.op==='step')stepQ(c.d>0?1:-1)}
+    if(c.op==='step')stepQ(c.d>0?1:-1);
+    if(c.op==='side'&&(c.s==='q'||c.s==='a')){followPick=c.s;if(prefs.view!=='split')setView(c.s);
+      const st0=activeN!=null&&findS(c.s,activeN);if(st0)scrollToSticker(c.s,st0,false);lkLastSent='';syncFollowSoon()}}
 }
 function phoneStep(d){if(!syncOk())return;fbReq('POST','rooms/'+SY.room()+'/cmd',{op:'step',d,t:{'.sv':'timestamp'}}).catch(()=>toast('Could not reach the laptop. Check the internet.'))}
 /* phone side: follow the laptop */
@@ -2973,7 +2976,7 @@ async function phoneFollow(f){
   if(f.k!==key){const set=LIB.sets.find(x=>x.key===f.k);
     if(!set){if(phoneFollow.miss!==f.k){phoneFollow.miss=f.k;openLib();setTimeout(()=>toast('The laptop opened a set that is not on this phone yet. Tap ⟲ Restore a backup and pick a “Back up with PDFs” file from your laptop.'),300)}return}
     if(!$('#lib').hidden)closeLib(true);await openSet(set.id);if(phFollowing!==f)return}
-  if(prefs.view!==f.s)setView(f.s);
+  if(prefs.view!==f.s){if(Date.now()-phFlipT<4000)return;setView(f.s)}   // just flipped here: wait for the laptop to catch up
   const nopdf=!P[f.s].pages.length;$('#app').classList.toggle('nopdf',nopdf);
   if(nopdf){const cs=curSet();$('#phEmT').textContent='The PDF for “'+(cs?cs.name:'this set')+'” is not on this phone';return}
   // show the laptop's highlights for these pages
