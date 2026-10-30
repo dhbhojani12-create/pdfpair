@@ -511,8 +511,10 @@ select.tin{appearance:auto}
 #app.phone.ui:not(.rv) #mcqBar{bottom:calc(60px + env(safe-area-inset-bottom,0px))}
 #app.phone #mcqBar button.o{width:46px;height:42px}#app.phone #mcqEye{display:none}
 #app.phone #mcqBar .mq{display:none}
-#app.phone.linked:not(.zz) #mcqBar,#app.phone #mcqCover{display:none!important}
-#app.phone.marking #mcqBar{display:none}
+#app.phone #mcqCover{display:none!important}
+#app.phone.linked.linked #mcqBar{bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+#mcqBar .nx{width:40px;height:40px;border-radius:20px;background:#2f6fe0;color:#fff;font-size:22px;display:none}#mcqBar.done .nx{display:grid;place-items:center}
+#app.phone.marking:not(.linked) #mcqBar{display:none}
 #phPill{position:absolute;z-index:33;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom,0px));background:rgba(27,30,35,.92);border-radius:28px;gap:5px;padding:5px;box-shadow:0 4px 14px rgba(0,0,0,.3)}
 #app.phone.rv:not(.ans):not(.rvclean) #phPill{display:flex!important}
 #phPill button{width:52px;height:44px;border-radius:22px;color:#fff;font-size:19px;display:grid;place-items:center;background:rgba(255,255,255,.08)}
@@ -635,7 +637,7 @@ select.tin{appearance:auto}
     </section>
   </main>
 
-  <div id="mcqBar" role="group" aria-label="Pick an answer"><span class="mq"></span><button class="o" data-o="a">A</button><button class="o" data-o="b">B</button><button class="o" data-o="c">C</button><button class="o" data-o="d">D</button><span class="ms"></span><button id="mcqEye" title="Hide the answer until I pick an option" aria-label="Hide answers until I pick">👁</button></div>
+  <div id="mcqBar" role="group" aria-label="Pick an answer"><span class="mq"></span><button class="o" data-o="a">A</button><button class="o" data-o="b">B</button><button class="o" data-o="c">C</button><button class="o" data-o="d">D</button><span class="ms"></span><button class="nx" aria-label="Next question">›</button><button id="mcqEye" title="Hide the answer until I pick an option" aria-label="Hide answers until I pick">👁</button></div>
   <div id="bar" role="toolbar" aria-label="Tools">
     <button class="b" id="bSide" title="Index (I)">☰<span>Index</span></button>
     <span class="sepv"></span>
@@ -1568,6 +1570,7 @@ document.addEventListener('keydown',e=>{
   if(!$('#tagPop').hidden){if(e.key==='Escape')closeTag();return}
   if(!$('#open').hidden){if(e.key==='Escape'&&!$('#oCancel').hidden)closeDlg();return}
   if(!$('#lib').hidden){if(e.key==='Escape'&&e.target.id!=='libSearch')closeLib();return}
+  if(/^[a-dA-D]$/.test(e.key)&&$('#mcqBar').classList.contains('on')&&!$('#mcqBar').classList.contains('done')){e.preventDefault();mcqChoose(e.key.toLowerCase());return}
   switch(e.key){
     case '1':setView('q');break;case '2':setView('split');break;case '3':setView('a');break;
     case 'Tab':e.preventDefault();setView(prefs.view==='q'?'a':'q');break;
@@ -1943,28 +1946,44 @@ function updMcq(){
   const sc=mcqScore(n),last=(st.mans||{})[n];let t='';
   if(mcqPick)t=mcqPick.o===key0?'<span class="g">✓ Right</span>':'<span class="r">✗ It’s '+key0.toUpperCase()+'</span>';
   else if(last)t='<span class="'+(last.ok?'g':'r')+'">Last '+(last.ok?'✓':'✗')+'</span>';
-  if(sc&&sc.tried)t+=(t?' · ':'')+sc.g+' '+sc.ok+'/'+sc.tot;
+  const lm=mcqLinkedPhone()&&phFollowing&&phFollowing.mq&&phFollowing.mq.n===n?phFollowing.mq:null;   // the laptop keeps the real score
+  if(lm&&lm.sc)t+=(t?' · ':'')+lm.sc;else if(sc&&sc.tried)t+=(t?' · ':'')+sc.g+' '+sc.ok+'/'+sc.tot;
   $('.ms',bar).innerHTML=t;
   const hide=prefs.mcqHide!==false;$('#mcqEye').classList.toggle('off',!hide);
   $('#app').classList.toggle('mcqhide',!PH&&hide&&mcqSeen!==n);
 }
 function mcqReveal(){mcqSeen=activeN;updMcq()}
-function mcqChoose(o){
-  const n=activeN;if(n==null||!st.mcq||!st.mcq[n]||mcqPick)return;
-  const ok=o===st.mcq[n];
-  st.mans=st.mans||{};st.mans[n]={c:o,ok,at:Date.now()};
-  st.rev=st.rev||{};st.rev[n]=ok?'done':'again';
-  save();mcqPick={n,o};mcqSeen=n;renderAll();if(RV)updRv();
-  // show the reasoning
+function mcqLinkedPhone(){try{return PH&&SY.role()==='phone'&&syncOk()&&$('#app').classList.contains('linked')}catch(e){return false}}
+function mcqRecord(S,n,o){const ok=o===S.mcq[n];S.mans=S.mans||{};S.mans[n]={c:o,ok,at:Date.now()};S.rev=S.rev||{};S.rev[n]=ok?'done':'again';return ok}
+function mcqScoreText(n){const sc=mcqScore(n);return sc&&sc.tried?sc.g+' '+sc.ok+'/'+sc.tot:''}
+function mcqShowAns(n){   // open the reasoning for question n
   const a=findS('a',n);
-  if(PH){if(RV&&RV.kind==='q')phShowAns(true);else{setView('a');if(a)setTimeout(()=>scrollToSticker('a',a),60)}}
+  if(PH){if(RV&&RV.kind==='q')phShowAns(true);else{if(mcqLinkedPhone()&&!prefs.phIndep)phFlipT=Date.now();setView('a');if(a){const go=()=>{if(prefs.view==='a'&&activeN===n){userMoved=true;phProgT=Date.now();scrollToSticker('a',a,false)}};go();[120,400,900].forEach(t=>setTimeout(go,t))}}}
   else{if(prefs.view==='q')setView('split');if(a)scrollToSticker('a',a)}
-  updMcq();
-  const sc=mcqScore(n);
-  if(sc&&sc.tried===sc.tot)toast(sc.g+' done: '+sc.ok+' / '+sc.tot+' right'+(sc.ok<sc.tot?'. Wrong ones are marked ↻ Again':''));
 }
-$$('#mcqBar button.o').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();mcqChoose(b.dataset.o)}));
-$('#mcqEye').addEventListener('click',e=>{e.stopPropagation();prefs.mcqHide=prefs.mcqHide===false;savePrefs();if(prefs.mcqHide===false)toast('Answers stay visible');else{mcqSeen=null;toast('Answers stay hidden until you pick an option')}updMcq()});
+function mcqChoose(o,remote){
+  const n=activeN;if(n==null||!st.mcq||!st.mcq[n]||(mcqPick&&mcqPick.n===n))return;
+  mcqRecord(st,n,o);save();mcqPick={n,o};mcqSeen=n;renderAll();if(RV)updRv();
+  if(mcqLinkedPhone()&&!remote)fbReq('POST','rooms/'+SY.room()+'/cmd',{op:'mcq',k:key,n,o,t:{'.sv':'timestamp'}}).catch(()=>toast('Could not reach the laptop. Check the internet.'));
+  mcqShowAns(n);updMcq();
+  try{lkLastSent='';syncFollowSoon()}catch(e){}
+  const sc=mcqScore(n);
+  if(sc&&sc.tried===sc.tot&&!mcqLinkedPhone())toast(sc.g+' done: '+sc.ok+' / '+sc.tot+' right'+(sc.ok<sc.tot?'. Wrong ones are marked ↻ Again':''));
+}
+/* an answer tapped on the linked phone */
+function mcqFromPhone(c){
+  if(c.k===key){if(c.n===activeN){if(!(mcqPick&&mcqPick.n===c.n))mcqChoose(c.o,true)}else if(st.mcq&&st.mcq[c.n]){mcqRecord(st,c.n,c.o);save();renderAll()}return}
+  const S=LS.get('pp:'+c.k);if(S&&S.mcq&&S.mcq[c.n]){mcqRecord(S,c.n,c.o);LS.set('pp:'+c.k,S)}
+}
+function mcqNext(){if(mcqLinkedPhone()&&!prefs.phIndep)phoneStep(1);else stepQ(1)}
+(()=>{const bar=$('#mcqBar');let fired=0;
+  const act=b=>{if(b.classList.contains('o'))mcqChoose(b.dataset.o);else if(b.classList.contains('nx'))mcqNext();else if(b.id==='mcqEye')mcqEyeTog()};
+  bar.addEventListener('pointerdown',e=>{e.stopPropagation();const b=e.target.closest('button');if(!b)return;
+    const up=ev=>{window.removeEventListener('pointerup',up,true);const t=document.elementFromPoint(ev.clientX,ev.clientY);if(t&&t.closest('button')===b){fired=Date.now();act(b)}};
+    window.addEventListener('pointerup',up,true)});
+  bar.addEventListener('click',e=>{e.stopPropagation();if(Date.now()-fired<600)return;const b=e.target.closest('button');if(b)act(b)});
+})();
+function mcqEyeTog(){prefs.mcqHide=prefs.mcqHide===false;savePrefs();if(prefs.mcqHide===false)toast('Answers stay visible');else{mcqSeen=null;toast('Answers stay hidden until you pick an option')}updMcq()}
 $('#mcqCover').addEventListener('click',e=>{e.stopPropagation();mcqReveal()});
 $('#mcqCover').addEventListener('pointerdown',e=>e.stopPropagation());
 
@@ -3007,7 +3026,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='30 Oct 17:35';   // build label, so you can check both devices have the same version
+const APPV='30 Oct 18:02';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
@@ -3078,7 +3097,8 @@ function syncFollowNow(){
   const isC=p===P.c;const hl=(isC?(p.cst&&p.cst.hl.q||[]):st.hl[p.side]).filter(h=>Math.abs(h.page-a.n)<=1);
   if(Date.now()<lkQuiet)return;
   const body={k:isC?p.ckey:key,qk:key,s:p.side,p:a.n,f:+a.f.toFixed(4),hl,q:activeN==null?-1:activeN,sq:sideSeq,fp:prefs.lkFollowPhone?1:0,t:{'.sv':'timestamp'}};
-  const sig=JSON.stringify([body.k,body.s,body.p,body.f,body.q,body.sq,body.fp,hl]);if(sig===lkLastSent)return;lkLastSent=sig;
+  if(!isC&&st.mcq&&activeN!=null&&st.mcq[activeN])body.mq={n:activeN,o:mcqPick&&mcqPick.n===activeN?mcqPick.o:'',sc:mcqScoreText(activeN)};
+  const sig=JSON.stringify([body.k,body.s,body.p,body.f,body.q,body.sq,body.fp,hl,body.mq||0]);if(sig===lkLastSent)return;lkLastSent=sig;
   fbReq('PUT','rooms/'+SY.room()+'/follow',body).catch(()=>{lkLastSent=''});
 }
 setInterval(()=>{if(SY.role()==='laptop'&&syncOk()){lkLastSent='';syncFollowNow()}},20000);   // keep-alive so the phone knows the laptop is on
@@ -3104,6 +3124,7 @@ function laptopCmd(d){
   for(const id in items){const c=items[id];if(!c||lkSeen.has(id))continue;lkSeen.add(id);fbReq('DELETE','rooms/'+SY.room()+'/cmd/'+id).catch(()=>{});
     if(Date.now()-(c.t||0)>30000)continue;   // ignore old taps
     if(c.op==='step')stepQ(c.d>0?1:-1);
+    if(c.op==='mcq')mcqFromPhone(c);
     if(c.op==='pos'&&prefs.lkFollowPhone&&c.k===key&&(c.s==='q'||c.s==='a')&&P[c.s].pages.length){   // laptop follows the phone's scrolling
       followPick=c.s;if(prefs.view!=='split'&&prefs.view!==c.s)setView(c.s);lkQuiet=Date.now()+1200;setAnchor(P[c.s],{n:c.p,f:c.f})}
     if(c.op==='side'&&(c.s==='q'||c.s==='a')){followPick=c.s;sideSeq++;if(prefs.view!=='split')setView(c.s);
@@ -3143,6 +3164,10 @@ async function phoneFollow(f){
   if(f.k!==key){const set=LIB.sets.find(x=>x.key===f.k);
     if(!set){if(phoneFollow.miss!==f.k){phoneFollow.miss=f.k;openLib();setTimeout(()=>toast('The laptop opened a set that is not on this phone yet. Tap ⟲ Restore a backup and pick a “Back up with PDFs” file from your laptop.'),300)}return}
     if(!$('#lib').hidden)closeLib(true);await openSet(set.id);if(phFollowing!==f)return}
+  try{   // MCQ: know which question the laptop is on, and show an answer picked on the laptop
+    if(f.q>=0&&activeN!==f.q)setActive(f.q);
+    const m=f.mq;if(m&&m.o&&m.n===activeN&&st.mcq&&st.mcq[m.n]&&!(mcqPick&&mcqPick.n===m.n)){mcqRecord(st,m.n,m.o);save();mcqPick={n:m.n,o:m.o};mcqSeen=m.n;mcqShowAns(m.n)}
+    updMcq()}catch(e){}
   const lf0=phoneFollow.last;
   const laptopChose=!lf0||lf0.k!==f.k||lf0.q!==f.q||lf0.sq!==f.sq;
   if(prefs.view!==f.s){
