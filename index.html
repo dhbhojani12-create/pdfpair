@@ -872,7 +872,7 @@ function zoomTo(p,z,cx,cy){
 }
 let spt=0;function savePrefsSoon(){clearTimeout(spt);spt=setTimeout(savePrefs,300)}
 
-async function loadDoc(side,recs){
+async function loadDoc(side,recs){try{P[side].keep=null}catch(e){}
   const p=P[side];
   p.pages.forEach(pg=>{try{pg.task&&pg.task.cancel()}catch(e){}p.io.unobserve(pg.div)});
   p.pg.innerHTML='';p.pages=[];p.rendered.clear();
@@ -1458,10 +1458,15 @@ function rename(row,n){
 function isShown(side){if(side==='a'&&isCset())return false;if(PH&&side==='a'&&RV&&RV.kind==='q'&&$('#app').classList.contains('ans'))return true;if(side==='q'&&isCset())return true;return prefs.view==='split'||prefs.view===side}
 function setView(v){
   if(PH&&v==='split')v=prefs.view==='a'?'a':'q';
+  // a hidden side loses its scroll position, so remember where each side was and put it back when it shows again
+  const was={q:isShown('q'),a:isShown('a')};
+  ['q','a'].forEach(s=>{const p=P[s];if(was[s]&&p.pages.length&&p.sc.clientHeight){const a=getAnchor(p);if(a)p.keep=a}});
   prefs.view=v;savePrefs();
   const app=$('#app');app.classList.remove('v-q','v-a','v-split');app.classList.add('v-'+v);
   $$('[data-v]').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
-  ['q','a'].forEach(s=>{if(isShown(s)){const p=P[s];layout(p);if(p.pending){const x=p.pending;p.pending=null;scrollToSticker(s,x,false)}}});
+  ['q','a'].forEach(s=>{if(isShown(s)){const p=P[s];layout(p);
+    if(p.pending){const x=p.pending;p.pending=null;scrollToSticker(s,x,false)}
+    else if(!was[s]&&p.keep){setAnchor(p,p.keep)}}});
   if(PH&&conceptShown())layout(P.c);updPh();
 }
 function setSwap(on){prefs.swap=on;savePrefs();$('#stage').classList.toggle('swap',on)}
@@ -2621,7 +2626,7 @@ function phFlip(v,dir){
   if(isCset()||(RV&&(RV.kind!=='q'||APP.classList.contains('ans'))))return;
   if(APP.classList.contains('linked')&&!prefs.phIndep){phFlipT=Date.now();const nn=(()=>{try{return pairAt(prefs.view)}catch(e){return null}})();setTimeout(()=>{try{showOtherSide(v,nn)}catch(e){}},30);try{fbReq('POST','rooms/'+SY.room()+'/cmd',{op:'side',s:v,t:{'.sv':'timestamp'}}).catch(()=>{})}catch(e){}}
   if(v===prefs.view)return;
-  const blank=P[v].sc.scrollTop<5;   // that side was never moved: open the matching question/answer instead of page 1
+  const blank=!P[v].keep;   // that side was never opened here: open the matching question/answer instead of page 1
   const nn2=(!APP.classList.contains('linked')||prefs.phIndep)&&blank?(()=>{try{return pairAt(prefs.view)}catch(e){return null}})():null;
   setView(v);
   if(nn2!=null)setTimeout(()=>{try{showOtherSide(v,nn2)}catch(e){}},30);
@@ -2900,7 +2905,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='30 Oct 15:40';   // build label, so you can check both devices have the same version
+const APPV='30 Oct 15:49';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
