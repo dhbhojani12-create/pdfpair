@@ -1922,7 +1922,7 @@ $('#rvAg').addEventListener('click',()=>markRv('again'));
 $('#rvExit').addEventListener('click',()=>{stopRv();openLib()});
 
 /* MCQ practice: a bar with A/B/C/D shows on questions that have an answer key (st.mcq) */
-let mcqSeen=null,mcqPick=null;   // the question whose answer is shown now, and the option picked this visit
+let mcqSeen=null,mcqPick=null,mcqLastN=null;   // the question whose answer is shown now, and the option picked this visit
 function mcqGroup(n){const nm=label(n);const i=nm.indexOf(' · ');return i>0?nm.slice(0,i):null}
 function mcqScore(n){const g=mcqGroup(n);if(!g)return null;let ok=0,tot=0,tried=0;
   for(const k in st.mcq){if(mcqGroup(+k)!==g)continue;tot++;const m=(st.mans||{})[k];if(m){tried++;if(m.ok)ok++}}return {g,ok,tot,tried}}
@@ -1934,6 +1934,8 @@ function updMcq(){
   bar.classList.toggle('on',on);
   if(!on){$('#app').classList.remove('mcqhide');mcqSeen=null;return}
   if(mcqPick&&mcqPick.n!==n)mcqPick=null;
+  if(n!==mcqLastN){mcqLastN=n;   // a new MCQ: always start on the question, so the answer is not already on screen
+    if(!mcqPick&&prefs.view==='a'&&!(PH&&$('#app').classList.contains('linked'))){setView('q');const q=findS('q',n);if(q)setTimeout(()=>scrollToSticker('q',q),40)}}
   if(mcqSeen!==null&&mcqSeen!==n)mcqSeen=null;
   $('.mq',bar).textContent=label(n);
   bar.classList.toggle('done',!!mcqPick);
@@ -3005,7 +3007,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='30 Oct 17:21';   // build label, so you can check both devices have the same version
+const APPV='30 Oct 17:35';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
