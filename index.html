@@ -607,7 +607,7 @@ select.tin{appearance:auto}
     </section>
     <section class="pane" id="pane-c" data-side="c" aria-label="Concept book">
       <div class="chip"><div class="cname"><span class="tag">📖</span><span class="fn"></span><span class="pc"></span>
-        <span class="zm"><button data-z="-1" aria-label="Zoom out">−</button><button class="zp" data-z="0" title="Fit width">100%</button><button data-z="1" aria-label="Zoom in">+</button></span><button class="cxb" id="conClose" title="Back to the answer (C)" aria-label="Back to the answer">×</button></div></div>
+        <span class="zm"><button data-z="-1" aria-label="Zoom out">−</button><button class="zp" data-z="0" title="Fit width">100%</button><button data-z="1" aria-label="Zoom in">+</button></span><button class="cxb" id="conTopics" title="Jump to a topic in the concept book" aria-label="Topics">≡</button><button class="cxb" id="conClose" title="Back to the answer (C)" aria-label="Back to the answer">×</button></div></div>
       <div class="sc"><div class="pages"></div></div>
     </section>
   </main>
@@ -2499,9 +2499,38 @@ async function toggleConcept(force){
   const on=force===undefined?!conceptShown():force;
   if(!on){conceptPref=false;hideConcept();requestAnimationFrame(()=>layout(P.a));return}
   if(!hasConcepts()){toast('Add your concept book first: Library, Add a set, type Concept book');return}
-  if(activeN==null){toast('Pick a question first: click its sticker or its row in the index');return}
-  conceptPref=true;if(!(await showConcept(activeN,false)))conceptPref=false;
+  if(activeN!=null&&findConcept(activeN)){conceptPref=true;if(!(await showConcept(activeN,false)))conceptPref=false;return}
+  // no topic linked: open the concept book anyway so you can look things up (stays open while you move between questions)
+  conceptPref=false;
+  if(await openConceptBrowse()){const m=activeN!=null?meta(activeN):{};toast(m.tp||m.ch?'No concept marked for '+(m.tp||m.ch)+' yet, so the concept book is open where you left it. ≡ jumps to a topic':'Concept book opened where you left it. ≡ jumps to a topic')}
 }
+async function openConceptBrowse(){
+  const cur=curSet();const books=LIB.sets.filter(x=>x.type==='con'&&(!cur||x.subject===cur.subject));if(!books.length)return false;
+  const c=P.c;const set=books.find(x=>x.id===c.setId)||books.find(x=>x.id===prefs.lastCon)||books[0];
+  const fresh=c.setId!==set.id;
+  if(fresh){const recs=[];for(const f of set.files.q){const b=await idbGet('blob:'+f.id);if(b)recs.push({name:f.name,size:f.size,blob:b,id:f.id})}
+    if(!recs.length){toast('The concept book PDF is not on this device. Add it again with Edit set');return false}
+    $('#app').classList.add('cv');await loadDoc('c',recs);c.setId=set.id}
+  c.ckey=set.key;c.cst=Object.assign({hl:{q:[],a:[]},stars:{q:[],a:[]},topics:[]},LS.get('pp:'+set.key)||{});c.topics=c.cst.topics||[];
+  $('#app').classList.add('cv');if(prefs.view==='q')setView(PH?'a':'split');
+  layout(c,false);renderConPane();
+  if(fresh){const lp=LS.get('cpos:'+set.key);if(lp)setTimeout(()=>setAnchor(c,lp),60)}
+  c.fn.textContent=set.name;c.fn.title=set.name;prefs.lastCon=set.id;savePrefs();
+  updConUI();return true;
+}
+// remember where you were in the concept book
+(function(){let t=0;P.c.sc.addEventListener('scroll',()=>{clearTimeout(t);t=setTimeout(()=>{const c=P.c;if(c.ckey&&c.pages.length){const a=getAnchor(c);if(a)LS.set('cpos:'+c.ckey,a)}},400)},{passive:true})})();
+// ≡ : jump to a topic in the concept book
+$('#conTopics').addEventListener('click',e=>{
+  e.stopPropagation();if(closePop())return;const c=P.c;const ts=[...(c.topics||[])].sort((a,b)=>a.page-b.page||a.y-b.y);
+  pop=document.createElement('div');pop.className='pop stp';pop.addEventListener('pointerdown',ev=>ev.stopPropagation());
+  pop.innerHTML='<label>Jump to a topic</label><div class="stl"></div>';const l=$('.stl',pop);
+  if(!ts.length)l.innerHTML='<div class="empty">No topics marked in this concept book yet.</div>';
+  ts.forEach(t=>{const b=document.createElement('button');b.className='sto';b.innerHTML='<span class="ti">📖</span><span></span><small>p'+t.page+'</small>';$('span:nth-child(2)',b).textContent=(t.tp||t.ch||'Untitled')+(t.tp&&t.ch?' · '+t.ch:'');
+    b.addEventListener('click',()=>{closePop();const pg=c.pages[t.page-1];if(pg){c.sc.scrollTop=Math.max(0,pg.div.offsetTop+t.y*c.W-c.sc.clientHeight*.1);c.curTid=t.id;renderConPane()}});l.append(b)});
+  $('#app').append(pop);const r=e.target.getBoundingClientRect(),a=$('#app').getBoundingClientRect();
+  pop.style.top=(r.bottom-a.top+6)+'px';pop.style.left=Math.max(8,Math.min(r.right-a.left-260,a.width-270))+'px';
+});
 function updConUI(){const on=conceptShown();const b=$('#bCon');if(b){b.hidden=!hasConcepts();b.classList.toggle('on',on)}
   $$('#rvSeg button').forEach(x=>x.classList.toggle('on',(x.dataset.c==='1')===on));updPh()}
 $('#bCon').addEventListener('click',()=>toggleConcept());
@@ -2905,7 +2934,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='30 Oct 15:49';   // build label, so you can check both devices have the same version
+const APPV='30 Oct 16:07';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
