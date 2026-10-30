@@ -539,6 +539,7 @@ select.tin{appearance:auto}
 .lkq{display:flex;gap:22px;align-items:center;margin:6px 0 4px;flex-wrap:wrap}
 .lkq .qr{background:#fff;padding:8px;border-radius:8px;border:1px solid var(--line)}.lkq .qr img{display:block;width:150px;height:150px;image-rendering:pixelated}
 .lkcode{font:700 34px var(--mono);letter-spacing:.18em}
+.lkus{font-size:12px;color:var(--mut);margin:12px 0 0;line-height:1.5}.lkus b{color:var(--ink)}
 .lkst{display:flex;align-items:center;gap:8px;font-size:13px;margin-top:10px}.lkst i{width:9px;height:9px;border-radius:50%;background:#c9cdd3}.lkst i.on{background:#3fbf6a}
 .lkin{display:flex;gap:8px;margin-top:10px}.lkin input{flex:1;font:700 22px var(--mono);letter-spacing:.2em;text-align:center;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--chrome);color:var(--ink)}
 #bLink.on{background:#2f6fe0;color:#fff}
@@ -2877,13 +2878,19 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
+// rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
+function usage(up,down){try{const m=new Date().toISOString().slice(0,7);let u=JSON.parse(localStorage.getItem('ppsync:usage')||'{}');if(u.m!==m)u={m,up:0,down:0};u.up+=up||0;u.down+=down||0;localStorage.setItem('ppsync:usage',JSON.stringify(u));return u}catch(e){return {up:0,down:0}}}
 async function fbReq(method,path,body){
-  const r=await fetch(SY.url()+'/'+path+'.json',{method,headers:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});
-  if(!r.ok)throw new Error('sync '+r.status);return r.status===204?null:r.json();
+  const b=body===undefined?undefined:JSON.stringify(body);const url=SY.url()+'/'+path+'.json';
+  const r=await fetch(url,{method,headers:{'Content-Type':'application/json'},body:b});
+  if(!r.ok){usage(url.length+(b?b.length:0)+200,200);throw new Error('sync '+r.status)}
+  const t=r.status===204?'':await r.text();usage(url.length+(b?b.length:0)+200,t.length+200);   // +200 ≈ request/response headers
+  return t?JSON.parse(t):null;
 }
 function fbStream(path,onEvent){ // live updates (EventSource on the REST API)
   const es=new EventSource(SY.url()+'/'+path+'.json');
-  ['put','patch'].forEach(t=>es.addEventListener(t,e=>{try{onEvent(t,JSON.parse(e.data))}catch(x){}}));
+  ['put','patch'].forEach(t=>es.addEventListener(t,e=>{usage(0,e.data.length+20);try{onEvent(t,JSON.parse(e.data))}catch(x){}}));
+  es.addEventListener('keep-alive',()=>usage(0,30));
   return es;
 }
 const rid=n=>{const a=new Uint8Array(n);crypto.getRandomValues(a);return [...a].map(x=>'abcdefghijkmnpqrstuvwxyz23456789'[x%32]).join('')};
@@ -3000,11 +3007,15 @@ async function phonePair(code){
   catch(e){toast('Could not reach the sync service. Check the internet.');return false}
 }
 function unlink(){linkStop();delete prefs.room;delete prefs.linkRole;delete prefs.linkCode;delete prefs.linkToolSet;savePrefs();lkMine=[];updLinkUI();toast('Unlinked')}
+function usageLine(){const u=usage(0,0);const f=n=>n<1024?n+' B':n<1048576?(n/1024).toFixed(1)+' KB':(n/1048576).toFixed(2)+' MB';
+  const mon=new Date().toLocaleString('en',{month:'long'});
+  return '<p class="lkus">This device in '+mon+': about <b>'+f(u.up)+'</b> sent and <b>'+f(u.down)+'</b> received. Free limit: 10 GB received per month, 1 GB stored. Exact figures: Firebase console → Realtime Database → Usage.</p>'}
 function renderLinkDlg(){
   const b=$('#lkBody');const lp=SY.role()==='laptop'&&syncOk();$('#lkOff').hidden=!syncOk();
   if(PH&&SY.role()!=='laptop'){
     $('#lkT').textContent=SY.role()==='phone'?'Linked to your laptop':'Link to your laptop';
     b.innerHTML=SY.role()==='phone'?'<p class="sub">This phone follows your laptop and only highlights. Tap Unlink to use it on its own again.</p>':'<p class="sub">On the laptop, click <b>📱 Link phone</b>, then type the 6-digit code here.</p><div class="lkin"><input id="lkCode" inputmode="numeric" maxlength="6" placeholder="······"><button class="btn" id="lkGo">Link</button></div>';
+    if(SY.role()==='phone')b.insertAdjacentHTML('beforeend',usageLine());
     const go=$('#lkGo');if(go)go.onclick=async()=>{if(await phonePair($('#lkCode').value))$('#linkDlg').hidden=true};
     return;
   }
@@ -3013,7 +3024,7 @@ function renderLinkDlg(){
   const url=location.origin+location.pathname+'#link='+prefs.linkCode;
   let qr='';try{const q=qrcode(0,'M');q.addData(url);q.make();qr=q.createDataURL(4,2)}catch(e){}
   const seen=Date.now()-lkPeer<45000;
-  b.innerHTML='<div class="lkq">'+(qr?'<div class="qr"><img alt="QR code" src="'+qr+'"></div>':'')+'<div><div class="sub" style="margin:0">On your phone, open PDF Pair and scan this, or go to <b>⋯ More → Link to laptop</b> and type:</div><div class="lkcode">'+prefs.linkCode+'</div></div></div><div class="lkst"><i class="'+(seen?'on':'')+'"></i>'+(seen?'Phone connected. It follows what you open here.':'Waiting for the phone…')+'</div>';
+  b.innerHTML='<div class="lkq">'+(qr?'<div class="qr"><img alt="QR code" src="'+qr+'"></div>':'')+'<div><div class="sub" style="margin:0">On your phone, open PDF Pair and scan this, or go to <b>⋯ More → Link to laptop</b> and type:</div><div class="lkcode">'+prefs.linkCode+'</div></div></div><div class="lkst"><i class="'+(seen?'on':'')+'"></i>'+(seen?'Phone connected. It follows what you open here.':'Waiting for the phone…')+'</div>'+usageLine();
 }
 $('#bLink').addEventListener('click',async()=>{$('#linkDlg').hidden=false;renderLinkDlg();if(!(SY.role()==='laptop'&&syncOk()&&prefs.linkCode))await laptopPair();else{try{await fbReq('PUT','codes/'+prefs.linkCode,{r:prefs.room,t:{'.sv':'timestamp'}})}catch(e){}await lkCheckPeer()}renderLinkDlg()});
 $('#lkClose').addEventListener('click',()=>{$('#linkDlg').hidden=true});
