@@ -1097,6 +1097,19 @@ $('#bPrev').addEventListener('click',()=>stepQ(-1));
 $('#bNext').addEventListener('click',()=>stepQ(1));
 // after switching sets the pages are still settling and the set's last reading spot is being restored:
 // stop that restore, go to the pair, and check again shortly in case the layout moved
+// the question you are looking at on one side: the last sticker above the reading line (or the next one below)
+function pairAt(side){
+  const p=P[side];if(!p||!p.pages.length||!p.W)return null;const line=p.sc.scrollTop+p.sc.clientHeight*.35;
+  let best=null,bestY=-1e9,next=null,nextY=1e9;
+  for(const s of st.stickers[side]){const pg=p.pages[s.page-1];if(!pg)continue;const y=pg.div.offsetTop+s.y*p.W;
+    if(y<=line&&y>bestY){best=s.n;bestY=y}if(y>line&&y<nextY){next=s.n;nextY=y}}
+  return best??next;
+}
+// show the other side of the question in view
+function showOtherSide(to,known){
+  const from=to==='a'?'q':'a';const n=known!=null?known:(isShown(from)?(pairAt(from)??activeN):activeN);
+  const s=n!=null&&findS(to,n);if(s){if(n!==activeN)setActive(n);scrollToSticker(to,s,false);return true}return false;
+}
 function openPairSettled(n){
   userMoved=true;openPair(n);let moved=false;const evs=['wheel','touchstart','pointerdown','keydown'];const mark=()=>{moved=true};
   setTimeout(()=>evs.forEach(ev=>document.addEventListener(ev,mark,{capture:true,passive:true})),50);
@@ -2605,9 +2618,12 @@ function phBoot(){
 // flip Q / A with a small slide
 function phFlip(v,dir){
   if(isCset()||(RV&&(RV.kind!=='q'||APP.classList.contains('ans'))))return;
-  if(APP.classList.contains('linked')){phFlipT=Date.now();try{fbReq('POST','rooms/'+SY.room()+'/cmd',{op:'side',s:v,t:{'.sv':'timestamp'}}).catch(()=>{})}catch(e){}}
+  if(APP.classList.contains('linked')){phFlipT=Date.now();const nn=(()=>{try{return pairAt(prefs.view)}catch(e){return null}})();setTimeout(()=>{try{showOtherSide(v,nn)}catch(e){}},30);try{fbReq('POST','rooms/'+SY.room()+'/cmd',{op:'side',s:v,t:{'.sv':'timestamp'}}).catch(()=>{})}catch(e){}}
   if(v===prefs.view)return;
+  const blank=P[v].sc.scrollTop<5;   // that side was never moved: open the matching question/answer instead of page 1
+  const nn2=!APP.classList.contains('linked')&&blank?(()=>{try{return pairAt(prefs.view)}catch(e){return null}})():null;
   setView(v);
+  if(nn2!=null)setTimeout(()=>{try{showOtherSide(v,nn2)}catch(e){}},30);
   if(v==='a'&&conceptPref&&activeN!=null)showConcept(activeN,true);
   const p=v==='a'&&conceptShown()?P.c:P[v];
   p.sc.classList.remove('flipL','flipR');void p.sc.offsetWidth;p.sc.classList.add(dir<0?'flipL':'flipR');
@@ -2883,7 +2899,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='30 Oct 14:26';   // build label, so you can check both devices have the same version
+const APPV='30 Oct 14:35';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
@@ -2968,7 +2984,7 @@ function laptopCmd(d){
     if(Date.now()-(c.t||0)>30000)continue;   // ignore old taps
     if(c.op==='step')stepQ(c.d>0?1:-1);
     if(c.op==='side'&&(c.s==='q'||c.s==='a')){followPick=c.s;sideSeq++;if(prefs.view!=='split')setView(c.s);
-      const st0=activeN!=null&&findS(c.s,activeN);if(st0)scrollToSticker(c.s,st0,false);lkLastSent='';syncFollowSoon()}}
+      showOtherSide(c.s);lkLastSent='';syncFollowSoon()}}
 }
 function phoneStep(d){if(!syncOk())return;fbReq('POST','rooms/'+SY.room()+'/cmd',{op:'step',d,t:{'.sv':'timestamp'}}).catch(()=>toast('Could not reach the laptop. Check the internet.'))}
 /* phone side: follow the laptop */
