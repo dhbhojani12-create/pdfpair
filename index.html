@@ -546,9 +546,9 @@ select.tin{appearance:auto}
 #lkStat button{width:24px;height:24px;border-radius:12px;color:#fff;font-size:12px;background:rgba(255,255,255,.15)}
 #app.phone.linked #lkStat{display:flex!important}
 #app.phone.linked.linked:not(.zz) #phNav,#app.phone.linked.linked:not(.zz) #phPill,#app.phone.linked.linked:not(.zz) #phLab,#app.phone.linked.linked:not(.zz) #fab{display:none!important}
-#app.phone.linked #dock [data-dt]:not([data-dt="hl"]),#app.phone.linked #dkFlip,#app.phone.linked #dkMore,#app.phone.linked #dock .dsep{display:none!important}
+#app.phone.linked #dock [data-dt]:not([data-dt="hl"]):not([data-dt="erase"]),#app.phone.linked #dkFlip,#app.phone.linked #dkMore,#app.phone.linked #dock .dsep{display:none!important}
 #app.phone.linked #dock{display:flex!important;opacity:1}
-#app.phone.linked #dkUndo{display:grid!important}
+#app.phone.linked #dkUndo,#app.phone.linked #dkEr{display:grid!important}
 #dkQp,#dkQn{display:none!important;font-size:24px!important;font-weight:600}
 #app.phone.linked #dkQp,#app.phone.linked #dkQn{display:grid!important}
 #app.phone.linked .chip{top:44px}
@@ -1146,7 +1146,11 @@ function onDown(e,p){
     window.addEventListener('pointerup',up);window.addEventListener('pointercancel',cancel);return;
   }
   if(prefs.tool==='erase'){
-    if(hl){pushUndo();st.hl[p.side].splice(+hl.dataset.i,1);save();renderAnn(p.side)}
+    const del=()=>{pushUndo();const gone=st.hl[p.side].splice(+hl.dataset.i,1)[0];save();renderAnn(p.side);try{if(gone)syncEraseHl(p.side,gone)}catch(e){}};
+    if(hl&&e.pointerType==='touch'){ // on touch, erase on a tap so scrolling over a highlight doesn't delete it
+      const x0=e.clientX,y0=e.clientY;const up=ev=>{window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',cx);if(Math.hypot(ev.clientX-x0,ev.clientY-y0)<10)del()};const cx=()=>{window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',cx)};
+      window.addEventListener('pointerup',up);window.addEventListener('pointercancel',cx)}
+    else if(hl)del();
     return;
   }
   if(prefs.tool==='sticker'){
@@ -2962,8 +2966,16 @@ function syncSendHl(side,h){
   lkMine.push({side,h,k:key});
   fbReq('POST','rooms/'+SY.room()+'/hl',{k:key,s:side,h,t:{'.sv':'timestamp'}}).catch(()=>toast('Could not send that highlight. Check the internet and try again.'));
 }
+function syncEraseHl(side,h){
+  if(SY.role()!=='phone'||!syncOk()||!key)return;
+  lkMine.push({side,h,k:key,erased:true});
+  fbReq('POST','rooms/'+SY.room()+'/hl',{k:key,s:side,h,op:'del',t:{'.sv':'timestamp'}}).catch(()=>toast('Could not send that. Check the internet and try again.'));
+}
 function phoneUndo(){
   const m=lkMine.pop();if(!m){toast('Nothing to undo');return}
+  if(m.erased){ // put an erased highlight back
+    if(m.k===key){st.hl[m.side].push(m.h);save();renderAnn(m.side)}
+    fbReq('POST','rooms/'+SY.room()+'/hl',{k:m.k,s:m.side,h:m.h,t:{'.sv':'timestamp'}}).catch(()=>{});return}
   if(m.k===key){const i=st.hl[m.side].indexOf(m.h);if(i>=0)st.hl[m.side].splice(i,1);save();renderAnn(m.side)}
   fbReq('POST','rooms/'+SY.room()+'/hl',{k:m.k,s:m.side,h:m.h,op:'del',t:{'.sv':'timestamp'}}).catch(()=>{});
 }
