@@ -2899,7 +2899,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='30 Oct 14:53';   // build label, so you can check both devices have the same version
+const APPV='30 Oct 15:20';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
@@ -2955,7 +2955,7 @@ function updLinkUI(){
 setInterval(()=>{if(syncOk())updLinkUI()},10000);
 /* laptop side: tell the phone what is on screen */
 // which side the phone shows: the one you last clicked, scrolled or jumped to on the laptop (not just where the mouse passes over)
-let followPick='q',sideSeq=0;
+let followPick='q',sideSeq=0,lkQuiet=0;
 ['q','a'].forEach(sd=>{const el=P[sd].sc;['pointerdown','wheel','touchstart'].forEach(ev=>el.addEventListener(ev,()=>{if(followPick!==sd){followPick=sd;sideSeq++;syncFollowSoon()}},{passive:true}))});
 function followSide(){
   if(prefs.view==='q'||prefs.view==='a')return P[prefs.view].pages.length?P[prefs.view]:null;
@@ -2965,8 +2965,9 @@ function syncFollowNow(){
   const p=followSide();if(!p||!key)return;
   const a=getAnchor(p);if(!a)return;
   const hl=st.hl[p.side].filter(h=>Math.abs(h.page-a.n)<=1);
-  const body={k:key,s:p.side,p:a.n,f:+a.f.toFixed(4),hl,q:activeN==null?-1:activeN,sq:sideSeq,t:{'.sv':'timestamp'}};
-  const sig=JSON.stringify([body.k,body.s,body.p,body.f,body.q,body.sq,hl]);if(sig===lkLastSent)return;lkLastSent=sig;
+  if(Date.now()<lkQuiet)return;
+  const body={k:key,s:p.side,p:a.n,f:+a.f.toFixed(4),hl,q:activeN==null?-1:activeN,sq:sideSeq,fp:prefs.lkFollowPhone?1:0,t:{'.sv':'timestamp'}};
+  const sig=JSON.stringify([body.k,body.s,body.p,body.f,body.q,body.sq,body.fp,hl]);if(sig===lkLastSent)return;lkLastSent=sig;
   fbReq('PUT','rooms/'+SY.room()+'/follow',body).catch(()=>{lkLastSent=''});
 }
 setInterval(()=>{if(SY.role()==='laptop'&&syncOk()){lkLastSent='';syncFollowNow()}},20000);   // keep-alive so the phone knows the laptop is on
@@ -2990,12 +2991,20 @@ function laptopCmd(d){
   for(const id in items){const c=items[id];if(!c||lkSeen.has(id))continue;lkSeen.add(id);fbReq('DELETE','rooms/'+SY.room()+'/cmd/'+id).catch(()=>{});
     if(Date.now()-(c.t||0)>30000)continue;   // ignore old taps
     if(c.op==='step')stepQ(c.d>0?1:-1);
+    if(c.op==='pos'&&prefs.lkFollowPhone&&c.k===key&&(c.s==='q'||c.s==='a')&&P[c.s].pages.length){   // laptop follows the phone's scrolling
+      followPick=c.s;if(prefs.view!=='split'&&prefs.view!==c.s)setView(c.s);lkQuiet=Date.now()+1200;setAnchor(P[c.s],{n:c.p,f:c.f})}
     if(c.op==='side'&&(c.s==='q'||c.s==='a')){followPick=c.s;sideSeq++;if(prefs.view!=='split')setView(c.s);
       showOtherSide(c.s);lkLastSent='';syncFollowSoon()}}
 }
 function phoneStep(d){if(!syncOk())return;fbReq('POST','rooms/'+SY.room()+'/cmd',{op:'step',d,t:{'.sv':'timestamp'}}).catch(()=>toast('Could not reach the laptop. Check the internet.'))}
 /* phone side: follow the laptop */
-let phFollowing=null;
+let phFollowing=null,phProgT=0;
+['q','a'].forEach(sd=>{let t=0;P[sd].sc.addEventListener('scroll',()=>{
+  if(SY.role()!=='phone'||!syncOk()||!phFollowing||!phFollowing.fp||!APP.classList.contains('linked'))return;
+  if(Date.now()-phProgT<1500||prefs.view!==sd)return;   // ignore moves made by following the laptop
+  clearTimeout(t);t=setTimeout(()=>{if(Date.now()-phProgT<1500)return;const a=getAnchor(P[sd]);if(!a||!key)return;
+    phoneFollow.last=Object.assign({},phoneFollow.last||{},{s:sd,p:a.n,f:+a.f.toFixed(4)});   // so the laptop's echo doesn't move us again
+    fbReq('POST','rooms/'+SY.room()+'/cmd',{op:'pos',k:key,s:sd,p:a.n,f:+a.f.toFixed(4),t:{'.sv':'timestamp'}}).catch(()=>{})},450)},{passive:true})});
 async function phoneFollow(f){
   lkFollowT=Date.now();updLinkUI();phFollowing=f;
   if(f.k!==key){const set=LIB.sets.find(x=>x.key===f.k);
@@ -3016,7 +3025,7 @@ async function phoneFollow(f){
   const lf=phoneFollow.last;phoneFollow.last=f;
   const moved=!lf||lf.k!==f.k||lf.s!==f.s||lf.p!==f.p||Math.abs(lf.f-f.f)>0.002;
   if(!moved)return;
-  const p=P[f.s];const go=()=>{if(phFollowing!==f||hlAbort)return;userMoved=true;setAnchor(p,{n:f.p,f:f.f})};
+  const p=P[f.s];const go=()=>{if(phFollowing!==f||hlAbort)return;userMoved=true;phProgT=Date.now();setAnchor(p,{n:f.p,f:f.f})};
   go();setTimeout(go,300);setTimeout(go,900);
 }
 function syncSendHl(side,h){
@@ -3066,10 +3075,11 @@ function renderLinkDlg(){
   }
   $('#lkT').textContent='Link your phone';
   if(!lp){b.innerHTML='<p class="sub">Connecting…</p>';return}
+  setTimeout(()=>{const c=$('#lkFP');if(c)c.onchange=()=>{prefs.lkFollowPhone=c.checked;savePrefs();lkLastSent='';syncFollowNow()}},0);
   const url=location.origin+location.pathname+'#link='+prefs.linkCode;
   let qr='';try{const q=qrcode(0,'M');q.addData(url);q.make();qr=q.createDataURL(4,2)}catch(e){}
   const seen=Date.now()-lkPeer<45000;
-  b.innerHTML='<div class="lkq">'+(qr?'<div class="qr"><img alt="QR code" src="'+qr+'"></div>':'')+'<div><div class="sub" style="margin:0">On your phone, open PDF Pair and scan this, or go to <b>⋯ More → Link to laptop</b> and type:</div><div class="lkcode">'+prefs.linkCode+'</div></div></div><div class="lkst"><i class="'+(seen?'on':'')+'"></i>'+(seen?'Phone connected. It follows what you open here.':'Waiting for the phone…')+'</div>'+('wakeLock' in navigator?'<p class="lkus">☀ This laptop stays awake while the phone is linked and this tab is open.</p>':'')+usageLine();
+  b.innerHTML='<div class="lkq">'+(qr?'<div class="qr"><img alt="QR code" src="'+qr+'"></div>':'')+'<div><div class="sub" style="margin:0">On your phone, open PDF Pair and scan this, or go to <b>⋯ More → Link to laptop</b> and type:</div><div class="lkcode">'+prefs.linkCode+'</div></div></div><div class="lkst"><i class="'+(seen?'on':'')+'"></i>'+(seen?'Phone connected. It follows what you open here.':'Waiting for the phone…')+'</div>'+'<label class="ck"><input type="checkbox" id="lkFP"'+(prefs.lkFollowPhone?' checked':'')+'><span>Laptop follows phone scrolling <small style="color:var(--mut)">(scroll on either device and the other follows when you stop)</small></span></label>'+('wakeLock' in navigator?'<p class="lkus">☀ This laptop stays awake while the phone is linked and this tab is open.</p>':'')+usageLine();
 }
 $('#bLink').addEventListener('click',async()=>{$('#linkDlg').hidden=false;renderLinkDlg();if(!(SY.role()==='laptop'&&syncOk()&&prefs.linkCode))await laptopPair();else{try{await fbReq('PUT','codes/'+prefs.linkCode,{r:prefs.room,t:{'.sv':'timestamp'}})}catch(e){}await lkCheckPeer()}renderLinkDlg()});
 $('#lkClose').addEventListener('click',()=>{$('#linkDlg').hidden=true});
