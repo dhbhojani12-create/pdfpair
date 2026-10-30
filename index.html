@@ -539,6 +539,9 @@ select.tin{appearance:auto}
 .lkq{display:flex;gap:22px;align-items:center;margin:6px 0 4px;flex-wrap:wrap}
 .lkq .qr{background:#fff;padding:8px;border-radius:8px;border:1px solid var(--line)}.lkq .qr img{display:block;width:150px;height:150px;image-rendering:pixelated}
 .lkcode{font:700 34px var(--mono);letter-spacing:.18em}
+#phEmpty{position:absolute;inset:0;z-index:30;place-items:center;text-align:center;padding:24px;background:var(--ground)}
+#phEmpty>div{max-width:320px}#phEmpty p{color:var(--mut);font-size:13.5px;line-height:1.5}
+#app.phone.linked.nopdf #phEmpty{display:grid!important}
 .lkus{font-size:12px;color:var(--mut);margin:12px 0 0;line-height:1.5}.lkus b{color:var(--ink)}
 .lkst{display:flex;align-items:center;gap:8px;font-size:13px;margin-top:10px}.lkst i{width:9px;height:9px;border-radius:50%;background:#c9cdd3}.lkst i.on{background:#3fbf6a}
 .lkin{display:flex;gap:8px;margin-top:10px}.lkin input{flex:1;font:700 22px var(--mono);letter-spacing:.2em;text-align:center;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--chrome);color:var(--ink)}
@@ -735,6 +738,7 @@ select.tin{appearance:auto}
     <div id="lkBody"></div>
     <div class="acts"><button class="btn ghost danger" id="lkOff" hidden>Unlink</button><span class="priv">Only highlights and the page you're on are shared. PDFs stay on each device.</span><button class="btn" id="lkClose">Done</button></div>
   </div></div>
+  <div id="phEmpty" class="ph"><div><div style="font-size:30px">📄</div><b id="phEmT"></b><p>This phone has the marks for this set but not its PDF. On the laptop make a <b>Backup → Back up with PDFs</b>, send the .zip to this phone, then restore it here.</p><button class="btn" id="phEmGo">⟲ Restore a backup</button></div></div>
   <div id="lkStat" class="ph"><span id="lkTxt"></span><button id="lkX" aria-label="Stop following">✕</button></div>
   <div id="toast" role="status"></div>
 </div>
@@ -1655,6 +1659,7 @@ function openRestore(){if(!$('#open').hidden)closeDlg();closePop();$('#bBk').cli
 $('#oRestore').addEventListener('click',e=>{e.stopPropagation();openRestore()});
 $('#libRestore').addEventListener('click',e=>{e.stopPropagation();openRestore()});
 function openLinkPhone(){if(!$('#open').hidden)closeDlg();closeLib(true);$('#lib').hidden=true;$('#linkDlg').hidden=false;renderLinkDlg()}
+$('#phEmGo').addEventListener('click',e=>{e.stopPropagation();openRestore()});
 $('#oLink').addEventListener('click',e=>{e.stopPropagation();openLinkPhone()});
 $('#libLink').addEventListener('click',e=>{e.stopPropagation();openLinkPhone()});
 $('#oDel').addEventListener('click',async()=>{
@@ -2964,6 +2969,8 @@ async function phoneFollow(f){
     if(!set){if(phoneFollow.miss!==f.k){phoneFollow.miss=f.k;openLib();setTimeout(()=>toast('The laptop opened a set that is not on this phone yet. Tap ⟲ Restore a backup and pick a “Back up with PDFs” file from your laptop.'),300)}return}
     if(!$('#lib').hidden)closeLib(true);await openSet(set.id);if(phFollowing!==f)return}
   if(prefs.view!==f.s)setView(f.s);
+  const nopdf=!P[f.s].pages.length;$('#app').classList.toggle('nopdf',nopdf);
+  if(nopdf){const cs=curSet();$('#phEmT').textContent='The PDF for “'+(cs?cs.name:'this set')+'” is not on this phone';return}
   // show the laptop's highlights for these pages
   const pages=new Set([f.p-1,f.p,f.p+1]);
   st.hl[f.s]=[...st.hl[f.s].filter(h=>!pages.has(h.page)),...(f.hl||[])];save();renderAnn(f.s);
@@ -3006,7 +3013,7 @@ async function phonePair(code){
     prefs.room=v.r;prefs.linkRole='phone';savePrefs();fbReq('DELETE','codes/'+code.trim()).catch(()=>{});linkStart();toast('Linked. This phone now follows your laptop.');return true}
   catch(e){toast('Could not reach the sync service. Check the internet.');return false}
 }
-function unlink(){linkStop();delete prefs.room;delete prefs.linkRole;delete prefs.linkCode;delete prefs.linkToolSet;savePrefs();lkMine=[];updLinkUI();toast('Unlinked')}
+function unlink(){$('#app').classList.remove('nopdf');linkStop();delete prefs.room;delete prefs.linkRole;delete prefs.linkCode;delete prefs.linkToolSet;savePrefs();lkMine=[];updLinkUI();toast('Unlinked')}
 function usageLine(){const u=usage(0,0);const f=n=>n<1024?n+' B':n<1048576?(n/1024).toFixed(1)+' KB':(n/1048576).toFixed(2)+' MB';
   const mon=new Date().toLocaleString('en',{month:'long'});
   return '<p class="lkus">This device in '+mon+': about <b>'+f(u.up)+'</b> sent and <b>'+f(u.down)+'</b> received. Free limit: 10 GB received per month, 1 GB stored. Exact figures: Firebase console → Realtime Database → Usage.</p>'}
