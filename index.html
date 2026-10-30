@@ -490,6 +490,29 @@ select.tin{appearance:auto}
 #app.phone.rv:not(.rvclean) #phLab{display:flex!important}
 #phDrop{position:absolute;z-index:36;top:calc(46px + env(safe-area-inset-top,0px));left:8px;width:min(320px,calc(100% - 16px));background:var(--panel);color:var(--ink);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.3);padding:12px;flex-direction:column;gap:4px;font-size:13px}
 #app.phone.rv #phDrop.open{display:flex!important}#phDrop span{color:var(--mut);font-size:12px}#phDrop button{margin-top:8px;padding:9px;border:1px solid var(--line);border-radius:9px;font-weight:600}
+
+/* MCQ practice */
+#mcqBar{position:absolute;z-index:31;left:50%;transform:translateX(-50%);bottom:calc(74px + env(safe-area-inset-bottom,0px));display:none;align-items:center;gap:6px;background:rgba(27,30,35,.94);color:#fff;padding:6px 8px;border-radius:26px;box-shadow:0 6px 18px rgba(0,0,0,.3);font-size:13px;white-space:nowrap;max-width:calc(100% - 16px)}
+#mcqBar.on{display:flex}
+#mcqBar .mq{opacity:.75;padding:0 4px;max-width:120px;overflow:hidden;text-overflow:ellipsis}
+#mcqBar button.o{width:44px;height:40px;border-radius:20px;background:rgba(255,255,255,.12);color:#fff;font-weight:700;font-size:16px}
+#mcqBar button.o:hover{background:rgba(255,255,255,.22)}
+#mcqBar button.o.ok{background:#23784a}#mcqBar button.o.bad{background:#b8333a}
+#mcqBar.done button.o:not(.ok):not(.bad){opacity:.35}
+#mcqBar .ms{padding:0 4px;font-weight:600}#mcqBar .ms:empty{display:none}
+#mcqBar .ms .g{color:#7fe0a2}#mcqBar .ms .r{color:#ff9aa0}
+#mcqBar #mcqEye{width:32px;height:32px;border-radius:16px;font-size:15px;opacity:.7;color:#fff}#mcqBar #mcqEye.off{opacity:.3;text-decoration:line-through}
+#mcqCover{position:absolute;inset:0;z-index:5;display:none;place-items:center;backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);background:rgba(240,241,244,.55);cursor:pointer}
+#mcqCover span{background:rgba(27,30,35,.9);color:#fff;padding:10px 16px;border-radius:20px;font-size:14px}
+#app.mcqhide #mcqCover{display:grid}
+#pane-a{position:relative}
+#app.phone #mcqBar{bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+#app.phone.rv:not(.ans):not(.rvclean) #mcqBar{bottom:calc(68px + env(safe-area-inset-bottom,0px))}
+#app.phone.ui:not(.rv) #mcqBar{bottom:calc(60px + env(safe-area-inset-bottom,0px))}
+#app.phone #mcqBar button.o{width:46px;height:42px}#app.phone #mcqEye{display:none}
+#app.phone #mcqBar .mq{display:none}
+#app.phone.linked:not(.zz) #mcqBar,#app.phone #mcqCover{display:none!important}
+#app.phone.marking #mcqBar{display:none}
 #phPill{position:absolute;z-index:33;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom,0px));background:rgba(27,30,35,.92);border-radius:28px;gap:5px;padding:5px;box-shadow:0 4px 14px rgba(0,0,0,.3)}
 #app.phone.rv:not(.ans):not(.rvclean) #phPill{display:flex!important}
 #phPill button{width:52px;height:44px;border-radius:22px;color:#fff;font-size:19px;display:grid;place-items:center;background:rgba(255,255,255,.08)}
@@ -599,7 +622,7 @@ select.tin{appearance:auto}
       <div class="sc"><div class="pages"></div></div>
     </section>
     <div id="div" role="separator" aria-orientation="vertical" title="Drag to resize"><i></i></div>
-    <section class="pane" id="pane-a" data-side="a">
+    <section class="pane" id="pane-a" data-side="a"><div id="mcqCover"><span>Pick A / B / C / D to see the answer · or click here</span></div>
       <div class="chip"><div class="cname"><span class="tag">A</span><span class="fn"></span><span class="pc"></span>
         <span class="zm"><button class="gbtn" title="Page grid (G)" aria-label="Page grid"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5"/><rect x="13.5" y="4" width="6.5" height="6.5"/><rect x="4" y="13.5" width="6.5" height="6.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5"/></svg></button><button class="bbtn" title="Bookmark this page (B)" aria-label="Bookmark this page"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg></button><button class="abtn" title="Add another PDF below this one" aria-label="Add PDF below"><svg viewBox="0 0 24 24"><path d="M14 3H6v18h12V7z"/><path d="M12 10v7M8.5 13.5h7"/></svg></button><input type="file" accept="application/pdf,.pdf" class="addin" hidden></span>
         <span class="zm"><button data-z="-1" aria-label="Zoom out">−</button><button class="zp" data-z="0" title="Fit width">100%</button><button data-z="1" aria-label="Zoom in">+</button></span></div></div>
@@ -612,6 +635,7 @@ select.tin{appearance:auto}
     </section>
   </main>
 
+  <div id="mcqBar" role="group" aria-label="Pick an answer"><span class="mq"></span><button class="o" data-o="a">A</button><button class="o" data-o="b">B</button><button class="o" data-o="c">C</button><button class="o" data-o="d">D</button><span class="ms"></span><button id="mcqEye" title="Hide the answer until I pick an option" aria-label="Hide answers until I pick">👁</button></div>
   <div id="bar" role="toolbar" aria-label="Tools">
     <button class="b" id="bSide" title="Index (I)">☰<span>Index</span></button>
     <span class="sepv"></span>
@@ -1078,7 +1102,7 @@ function jumpTo(n,from){
 }
 function updNav(){const l=document.getElementById('navl');if(!l)return;
   if(isCset()){const ts=sortedTopics();const i=ts.findIndex(t=>t.id===activeTid);l.textContent=i>=0?'📖 '+(i+1)+'/'+ts.length:'📖 –';return}
-  l.textContent=activeN!=null&&allNums().includes(activeN)?'Q '+activeN:'Q –';updPh()}
+  l.textContent=activeN!=null&&allNums().includes(activeN)?'Q '+activeN:'Q –';updPh();try{updMcq()}catch(e){}}
 // go to the previous / next question number; without a current one, start from where the reader is
 function stepQ(d){
   if(!RV&&isCset()){stepTopic(d);return}
@@ -1779,7 +1803,8 @@ function renderLib(){
   sets.forEach(set=>{
     const r=document.createElement('div');r.className='sr'+(set.id===LIB.cur?' on':'');r.tabIndex=0;
     const n=qCount(set);
-    r.innerHTML='<span class="ty '+set.type+'">'+(set.type==='mod'?'MODULE':set.type==='con'?'CONCEPT':TSHORT[set.type])+'</span><span class="tx"><b></b><small>'+n+(set.type==='con'?' topic':' question')+(n===1?'':'s')+'</small></span><button class="ed" title="Edit set" aria-label="Edit set">✎</button>';
+    const ms=mcqStats(stOf(set));
+    r.innerHTML='<span class="ty '+set.type+'">'+(set.type==='mod'?'MODULE':set.type==='con'?'CONCEPT':TSHORT[set.type])+'</span><span class="tx"><b></b><small>'+n+(set.type==='con'?' topic':' question')+(n===1?'':'s')+(ms.tried?' · MCQs '+ms.ok+'/'+ms.tried+' right ('+Math.round(100*ms.ok/ms.tried)+'%)':'')+'</small></span><button class="ed" title="Edit set" aria-label="Edit set">✎</button>';
     $('b',r).textContent=set.name;r.title=set.name;
     r.addEventListener('click',async e=>{if(e.target.closest('.ed')){showSetDialog('edit',set);return}closeLib(true);stopRv();await openSet(set.id)});
     r.addEventListener('keydown',async e=>{if(e.key==='Enter'&&e.target===r){closeLib(true);stopRv();await openSet(set.id)}});
@@ -1895,6 +1920,52 @@ function markRv(v){
 $('#rvOk').addEventListener('click',()=>markRv('done'));
 $('#rvAg').addEventListener('click',()=>markRv('again'));
 $('#rvExit').addEventListener('click',()=>{stopRv();openLib()});
+
+/* MCQ practice: a bar with A/B/C/D shows on questions that have an answer key (st.mcq) */
+let mcqSeen=null,mcqPick=null;   // the question whose answer is shown now, and the option picked this visit
+function mcqGroup(n){const nm=label(n);const i=nm.indexOf(' · ');return i>0?nm.slice(0,i):null}
+function mcqScore(n){const g=mcqGroup(n);if(!g)return null;let ok=0,tot=0,tried=0;
+  for(const k in st.mcq){if(mcqGroup(+k)!==g)continue;tot++;const m=(st.mans||{})[k];if(m){tried++;if(m.ok)ok++}}return {g,ok,tot,tried}}
+function mcqStats(s0){const m=s0.mcq||{},a=s0.mans||{};let tot=0,tried=0,ok=0;for(const k in m){tot++;if(a[k]){tried++;if(a[k].ok)ok++}}return {tot,tried,ok}}
+function updMcq(){
+  const bar=$('#mcqBar');if(!bar)return;
+  const n=activeN,key0=st.mcq&&n!=null?st.mcq[n]:null;
+  const on=!!key0&&!isCset()&&!conceptShown();
+  bar.classList.toggle('on',on);
+  if(!on){$('#app').classList.remove('mcqhide');mcqSeen=null;return}
+  if(mcqPick&&mcqPick.n!==n)mcqPick=null;
+  if(mcqSeen!==null&&mcqSeen!==n)mcqSeen=null;
+  $('.mq',bar).textContent=label(n);
+  bar.classList.toggle('done',!!mcqPick);
+  $$('#mcqBar button.o').forEach(b=>{b.classList.toggle('ok',!!mcqPick&&b.dataset.o===key0);b.classList.toggle('bad',!!mcqPick&&b.dataset.o===mcqPick.o&&mcqPick.o!==key0)});
+  const sc=mcqScore(n),last=(st.mans||{})[n];let t='';
+  if(mcqPick)t=mcqPick.o===key0?'<span class="g">✓ Right</span>':'<span class="r">✗ It’s '+key0.toUpperCase()+'</span>';
+  else if(last)t='<span class="'+(last.ok?'g':'r')+'">Last '+(last.ok?'✓':'✗')+'</span>';
+  if(sc&&sc.tried)t+=(t?' · ':'')+sc.g+' '+sc.ok+'/'+sc.tot;
+  $('.ms',bar).innerHTML=t;
+  const hide=prefs.mcqHide!==false;$('#mcqEye').classList.toggle('off',!hide);
+  $('#app').classList.toggle('mcqhide',!PH&&hide&&mcqSeen!==n);
+}
+function mcqReveal(){mcqSeen=activeN;updMcq()}
+function mcqChoose(o){
+  const n=activeN;if(n==null||!st.mcq||!st.mcq[n]||mcqPick)return;
+  const ok=o===st.mcq[n];
+  st.mans=st.mans||{};st.mans[n]={c:o,ok,at:Date.now()};
+  st.rev=st.rev||{};st.rev[n]=ok?'done':'again';
+  save();mcqPick={n,o};mcqSeen=n;renderAll();if(RV)updRv();
+  // show the reasoning
+  const a=findS('a',n);
+  if(PH){if(RV&&RV.kind==='q')phShowAns(true);else{setView('a');if(a)setTimeout(()=>scrollToSticker('a',a),60)}}
+  else{if(prefs.view==='q')setView('split');if(a)scrollToSticker('a',a)}
+  updMcq();
+  const sc=mcqScore(n);
+  if(sc&&sc.tried===sc.tot)toast(sc.g+' done: '+sc.ok+' / '+sc.tot+' right'+(sc.ok<sc.tot?'. Wrong ones are marked ↻ Again':''));
+}
+$$('#mcqBar button.o').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();mcqChoose(b.dataset.o)}));
+$('#mcqEye').addEventListener('click',e=>{e.stopPropagation();prefs.mcqHide=prefs.mcqHide===false;savePrefs();if(prefs.mcqHide===false)toast('Answers stay visible');else{mcqSeen=null;toast('Answers stay hidden until you pick an option')}updMcq()});
+$('#mcqCover').addEventListener('click',e=>{e.stopPropagation();mcqReveal()});
+$('#mcqCover').addEventListener('pointerdown',e=>e.stopPropagation());
+
 
 async function openFiles(qs,as,k){
   const norm=x=>!x?[]:Array.isArray(x)?x:[x];qs=norm(qs);as=norm(as);
@@ -2934,7 +3005,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='30 Oct 17:10';   // build label, so you can check both devices have the same version
+const APPV='30 Oct 17:21';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
