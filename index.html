@@ -1720,7 +1720,8 @@ function renderLib(){
   const qsets=sets.filter(x=>x.type!=='con');
   $('#libMeta').textContent=all.length?all.length+' questions from '+qsets.length+' set'+(qsets.length===1?'':'s')+' · '+done+' revised':'';
   const ra=$('#rvAll');ra.hidden=!rows.length;ra.textContent=rows.length===all.length?'▶ Revise all':'▶ Revise these '+rows.length;
-  ra.onclick=()=>startRv(rows,'All');
+  // go in the same order as the list: chapter by chapter, and topic by topic inside each chapter
+  ra.onclick=()=>startRv(libGroups(rows).flatMap(g=>[...g.loose,...g.topics.flatMap(t=>t.items)]),'All');
   // filters
   const f=$('#libFlt');const had=document.activeElement&&document.activeElement.id==='libSearch';f.innerHTML='';
   function saveF(){prefs.libTypes=[...libTypes];prefs.libStat=libStat;savePrefs();renderLib()}
@@ -1752,7 +1753,7 @@ function renderLib(){
     const sc=new Set(g.all.map(r=>r.set.id)).size;
     c.innerHTML='<div class="cch'+(g.ch?'':' none')+'"><b></b><span class="c">'+g.all.length+' question'+(g.all.length===1?'':'s')+' · '+sc+' set'+(sc===1?'':'s')+'</span><span class="sp"></span><button class="mini">▶ Revise chapter</button></div>';
     $('b',c).textContent=g.ch||'No chapter yet';
-    $('.mini',c).addEventListener('click',()=>startRv(g.all,g.ch||'No chapter yet'));
+    $('.mini',c).addEventListener('click',()=>startRv([...g.loose,...g.topics.flatMap(t=>t.items)],g.ch||'No chapter yet'));
     g.loose.forEach(r=>c.append(qRowEl(r)));
     for(const t of g.topics){
       const th=document.createElement('div');th.className='ctp';th.innerHTML='<span></span><span class="sp"></span><button class="mini">▶ Revise topic</button>';
