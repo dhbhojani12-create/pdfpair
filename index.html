@@ -1730,11 +1730,11 @@ function renderLib(){
   const allOn=present.every(t=>libTypes.has(t));
   if(present.length>1){
     chip('All sources',allOn,()=>{TORD.forEach(t=>libTypes.add(t));saveF()});
+    // one source at a time: tap a source to show only it, tap it again (or All sources) to show everything
     present.forEach(t=>chip(TYPES[t],libTypes.has(t)&&!allOn,()=>{
-      if(allOn){libTypes.clear();libTypes.add(t)}
-      else if(libTypes.has(t)){libTypes.delete(t);if(!present.some(x=>libTypes.has(x)))TORD.forEach(x=>libTypes.add(x))}
-      else libTypes.add(t);
-      TORD.filter(x=>!present.includes(x)).forEach(x=>libTypes.add(x));saveF()}));
+      const only=!allOn&&libTypes.has(t)&&present.filter(x=>libTypes.has(x)).length===1;
+      libTypes.clear();if(only)TORD.forEach(x=>libTypes.add(x));else{libTypes.add(t);TORD.filter(x=>!present.includes(x)).forEach(x=>libTypes.add(x))}
+      saveF()}));
     const g=document.createElement('span');g.className='gap';f.append(g);
   }
   chip('Any status',libStat==='all'||libStat==='noq',()=>{libStat='all';saveF()});
@@ -1747,7 +1747,7 @@ function renderLib(){
   const body=$('#libBody');body.innerHTML='';
   if(!sets.filter(x=>x.type!=='con').length){body.innerHTML='<div class="lempty">No question sets in '+esc(libSub)+' yet.<br>Add a study module, MTP, RTP or past paper with its answers to start.<br><button class="btn" id="emptyAdd">+ Add a set</button></div>';$('#emptyAdd').onclick=()=>showSetDialog('add');return}
   if(!all.length){body.innerHTML='<div class="lempty">No questions marked in '+esc(libSub)+' yet.<br>Open a set, place stickers beside questions and answers, then set their chapter and topic (right-click a sticker).</div>';return}
-  if(!rows.length){body.innerHTML='<div class="lempty">Nothing matches these filters.</div>';return}
+  if(!rows.length){body.innerHTML='<div class="lempty">'+(libStat==='again'?'No questions marked ↻ Revise again here yet.':libStat==='star'?'No starred questions here yet.':libStat==='not'?'Everything here is revised. Well done!':'Nothing matches these filters.')+'</div>';return}
   for(const g of libGroups(rows)){
     const c=document.createElement('div');c.className='cc';
     const sc=new Set(g.all.map(r=>r.set.id)).size;
