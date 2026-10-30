@@ -549,6 +549,8 @@ select.tin{appearance:auto}
 #app.phone.linked #dock [data-dt]:not([data-dt="hl"]),#app.phone.linked #dkFlip,#app.phone.linked #dkMore,#app.phone.linked #dock .dsep{display:none!important}
 #app.phone.linked #dock{display:flex!important;opacity:1}
 #app.phone.linked #dkUndo{display:grid!important}
+#dkQp,#dkQn{display:none!important;font-size:24px!important;font-weight:600}
+#app.phone.linked #dkQp,#app.phone.linked #dkQn{display:grid!important}
 #app.phone.linked .chip{top:44px}
 .flipL{animation:flipL .22s ease-out}.flipR{animation:flipR .22s ease-out}
 @keyframes flipL{from{transform:translateX(40px);opacity:.3}to{transform:none;opacity:1}}
@@ -716,7 +718,7 @@ select.tin{appearance:auto}
     <button id="phMoreB"><b>⋯</b>More</button>
   </div>
   <button id="fab" class="ph" aria-label="Tools"></button>
-  <div id="dock" class="ph idle"><button data-dt="hl" aria-label="Highlighter">▬<i></i></button><button data-dt="sticker" class="qo2" aria-label="Sticker"><span class="nb" id="dkNb">1</span></button><button data-dt="topic" class="co2" aria-label="Topic marker">📖</button><button data-dt="star" aria-label="Star"><span style="color:#f5b400">★</span></button><button data-dt="erase" id="dkEr" aria-label="Eraser">⌫</button><span class="dsep"></span><button id="dkFlip" aria-label="Question or answer">⇄</button><button id="dkUndo" aria-label="Undo">↶</button><button id="dkMore" aria-label="More">⋯</button></div>
+  <div id="dock" class="ph idle"><button data-dt="hl" aria-label="Highlighter">▬<i></i></button><button data-dt="sticker" class="qo2" aria-label="Sticker"><span class="nb" id="dkNb">1</span></button><button data-dt="topic" class="co2" aria-label="Topic marker">📖</button><button data-dt="star" aria-label="Star"><span style="color:#f5b400">★</span></button><button data-dt="erase" id="dkEr" aria-label="Eraser">⌫</button><span class="dsep"></span><button id="dkFlip" aria-label="Question or answer">⇄</button><button id="dkUndo" aria-label="Undo">↶</button><button id="dkQp" aria-label="Previous question">‹</button><button id="dkQn" aria-label="Next question">›</button><button id="dkMore" aria-label="More">⋯</button></div>
   <div id="dkCol" class="ph"></div>
   <div id="fan" class="ph"></div>
   <div id="phMore" class="ph"><div class="sbody"><span class="grab"></span><div id="phMg"></div></div></div>
@@ -2765,12 +2767,12 @@ document.addEventListener('pointerup',e=>{
   function showCol(){
     const b=$('[data-dt="hl"]',dk),r=b.getBoundingClientRect(),a=APP.getBoundingClientRect();col.innerHTML='';
     ['#ffd400','#5ad66d','#ff6fa5'].forEach((c,i)=>{const x=document.createElement('button');x.innerHTML='<span style="background:'+c+'"></span>';if(prefs.color===i)x.classList.add('on');
-      x.addEventListener('click',e=>{e.stopPropagation();prefs.color=i;savePrefs();if(prefs.tool!=='hl')setTool('hl');updBar();showCol()});col.append(x)});
+      x.addEventListener('click',e=>{e.stopPropagation();prefs.color=i;savePrefs();if(prefs.tool!=='hl')setTool('hl');updBar();col.classList.remove('open')});col.append(x)});
     const k=document.createElement('button');k.className='thk';k.innerHTML='<span style="width:18px;height:'+[3,6,9][prefs.size]+'px;background:#fff;border-radius:2px"></span>';
     k.addEventListener('click',e=>{e.stopPropagation();prefs.size=(prefs.size+1)%3;savePrefs();updBar();showCol()});col.append(k);
     col.style.top=(r.top-a.top+r.height/2-21)+'px';col.style.left=col.style.right='';
     if(prefs.dock==='l')col.style.left=(r.right-a.left+8)+'px';else col.style.right=(a.right-r.left+8)+'px';
-    col.classList.add('open');clearTimeout(ct);if(!APP.classList.contains('linked'))ct=setTimeout(()=>col.classList.remove('open'),2600);
+    col.classList.add('open');clearTimeout(ct);ct=setTimeout(()=>col.classList.remove('open'),2600);
   }
   let fired=false;
   dk.addEventListener('pointerdown',e=>{e.stopPropagation();wake();moved=false;drag={x:e.clientX,y:e.clientY};
@@ -2787,12 +2789,14 @@ document.addEventListener('pointerup',e=>{
     e.stopPropagation();if(fired){fired=false;return}if(moved||lp){moved=false;lp=false;return}
     const b=e.target.closest('button');if(b)act(b)});
   function act(b){wake();
+    if(b.dataset.dt==='hl'&&APP.classList.contains('linked')){if(prefs.tool!=='hl')setTool('hl');if(col.classList.contains('open'))col.classList.remove('open');else showCol();return}
+    if(b.id==='dkQp'||b.id==='dkQn'){phoneStep(b.id==='dkQn'?1:-1);return}
     if(b.dataset.dt){const t=b.dataset.dt;setTool(prefs.tool===t?'none':t);if(prefs.tool==='hl')showCol();else col.classList.remove('open');return}
     if(b.id==='dkFlip'){const to=prefs.view==='a'?'q':'a';phFlip(to,to==='a'?-1:1);return}
     if(b.id==='dkUndo'){if(APP.classList.contains('linked'))phoneUndo();else undo();return}
     if(b.id==='dkMore'){openMore();return}
   }
-  window.addEventListener('pointerdown',e=>{if(col.classList.contains('open')&&!APP.classList.contains('linked')&&!e.target.closest('#dkCol,#dock'))col.classList.remove('open')},true);
+  window.addEventListener('pointerdown',e=>{if(col.classList.contains('open')&&!e.target.closest('#dkCol,#dock'))col.classList.remove('open')},true);
   window.__dkShowCol=showCol;
   wake();
 })();
@@ -2874,14 +2878,15 @@ function fbStream(path,onEvent){ // live updates (EventSource on the REST API)
   return es;
 }
 const rid=n=>{const a=new Uint8Array(n);crypto.getRandomValues(a);return [...a].map(x=>'abcdefghijkmnpqrstuvwxyz23456789'[x%32]).join('')};
-let lkES=null,lkBeat=0,lkPeer=0,lkFollowT=0,lkLastSent='',lkSeen=new Set(),lkMine=[];
+let lkCmd=null,lkES=null,lkBeat=0,lkPeer=0,lkFollowT=0,lkLastSent='',lkSeen=new Set(),lkMine=[];
 function lkCheckPeer(){return fbReq('GET','rooms/'+SY.room()+'/phone').then(v=>{lkPeer=v&&v.t||0;updLinkUI()}).catch(()=>{})}
-function linkStop(){if(lkES){lkES.close();lkES=null}clearInterval(lkBeat);lkBeat=0}
+function linkStop(){if(lkCmd){lkCmd.close();lkCmd=null}if(lkES){lkES.close();lkES=null}clearInterval(lkBeat);lkBeat=0}
 function linkStart(){
   linkStop();if(!syncOk())return updLinkUI();
   const room=SY.room();
   if(SY.role()==='laptop'){
     lkES=fbStream('rooms/'+room+'/hl',(t,d)=>laptopIncoming(t,d));
+    lkCmd=fbStream('rooms/'+room+'/cmd',(t,d)=>laptopCmd(d));
     const beat=lkCheckPeer;
     beat();lkBeat=setInterval(beat,15000);lkLastSent='';syncFollowSoon();
   }else{
@@ -2897,7 +2902,6 @@ function updLinkUI(){
   $('#app').classList.toggle('linked',ph);$('#app').classList.toggle('wlock',!!prefs.wlock||ph);
   if(ph)['q','a','c'].forEach(sd=>{const x=P[sd];if(x.zoom!==1){x.zoom=1;layout(x,false)}x.sc.scrollLeft=0});
   const b=$('#bLink');if(b){b.classList.toggle('on',lp);$('#bLinkT').textContent=lp?(Date.now()-lkPeer<45000?'Phone linked':'Phone linked (away)'):'Link phone'}
-  if(ph&&window.__dkShowCol)setTimeout(()=>{try{__dkShowCol()}catch(e){}},50);else if(!ph)$('#dkCol').classList.remove('open');
   if(ph){const fresh=Date.now()-lkFollowT<45000;$('#lkStat').classList.toggle('wait',!fresh);$('#lkTxt').textContent=fresh?'● Following laptop':'Waiting for your laptop…'}
   if(!$('#linkDlg').hidden)renderLinkDlg();
 }
@@ -2929,6 +2933,13 @@ function applyRemote(it){
   else if(!list.some(h=>same(h,it.h)))list.push(it.h);
   if(mine){save();renderAnn(it.s)}else LS.set('pp:'+it.k,S);
 }
+function laptopCmd(d){
+  if(d.data==null)return;const items=d.path==='/'?d.data:{[d.path.slice(1)]:d.data};
+  for(const id in items){const c=items[id];if(!c||lkSeen.has(id))continue;lkSeen.add(id);fbReq('DELETE','rooms/'+SY.room()+'/cmd/'+id).catch(()=>{});
+    if(Date.now()-(c.t||0)>30000)continue;   // ignore old taps
+    if(c.op==='step')stepQ(c.d>0?1:-1)}
+}
+function phoneStep(d){if(!syncOk())return;fbReq('POST','rooms/'+SY.room()+'/cmd',{op:'step',d,t:{'.sv':'timestamp'}}).catch(()=>toast('Could not reach the laptop. Check the internet.'))}
 /* phone side: follow the laptop */
 let phFollowing=null;
 async function phoneFollow(f){
