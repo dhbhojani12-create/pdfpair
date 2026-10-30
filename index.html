@@ -2472,14 +2472,14 @@ function conDown(e,p){
   const r=pageDiv.getBoundingClientRect();const pt=ev=>({x:clamp((ev.clientX-r.left)/c.W,0,1),y:clamp((ev.clientY-r.top)/c.W,0,pg.ar)});
   const keep=()=>{LS.set('pp:'+c.ckey,cs);renderConPane()};
   const hl=e.target.closest('.hl'),sr=e.target.closest('.star');
-  if(prefs.tool==='erase'){if(hl){cs.hl.q.splice(+hl.dataset.i,1);keep()}else if(sr){cs.stars.q.splice(+sr.dataset.i,1);keep()}return}
+  if(prefs.tool==='erase'){if(hl){const gone=cs.hl.q.splice(+hl.dataset.i,1)[0];keep();try{if(gone)syncEraseHl('q',gone,c.ckey)}catch(e){}}else if(sr){cs.stars.q.splice(+sr.dataset.i,1);keep()}return}
   if(prefs.tool==='hl'){
     e.preventDefault();const a=pt(e),t=SIZES[prefs.size],col=prefs.color;
     const tmp=document.createElement('div');tmp.className='hl';pg.ov.append(tmp);let seg={x1:a.x,y1:a.y,x2:a.x,y2:a.y,t,c:col};hlStyle(tmp,seg);
     const mv=ev=>{const b=pt(ev);seg=Math.abs(b.x-a.x)>=Math.abs(b.y-a.y)?{x1:Math.min(a.x,b.x),x2:Math.max(a.x,b.x),y1:a.y,y2:a.y,t,c:col}:{x1:a.x,x2:a.x,y1:Math.min(a.y,b.y),y2:Math.max(a.y,b.y),t,c:col};hlStyle(tmp,seg)};
     const off=()=>{hlAbort=null;window.removeEventListener('pointermove',mv);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',up);tmp.remove()};
     const up=()=>{off();
-      if((seg.x2-seg.x1)+(seg.y2-seg.y1)>.008){cs.hl.q.push(Object.assign({page:pg.n},seg));keep()}};hlAbort=off;
+      if((seg.x2-seg.x1)+(seg.y2-seg.y1)>.008){const h=Object.assign({page:pg.n},seg);cs.hl.q.push(h);keep();try{syncSendHl('q',h,c.ckey)}catch(e){}}};hlAbort=off;
     window.addEventListener('pointermove',mv);window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up);return;
   }
   if(prefs.tool==='star'){
@@ -2492,7 +2492,7 @@ function conDown(e,p){
   }
   if(prefs.tool==='sticker')toast('On the concept side you can use Highlight, Star and the eraser');
 }
-function hideConcept(){$('#app').classList.remove('cv');updConUI()}
+function hideConcept(){$('#app').classList.remove('cv');updConUI();try{syncFollowSoon()}catch(e){}}
 function conceptShown(){return $('#app').classList.contains('cv')}
 async function toggleConcept(force){
   if(isCset())return;
@@ -2519,7 +2519,7 @@ async function openConceptBrowse(){
   updConUI();return true;
 }
 // remember where you were in the concept book
-(function(){let t=0;P.c.sc.addEventListener('scroll',()=>{clearTimeout(t);t=setTimeout(()=>{const c=P.c;if(c.ckey&&c.pages.length){const a=getAnchor(c);if(a)LS.set('cpos:'+c.ckey,a)}},400)},{passive:true})})();
+(function(){let t=0;P.c.sc.addEventListener('scroll',()=>{try{syncFollowSoon()}catch(e){}clearTimeout(t);t=setTimeout(()=>{const c=P.c;if(c.ckey&&c.pages.length){const a=getAnchor(c);if(a)LS.set('cpos:'+c.ckey,a)}},400)},{passive:true})})();
 // ≡ : jump to a topic in the concept book
 $('#conTopics').addEventListener('click',e=>{
   e.stopPropagation();if(closePop())return;const c=P.c;const ts=[...(c.topics||[])].sort((a,b)=>a.page-b.page||a.y-b.y);
@@ -2531,7 +2531,7 @@ $('#conTopics').addEventListener('click',e=>{
   $('#app').append(pop);const r=e.target.getBoundingClientRect(),a=$('#app').getBoundingClientRect();
   pop.style.top=(r.bottom-a.top+6)+'px';pop.style.left=Math.max(8,Math.min(r.right-a.left-260,a.width-270))+'px';
 });
-function updConUI(){const on=conceptShown();const b=$('#bCon');if(b){b.hidden=!hasConcepts();b.classList.toggle('on',on)}
+function updConUI(){try{syncFollowSoon()}catch(e){}const on=conceptShown();const b=$('#bCon');if(b){b.hidden=!hasConcepts();b.classList.toggle('on',on)}
   $$('#rvSeg button').forEach(x=>x.classList.toggle('on',(x.dataset.c==='1')===on));updPh()}
 $('#bCon').addEventListener('click',()=>toggleConcept());
 $('#conClose').addEventListener('click',()=>toggleConcept(false));
@@ -2934,7 +2934,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='30 Oct 16:07';   // build label, so you can check both devices have the same version
+const APPV='30 Oct 16:16';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
@@ -2991,17 +2991,20 @@ setInterval(()=>{if(syncOk())updLinkUI()},10000);
 /* laptop side: tell the phone what is on screen */
 // which side the phone shows: the one you last clicked, scrolled or jumped to on the laptop (not just where the mouse passes over)
 let followPick='q',sideSeq=0,lkQuiet=0;
+[['c','a']].forEach(([x,sd])=>{const el=P[x].sc;['pointerdown','wheel','touchstart'].forEach(ev=>el.addEventListener(ev,()=>{if(followPick!==sd){followPick=sd;sideSeq++}syncFollowSoon()},{passive:true}))});
 ['q','a'].forEach(sd=>{const el=P[sd].sc;['pointerdown','wheel','touchstart'].forEach(ev=>el.addEventListener(ev,()=>{if(followPick!==sd){followPick=sd;sideSeq++;syncFollowSoon()}},{passive:true}))});
 function followSide(){
+  const conOn=conceptShown()&&P.c.pages.length&&P.c.ckey&&(prefs.view==='a'||(prefs.view==='split'&&followPick==='a'));
+  if(conOn)return P.c;
   if(prefs.view==='q'||prefs.view==='a')return P[prefs.view].pages.length?P[prefs.view]:null;
   const p=P[followPick]&&isShown(followPick)?P[followPick]:activePane();return p&&p.pages.length?p:null}
 function syncFollowSoon(){if(SY.role()!=='laptop'||!syncOk())return;clearTimeout(syncFollowSoon.t);syncFollowSoon.t=setTimeout(syncFollowNow,400)}
 function syncFollowNow(){
   const p=followSide();if(!p||!key)return;
   const a=getAnchor(p);if(!a)return;
-  const hl=st.hl[p.side].filter(h=>Math.abs(h.page-a.n)<=1);
+  const isC=p===P.c;const hl=(isC?(p.cst&&p.cst.hl.q||[]):st.hl[p.side]).filter(h=>Math.abs(h.page-a.n)<=1);
   if(Date.now()<lkQuiet)return;
-  const body={k:key,s:p.side,p:a.n,f:+a.f.toFixed(4),hl,q:activeN==null?-1:activeN,sq:sideSeq,fp:prefs.lkFollowPhone?1:0,t:{'.sv':'timestamp'}};
+  const body={k:isC?p.ckey:key,qk:key,s:p.side,p:a.n,f:+a.f.toFixed(4),hl,q:activeN==null?-1:activeN,sq:sideSeq,fp:prefs.lkFollowPhone?1:0,t:{'.sv':'timestamp'}};
   const sig=JSON.stringify([body.k,body.s,body.p,body.f,body.q,body.sq,body.fp,hl]);if(sig===lkLastSent)return;lkLastSent=sig;
   fbReq('PUT','rooms/'+SY.room()+'/follow',body).catch(()=>{lkLastSent=''});
 }
@@ -3013,13 +3016,15 @@ function laptopIncoming(t,d){
   for(const id in items){const it=items[id];if(!it||lkSeen.has(id))continue;lkSeen.add(id);applyRemote(it);fbReq('DELETE','rooms/'+SY.room()+'/hl/'+id).catch(()=>{})}
 }
 function applyRemote(it){
-  const mine=it.k===key;const S=mine?st:LS.get('pp:'+it.k);if(!S||!S.hl)return;
+  const cc=P.c,onCon=cc.ckey&&it.k===cc.ckey&&cc.cst;
+  const mine=it.k===key;const S=onCon?cc.cst:mine?st:LS.get('pp:'+it.k);if(!S||!S.hl)return;
   const list=S.hl[it.s]=S.hl[it.s]||[];
   const same=(a,b)=>a.page===b.page&&Math.abs(a.x1-b.x1)<1e-4&&Math.abs(a.y1-b.y1)<1e-4&&Math.abs(a.x2-b.x2)<1e-4&&Math.abs(a.y2-b.y2)<1e-4;
   if(mine)pushUndo();
   if(it.op==='del'){const i=list.findIndex(h=>same(h,it.h));if(i>=0)list.splice(i,1)}
   else if(!list.some(h=>same(h,it.h)))list.push(it.h);
-  if(mine){save();renderAnn(it.s)}else LS.set('pp:'+it.k,S);
+  if(onCon){LS.set('pp:'+it.k,S);renderConPane();syncFollowSoon()}
+  else if(mine){save();renderAnn(it.s)}else LS.set('pp:'+it.k,S);
 }
 function laptopCmd(d){
   if(d.data==null)return;const items=d.path==='/'?d.data:{[d.path.slice(1)]:d.data};
@@ -3040,8 +3045,25 @@ let phFollowing=null,phProgT=0;
   clearTimeout(t);t=setTimeout(()=>{if(Date.now()-phProgT<1500)return;const a=getAnchor(P[sd]);if(!a||!key)return;
     phoneFollow.last=Object.assign({},phoneFollow.last||{},{s:sd,p:a.n,f:+a.f.toFixed(4)});   // so the laptop's echo doesn't move us again
     fbReq('POST','rooms/'+SY.room()+'/cmd',{op:'pos',k:key,s:sd,p:a.n,f:+a.f.toFixed(4),t:{'.sv':'timestamp'}}).catch(()=>{})},450)},{passive:true})});
+async function phoneFollowConcept(f){
+  const set=LIB.sets.find(x=>x.key===f.k);const c=P.c;
+  if(!set){if(phoneFollow.miss!==f.k){phoneFollow.miss=f.k;toast('The laptop opened a concept book that is not on this phone. Restore a “Back up with PDFs” here first.')}return}
+  if(f.qk&&f.qk!==key){const qs=LIB.sets.find(x=>x.key===f.qk);if(qs){await openSet(qs.id);if(phFollowing!==f)return}}
+  if(c.setId!==set.id){const recs=[];for(const fl of set.files.q){const b=await idbGet('blob:'+fl.id);if(b)recs.push({name:fl.name,size:fl.size,blob:b,id:fl.id})}
+    if(!recs.length){$('#app').classList.add('nopdf');$('#phEmT').textContent='The PDF for “'+set.name+'” is not on this phone';return}
+    $('#app').classList.add('cv');await loadDoc('c',recs);c.setId=set.id;if(phFollowing!==f)return}
+  $('#app').classList.remove('nopdf');
+  c.ckey=set.key;c.cst=Object.assign({hl:{q:[],a:[]},stars:{q:[],a:[]},topics:[]},LS.get('pp:'+set.key)||{});c.topics=c.cst.topics||[];
+  const pages=new Set([f.p-1,f.p,f.p+1]);c.cst.hl.q=[...(c.cst.hl.q||[]).filter(h=>!pages.has(h.page)),...(f.hl||[])];LS.set('pp:'+set.key,c.cst);
+  $('#app').classList.add('cv');if(prefs.view!=='a')setView('a');layout(c,false);renderConPane();c.fn.textContent=set.name;
+  const lf=phoneFollow.last;phoneFollow.last=f;
+  if(lf&&lf.s==='c'&&lf.k===f.k&&lf.p===f.p&&Math.abs(lf.f-f.f)<=0.002)return;
+  const go=()=>{if(phFollowing!==f||hlAbort)return;userMoved=true;phProgT=Date.now();setAnchor(c,{n:f.p,f:f.f})};go();setTimeout(go,300);setTimeout(go,900);
+}
 async function phoneFollow(f){
   lkFollowT=Date.now();updLinkUI();phFollowing=f;
+  if(f.s==='c'&&!prefs.phIndep){await phoneFollowConcept(f);return}
+  if(f.s!=='c'&&conceptShown()&&!prefs.phIndep&&!phFlipT){conceptPref=false;hideConcept()}
   if(prefs.phIndep){   // phone on its own: keep highlights in step for the page you're on, never move the page
     if(f.k===key&&f.s===prefs.view&&P[f.s].pages.length){const pages=new Set([f.p-1,f.p,f.p+1]);st.hl[f.s]=[...st.hl[f.s].filter(h=>!pages.has(h.page)),...(f.hl||[])];save();renderAnn(f.s)}
     return}
@@ -3066,22 +3088,25 @@ async function phoneFollow(f){
   const p=P[f.s];const go=()=>{if(phFollowing!==f||hlAbort)return;userMoved=true;phProgT=Date.now();setAnchor(p,{n:f.p,f:f.f})};
   go();setTimeout(go,300);setTimeout(go,900);
 }
-function syncSendHl(side,h){
-  if(SY.role()!=='phone'||!syncOk()||!key)return;
-  lkMine.push({side,h,k:key});
-  fbReq('POST','rooms/'+SY.room()+'/hl',{k:key,s:side,h,t:{'.sv':'timestamp'}}).catch(()=>toast('Could not send that highlight. Check the internet and try again.'));
+function syncSendHl(side,h,k0){
+  const k=k0||key;if(SY.role()!=='phone'||!syncOk()||!k)return;
+  lkMine.push({side,h,k});
+  fbReq('POST','rooms/'+SY.room()+'/hl',{k,s:side,h,t:{'.sv':'timestamp'}}).catch(()=>toast('Could not send that highlight. Check the internet and try again.'));
 }
-function syncEraseHl(side,h){
-  if(SY.role()!=='phone'||!syncOk()||!key)return;
-  lkMine.push({side,h,k:key,erased:true});
-  fbReq('POST','rooms/'+SY.room()+'/hl',{k:key,s:side,h,op:'del',t:{'.sv':'timestamp'}}).catch(()=>toast('Could not send that. Check the internet and try again.'));
+function syncEraseHl(side,h,k0){
+  const k=k0||key;if(SY.role()!=='phone'||!syncOk()||!k)return;
+  lkMine.push({side,h,k,erased:true});
+  fbReq('POST','rooms/'+SY.room()+'/hl',{k,s:side,h,op:'del',t:{'.sv':'timestamp'}}).catch(()=>toast('Could not send that. Check the internet and try again.'));
 }
 function phoneUndo(){
   const m=lkMine.pop();if(!m){toast('Nothing to undo');return}
+  const cc=P.c;const onCon=cc.ckey&&m.k===cc.ckey&&cc.cst;
   if(m.erased){ // put an erased highlight back
-    if(m.k===key){st.hl[m.side].push(m.h);save();renderAnn(m.side)}
+    if(onCon){cc.cst.hl.q.push(m.h);LS.set('pp:'+cc.ckey,cc.cst);renderConPane()}
+    else if(m.k===key){st.hl[m.side].push(m.h);save();renderAnn(m.side)}
     fbReq('POST','rooms/'+SY.room()+'/hl',{k:m.k,s:m.side,h:m.h,t:{'.sv':'timestamp'}}).catch(()=>{});return}
-  if(m.k===key){const i=st.hl[m.side].indexOf(m.h);if(i>=0)st.hl[m.side].splice(i,1);save();renderAnn(m.side)}
+  if(onCon){const i=cc.cst.hl.q.indexOf(m.h);if(i>=0)cc.cst.hl.q.splice(i,1);LS.set('pp:'+cc.ckey,cc.cst);renderConPane()}
+  else if(m.k===key){const i=st.hl[m.side].indexOf(m.h);if(i>=0)st.hl[m.side].splice(i,1);save();renderAnn(m.side)}
   fbReq('POST','rooms/'+SY.room()+'/hl',{k:m.k,s:m.side,h:m.h,op:'del',t:{'.sv':'timestamp'}}).catch(()=>{});
 }
 /* pairing */
