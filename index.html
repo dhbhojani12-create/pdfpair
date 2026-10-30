@@ -276,7 +276,7 @@ body.t-hl .ov{cursor:text;touch-action:none}
 
 /* library */
 .ty{display:inline-block;font:600 9.5px var(--mono);letter-spacing:.05em;padding:3px 6px;border-radius:5px;color:#fff;text-transform:uppercase;flex:none;line-height:1.2}
-.ty.mod{background:#5b6472}.ty.mtp{background:#2f6fe0}.ty.rtp{background:#2f8f5b}.ty.pyq{background:#b5532a}.ty.oth{background:#8a8f99}.ty.con{background:#7a5bb5}
+.ty.mod{background:#5b6472}.ty.mtp{background:#2f6fe0}.ty.rtp{background:#2f8f5b}.ty.pyq{background:#b5532a}.ty.oth{background:#8a8f99}.ty.mcq{background:#b8860b}.ty.con{background:#7a5bb5}
 .setl{display:flex;align-items:center;gap:8px;margin:12px 12px 0;padding:7px 9px;border-radius:8px;background:var(--chrome);text-align:left;min-width:0}
 .setl:hover{background:var(--hover)}
 .setl .nm{flex:1;min-width:0;font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -659,7 +659,7 @@ select.tin{appearance:auto}
         <div class="of"><label for="oName">Name</label><input id="oName" class="tin" placeholder="e.g. MTP Mar 2025 Series 1"></div>
         <div class="of2">
           <div class="of"><label for="oSub">Subject</label><input id="oSub" class="tin" list="subList" placeholder="e.g. FR"><datalist id="subList"></datalist></div>
-          <div class="of"><label for="oType">Type</label><select id="oType" class="tin"><option value="mod">Study module</option><option value="mtp">MTP</option><option value="rtp">RTP</option><option value="pyq">Past paper</option><option value="oth">Other</option><option value="con">Concept book</option></select></div>
+          <div class="of"><label for="oType">Type</label><select id="oType" class="tin"><option value="mod">Study module</option><option value="mtp">MTP</option><option value="rtp">RTP</option><option value="pyq">Past paper</option><option value="mcq">MCQ booklet</option><option value="oth">Other</option><option value="con">Concept book</option></select></div>
         </div>
       </div>
       <div class="how" id="ohow">
@@ -1581,8 +1581,8 @@ async function idbPut(k,v){try{const db=await idb();await new Promise((res,rej)=
 async function idbGet(k){try{const db=await idb();return await new Promise(res=>{const r=db.transaction('files').objectStore('files').get(k);r.onsuccess=()=>res(r.result||null);r.onerror=()=>res(null)})}catch(e){return null}}
 
 /* ---------- library of sets ---------- */
-const TYPES={mod:'Module',mtp:'MTP',rtp:'RTP',pyq:'Past paper',oth:'Other',con:'Concept book'},TORD=['mod','mtp','rtp','pyq','oth','con'];
-const TSHORT={mod:'MOD',mtp:'MTP',rtp:'RTP',pyq:'PYQ',oth:'OTH',con:'CON'};
+const TYPES={mod:'Module',mtp:'MTP',rtp:'RTP',pyq:'Past paper',mcq:'MCQ booklet',oth:'Other',con:'Concept book'},TORD=['mod','mtp','rtp','pyq','mcq','oth','con'];
+const TSHORT={mod:'MOD',mtp:'MTP',rtp:'RTP',pyq:'PYQ',mcq:'MCQ',oth:'OTH',con:'CON'};
 function isCset(){const c=typeof curSet==='function'&&curSet();return !!(c&&c.type==='con')}
 let LIB=Object.assign({subjects:['FR','AFM','Audit'],sets:[],cur:null},LS.get('pp:lib')||{});
 function saveLib(){LS.set('pp:lib',LIB)}
@@ -1606,8 +1606,8 @@ async function recoverSets(){
       const fq=(sizes[q.size]||[])[0];if(!fq)continue;
       const fa=a?(a.size===q.size&&a.name===q.name?fq:(sizes[a.size]||[])[0]):null;if(a&&!fa)continue;
       const nm=q.name.replace(/\.pdf$/i,'');
-      const type=!a?'con':/rtp/i.test(nm)?'rtp':/suggested|past/i.test(nm)?'pyq':/mtp/i.test(nm)?'mtp':'mod';
-      const name=/RTP/i.test(nm)?'FR RTP':/Suggested/i.test(nm)?'FR Past Paper':/^FR MTP/.test(nm)?'FR MTP':nm;
+      const type=!a?'con':/mcq|case scenario/i.test(nm)?'mcq':/rtp/i.test(nm)?'rtp':/suggested|past/i.test(nm)?'pyq':/mtp/i.test(nm)?'mtp':'mod';
+      const name=/MCQ/.test(nm)&&/^FR/.test(nm)?'FR MCQ Case Scenarios':/RTP/i.test(nm)?'FR RTP':/Suggested/i.test(nm)?'FR Past Paper':/^FR MTP/.test(nm)?'FR MTP':nm;
       const fl={id:fq,name:q.name,size:q.size};
       LIB.sets.push({id:uid(),name,subject:LIB.subjects[0]||'FR',type,key,files:{q:[fl],a:a?[fa===fq?fl:{id:fa,name:a.name,size:a.size}]:[]},same:!!(a&&fa===fq),at:Date.now()});
       have.add(key);added++;
@@ -2934,7 +2934,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='30 Oct 16:16';   // build label, so you can check both devices have the same version
+const APPV='30 Oct 17:10';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
