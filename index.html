@@ -2899,7 +2899,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='30 Oct 14:35';   // build label, so you can check both devices have the same version
+const APPV='30 Oct 14:53';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
@@ -2920,7 +2920,14 @@ function fbStream(path,onEvent){ // live updates (EventSource on the REST API)
 const rid=n=>{const a=new Uint8Array(n);crypto.getRandomValues(a);return [...a].map(x=>'abcdefghijkmnpqrstuvwxyz23456789'[x%32]).join('')};
 let lkCmd=null,lkES=null,lkBeat=0,lkPeer=0,lkFollowT=0,lkLastSent='',lkSeen=new Set(),lkMine=[];
 function lkCheckPeer(){return fbReq('GET','rooms/'+SY.room()+'/phone').then(v=>{lkPeer=v&&v.t||0;updLinkUI()}).catch(()=>{})}
-function linkStop(){if(lkCmd){lkCmd.close();lkCmd=null}if(lkES){lkES.close();lkES=null}clearInterval(lkBeat);lkBeat=0}
+// keep the laptop awake while a phone is linked (works while this tab is open and visible)
+let wakeL=null;
+async function keepAwake(on){
+  try{if(on&&!wakeL&&'wakeLock' in navigator&&document.visibilityState==='visible'){wakeL=await navigator.wakeLock.request('screen');wakeL.addEventListener('release',()=>{wakeL=null})}
+    else if(!on&&wakeL){await wakeL.release();wakeL=null}}catch(e){wakeL=null}
+}
+document.addEventListener('visibilitychange',()=>{if(SY.role()==='laptop'&&syncOk()&&document.visibilityState==='visible')keepAwake(true)});
+function linkStop(){keepAwake(false);if(lkCmd){lkCmd.close();lkCmd=null}if(lkES){lkES.close();lkES=null}clearInterval(lkBeat);lkBeat=0}
 function linkStart(){
   linkStop();if(!syncOk())return updLinkUI();
   const room=SY.room();
@@ -2928,7 +2935,7 @@ function linkStart(){
     lkES=fbStream('rooms/'+room+'/hl',(t,d)=>laptopIncoming(t,d));
     lkCmd=fbStream('rooms/'+room+'/cmd',(t,d)=>laptopCmd(d));
     const beat=lkCheckPeer;
-    beat();lkBeat=setInterval(beat,15000);lkLastSent='';syncFollowSoon();
+    beat();lkBeat=setInterval(beat,15000);lkLastSent='';syncFollowSoon();keepAwake(true);
   }else{
     lkES=fbStream('rooms/'+room+'/follow',(t,d)=>{if(t==='put'&&d.path==='/'&&d.data)phoneFollow(d.data)});
     const beat=()=>fbReq('PUT','rooms/'+room+'/phone',{t:{'.sv':'timestamp'}}).catch(()=>{});
@@ -3062,7 +3069,7 @@ function renderLinkDlg(){
   const url=location.origin+location.pathname+'#link='+prefs.linkCode;
   let qr='';try{const q=qrcode(0,'M');q.addData(url);q.make();qr=q.createDataURL(4,2)}catch(e){}
   const seen=Date.now()-lkPeer<45000;
-  b.innerHTML='<div class="lkq">'+(qr?'<div class="qr"><img alt="QR code" src="'+qr+'"></div>':'')+'<div><div class="sub" style="margin:0">On your phone, open PDF Pair and scan this, or go to <b>⋯ More → Link to laptop</b> and type:</div><div class="lkcode">'+prefs.linkCode+'</div></div></div><div class="lkst"><i class="'+(seen?'on':'')+'"></i>'+(seen?'Phone connected. It follows what you open here.':'Waiting for the phone…')+'</div>'+usageLine();
+  b.innerHTML='<div class="lkq">'+(qr?'<div class="qr"><img alt="QR code" src="'+qr+'"></div>':'')+'<div><div class="sub" style="margin:0">On your phone, open PDF Pair and scan this, or go to <b>⋯ More → Link to laptop</b> and type:</div><div class="lkcode">'+prefs.linkCode+'</div></div></div><div class="lkst"><i class="'+(seen?'on':'')+'"></i>'+(seen?'Phone connected. It follows what you open here.':'Waiting for the phone…')+'</div>'+('wakeLock' in navigator?'<p class="lkus">☀ This laptop stays awake while the phone is linked and this tab is open.</p>':'')+usageLine();
 }
 $('#bLink').addEventListener('click',async()=>{$('#linkDlg').hidden=false;renderLinkDlg();if(!(SY.role()==='laptop'&&syncOk()&&prefs.linkCode))await laptopPair();else{try{await fbReq('PUT','codes/'+prefs.linkCode,{r:prefs.room,t:{'.sv':'timestamp'}})}catch(e){}await lkCheckPeer()}renderLinkDlg()});
 $('#lkClose').addEventListener('click',()=>{$('#linkDlg').hidden=true});
