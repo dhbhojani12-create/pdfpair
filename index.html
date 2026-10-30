@@ -548,6 +548,7 @@ select.tin{appearance:auto}
 #bLink.on{background:#2f6fe0;color:#fff}
 #lkStat{position:absolute;z-index:36;top:calc(8px + env(safe-area-inset-top,0px));left:8px;align-items:center;gap:6px;background:#23784a;color:#fff;border-radius:14px;padding:4px 6px 4px 11px;font:600 11.5px var(--sans);box-shadow:0 2px 8px rgba(0,0,0,.2)}
 #lkStat.wait{background:#5b6472}
+#lkTxt{cursor:pointer}
 #lkStat button{width:24px;height:24px;border-radius:12px;color:#fff;font-size:12px;background:rgba(255,255,255,.15)}
 #app.phone.linked #lkStat{display:flex!important}
 #app.phone.linked.linked:not(.zz) #phNav,#app.phone.linked.linked:not(.zz) #phPill,#app.phone.linked.linked:not(.zz) #phLab,#app.phone.linked.linked:not(.zz) #fab{display:none!important}
@@ -2618,10 +2619,10 @@ function phBoot(){
 // flip Q / A with a small slide
 function phFlip(v,dir){
   if(isCset()||(RV&&(RV.kind!=='q'||APP.classList.contains('ans'))))return;
-  if(APP.classList.contains('linked')){phFlipT=Date.now();const nn=(()=>{try{return pairAt(prefs.view)}catch(e){return null}})();setTimeout(()=>{try{showOtherSide(v,nn)}catch(e){}},30);try{fbReq('POST','rooms/'+SY.room()+'/cmd',{op:'side',s:v,t:{'.sv':'timestamp'}}).catch(()=>{})}catch(e){}}
+  if(APP.classList.contains('linked')&&!prefs.phIndep){phFlipT=Date.now();const nn=(()=>{try{return pairAt(prefs.view)}catch(e){return null}})();setTimeout(()=>{try{showOtherSide(v,nn)}catch(e){}},30);try{fbReq('POST','rooms/'+SY.room()+'/cmd',{op:'side',s:v,t:{'.sv':'timestamp'}}).catch(()=>{})}catch(e){}}
   if(v===prefs.view)return;
   const blank=P[v].sc.scrollTop<5;   // that side was never moved: open the matching question/answer instead of page 1
-  const nn2=!APP.classList.contains('linked')&&blank?(()=>{try{return pairAt(prefs.view)}catch(e){return null}})():null;
+  const nn2=(!APP.classList.contains('linked')||prefs.phIndep)&&blank?(()=>{try{return pairAt(prefs.view)}catch(e){return null}})():null;
   setView(v);
   if(nn2!=null)setTimeout(()=>{try{showOtherSide(v,nn2)}catch(e){}},30);
   if(v==='a'&&conceptPref&&activeN!=null)showConcept(activeN,true);
@@ -2823,7 +2824,7 @@ document.addEventListener('pointerup',e=>{
     e.stopPropagation();if(fired){fired=false;return}if(moved||lp){moved=false;lp=false;return}
     const b=e.target.closest('button');if(b)act(b)});
   function act(b){wake();
-    if(b.id==='dkQp'||b.id==='dkQn'){phoneStep(b.id==='dkQn'?1:-1);return}
+    if(b.id==='dkQp'||b.id==='dkQn'){if(prefs.phIndep)stepQ(b.id==='dkQn'?1:-1);else phoneStep(b.id==='dkQn'?1:-1);return}
     if(b.dataset.dt){const t=b.dataset.dt;setTool(prefs.tool===t?'none':t);if(prefs.tool==='hl')showCol();else col.classList.remove('open');return}
     if(b.id==='dkFlip'){const to=prefs.view==='a'?'q':'a';phFlip(to,to==='a'?-1:1);return}
     if(b.id==='dkUndo'){if(APP.classList.contains('linked'))phoneUndo();else undo();return}
@@ -2899,7 +2900,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='30 Oct 15:20';   // build label, so you can check both devices have the same version
+const APPV='30 Oct 15:40';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
@@ -2949,7 +2950,7 @@ function updLinkUI(){
   $('#app').classList.toggle('linked',ph);$('#app').classList.toggle('wlock',!!prefs.wlock||ph);
   if(ph)['q','a','c'].forEach(sd=>{const x=P[sd];if(x.zoom!==1){x.zoom=1;layout(x,false)}x.sc.scrollLeft=0});
   const b=$('#bLink');if(b){b.classList.toggle('on',lp);$('#bLinkT').textContent=lp?(Date.now()-lkPeer<45000?'Phone linked':'Phone linked (away)'):'Link phone'}
-  if(ph){const fresh=Date.now()-lkFollowT<45000;$('#lkStat').classList.toggle('wait',!fresh);$('#lkTxt').textContent=fresh?'● Following laptop':'Waiting for your laptop…'}
+  if(ph){const fresh=Date.now()-lkFollowT<45000;$('#lkStat').classList.toggle('wait',!fresh||!!prefs.phIndep);$('#lkTxt').textContent=prefs.phIndep?'○ On its own · tap to follow':fresh?'● Following laptop':'Waiting for your laptop…'}
   if(!$('#linkDlg').hidden)renderLinkDlg();
 }
 setInterval(()=>{if(syncOk())updLinkUI()},10000);
@@ -3000,13 +3001,16 @@ function phoneStep(d){if(!syncOk())return;fbReq('POST','rooms/'+SY.room()+'/cmd'
 /* phone side: follow the laptop */
 let phFollowing=null,phProgT=0;
 ['q','a'].forEach(sd=>{let t=0;P[sd].sc.addEventListener('scroll',()=>{
-  if(SY.role()!=='phone'||!syncOk()||!phFollowing||!phFollowing.fp||!APP.classList.contains('linked'))return;
+  if(SY.role()!=='phone'||!syncOk()||!phFollowing||!phFollowing.fp||!APP.classList.contains('linked')||prefs.phIndep)return;
   if(Date.now()-phProgT<1500||prefs.view!==sd)return;   // ignore moves made by following the laptop
   clearTimeout(t);t=setTimeout(()=>{if(Date.now()-phProgT<1500)return;const a=getAnchor(P[sd]);if(!a||!key)return;
     phoneFollow.last=Object.assign({},phoneFollow.last||{},{s:sd,p:a.n,f:+a.f.toFixed(4)});   // so the laptop's echo doesn't move us again
     fbReq('POST','rooms/'+SY.room()+'/cmd',{op:'pos',k:key,s:sd,p:a.n,f:+a.f.toFixed(4),t:{'.sv':'timestamp'}}).catch(()=>{})},450)},{passive:true})});
 async function phoneFollow(f){
   lkFollowT=Date.now();updLinkUI();phFollowing=f;
+  if(prefs.phIndep){   // phone on its own: keep highlights in step for the page you're on, never move the page
+    if(f.k===key&&f.s===prefs.view&&P[f.s].pages.length){const pages=new Set([f.p-1,f.p,f.p+1]);st.hl[f.s]=[...st.hl[f.s].filter(h=>!pages.has(h.page)),...(f.hl||[])];save();renderAnn(f.s)}
+    return}
   if(f.k!==key){const set=LIB.sets.find(x=>x.key===f.k);
     if(!set){if(phoneFollow.miss!==f.k){phoneFollow.miss=f.k;openLib();setTimeout(()=>toast('The laptop opened a set that is not on this phone yet. Tap ⟲ Restore a backup and pick a “Back up with PDFs” file from your laptop.'),300)}return}
     if(!$('#lib').hidden)closeLib(true);await openSet(set.id);if(phFollowing!==f)return}
@@ -3060,7 +3064,7 @@ async function phonePair(code){
     prefs.room=v.r;prefs.linkRole='phone';savePrefs();fbReq('DELETE','codes/'+code.trim()).catch(()=>{});linkStart();toast('Linked. This phone now follows your laptop.');return true}
   catch(e){toast('Could not reach the sync service. Check the internet.');return false}
 }
-function unlink(){$('#app').classList.remove('nopdf');linkStop();delete prefs.room;delete prefs.linkRole;delete prefs.linkCode;delete prefs.linkToolSet;savePrefs();lkMine=[];updLinkUI();toast('Unlinked')}
+function unlink(){delete prefs.phIndep;$('#app').classList.remove('nopdf');linkStop();delete prefs.room;delete prefs.linkRole;delete prefs.linkCode;delete prefs.linkToolSet;savePrefs();lkMine=[];updLinkUI();toast('Unlinked')}
 function usageLine(){const u=usage(0,0);const f=n=>n<1024?n+' B':n<1048576?(n/1024).toFixed(1)+' KB':(n/1048576).toFixed(2)+' MB';
   const mon=new Date().toLocaleString('en',{month:'long'});
   return '<p class="lkus">App version '+APPV+'. This device in '+mon+': about <b>'+f(u.up)+'</b> sent and <b>'+f(u.down)+'</b> received. Free limit: 10 GB received per month, 1 GB stored. Exact figures: Firebase console → Realtime Database → Usage.</p>'}
@@ -3068,8 +3072,8 @@ function renderLinkDlg(){
   const b=$('#lkBody');const lp=SY.role()==='laptop'&&syncOk();$('#lkOff').hidden=!syncOk();
   if(PH&&SY.role()!=='laptop'){
     $('#lkT').textContent=SY.role()==='phone'?'Linked to your laptop':'Link to your laptop';
-    b.innerHTML=SY.role()==='phone'?'<p class="sub">This phone follows your laptop and only highlights. Tap Unlink to use it on its own again.</p>':'<p class="sub">On the laptop, click <b>📱 Link phone</b>, then type the 6-digit code here.</p><div class="lkin"><input id="lkCode" inputmode="numeric" maxlength="6" placeholder="······"><button class="btn" id="lkGo">Link</button></div>';
-    if(SY.role()==='phone')b.insertAdjacentHTML('beforeend',usageLine());
+    b.innerHTML=SY.role()==='phone'?'<p class="sub">This phone highlights for your laptop. Tap Unlink to use it fully on its own again.</p><label class="ck"><input type="checkbox" id="phFollowCk"'+(prefs.phIndep?'':' checked')+'><span>Follow the laptop\'s page <small style="color:var(--mut)">(off: move this phone yourself with ‹ › and Q/A, e.g. question on the laptop and answer here)</small></span></label>':'<p class="sub">On the laptop, click <b>📱 Link phone</b>, then type the 6-digit code here.</p><div class="lkin"><input id="lkCode" inputmode="numeric" maxlength="6" placeholder="······"><button class="btn" id="lkGo">Link</button></div>';
+    if(SY.role()==='phone'){b.insertAdjacentHTML('beforeend',usageLine());const ck=$('#phFollowCk');if(ck)ck.onchange=()=>setPhIndep(!ck.checked)}
     const go=$('#lkGo');if(go)go.onclick=async()=>{if(await phonePair($('#lkCode').value))$('#linkDlg').hidden=true};
     return;
   }
@@ -3084,6 +3088,10 @@ function renderLinkDlg(){
 $('#bLink').addEventListener('click',async()=>{$('#linkDlg').hidden=false;renderLinkDlg();if(!(SY.role()==='laptop'&&syncOk()&&prefs.linkCode))await laptopPair();else{try{await fbReq('PUT','codes/'+prefs.linkCode,{r:prefs.room,t:{'.sv':'timestamp'}})}catch(e){}await lkCheckPeer()}renderLinkDlg()});
 $('#lkClose').addEventListener('click',()=>{$('#linkDlg').hidden=true});
 $('#lkOff').addEventListener('click',()=>{unlink();$('#linkDlg').hidden=true});
+$('#lkTxt').addEventListener('click',e=>{e.stopPropagation();setPhIndep(!prefs.phIndep)});
+function setPhIndep(on){prefs.phIndep=!!on;savePrefs();updLinkUI();
+  if(on)toast('This phone now moves on its own. Highlights still go to the laptop.');
+  else{toast('Following the laptop again');phFlipT=0;phoneFollow.last=null;if(phFollowing)phoneFollow(phFollowing)}}
 $('#lkX').addEventListener('click',()=>{$('#linkDlg').hidden=false;renderLinkDlg()});
 // phone opened from the QR link
 (function(){const m=location.hash.match(/link=(\d{6})/);if(m){history.replaceState(null,'',location.pathname);setTimeout(()=>phonePair(m[1]),800)}})();
