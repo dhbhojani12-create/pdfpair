@@ -1070,7 +1070,7 @@ function scrollToSticker(side,s,smooth=true){
   setTimeout(()=>{const el=$('.stk[data-n="'+s.n+'"]',p.pg);if(el){el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash')}},smooth?350:30);
 }
 function jumpTo(n,from){
-  const to=other(from);try{followPick=to}catch(e){}const s=findS(to,n);setActive(n);
+  const to=other(from);try{followPick=to;sideSeq++}catch(e){}const s=findS(to,n);setActive(n);
   if(!s){toast(label(n)+' has no '+(to==='a'?'answer':'question')+' sticker yet');return}
   if(prefs.view!=='split')setView(to);
   scrollToSticker(to,s);
@@ -1105,6 +1105,7 @@ function openPairSettled(n){
   [300,800,1500].forEach(t=>setTimeout(fix,t));setTimeout(()=>evs.forEach(ev=>document.removeEventListener(ev,mark,{capture:true})),1600);
 }
 function openPair(n){
+  if(n!==activeN){try{if(followPick!=='q'){followPick='q';sideSeq++}}catch(e){}}   // a new question starts on the question side for a linked phone
   setActive(n);
   const q=findS('q',n),a=findS('a',n);
   if(prefs.view==='a'&&!a&&q)setView('q');
@@ -2882,6 +2883,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
+const APPV='30 Oct 14:26';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
@@ -2930,8 +2932,8 @@ function updLinkUI(){
 setInterval(()=>{if(syncOk())updLinkUI()},10000);
 /* laptop side: tell the phone what is on screen */
 // which side the phone shows: the one you last clicked, scrolled or jumped to on the laptop (not just where the mouse passes over)
-let followPick='q';
-['q','a'].forEach(sd=>{const el=P[sd].sc;['pointerdown','wheel','touchstart'].forEach(ev=>el.addEventListener(ev,()=>{if(followPick!==sd){followPick=sd;syncFollowSoon()}},{passive:true}))});
+let followPick='q',sideSeq=0;
+['q','a'].forEach(sd=>{const el=P[sd].sc;['pointerdown','wheel','touchstart'].forEach(ev=>el.addEventListener(ev,()=>{if(followPick!==sd){followPick=sd;sideSeq++;syncFollowSoon()}},{passive:true}))});
 function followSide(){
   if(prefs.view==='q'||prefs.view==='a')return P[prefs.view].pages.length?P[prefs.view]:null;
   const p=P[followPick]&&isShown(followPick)?P[followPick]:activePane();return p&&p.pages.length?p:null}
@@ -2940,8 +2942,8 @@ function syncFollowNow(){
   const p=followSide();if(!p||!key)return;
   const a=getAnchor(p);if(!a)return;
   const hl=st.hl[p.side].filter(h=>Math.abs(h.page-a.n)<=1);
-  const body={k:key,s:p.side,p:a.n,f:+a.f.toFixed(4),hl,t:{'.sv':'timestamp'}};
-  const sig=JSON.stringify([body.k,body.s,body.p,body.f,hl]);if(sig===lkLastSent)return;lkLastSent=sig;
+  const body={k:key,s:p.side,p:a.n,f:+a.f.toFixed(4),hl,q:activeN==null?-1:activeN,sq:sideSeq,t:{'.sv':'timestamp'}};
+  const sig=JSON.stringify([body.k,body.s,body.p,body.f,body.q,body.sq,hl]);if(sig===lkLastSent)return;lkLastSent=sig;
   fbReq('PUT','rooms/'+SY.room()+'/follow',body).catch(()=>{lkLastSent=''});
 }
 setInterval(()=>{if(SY.role()==='laptop'&&syncOk()){lkLastSent='';syncFollowNow()}},20000);   // keep-alive so the phone knows the laptop is on
@@ -2965,7 +2967,7 @@ function laptopCmd(d){
   for(const id in items){const c=items[id];if(!c||lkSeen.has(id))continue;lkSeen.add(id);fbReq('DELETE','rooms/'+SY.room()+'/cmd/'+id).catch(()=>{});
     if(Date.now()-(c.t||0)>30000)continue;   // ignore old taps
     if(c.op==='step')stepQ(c.d>0?1:-1);
-    if(c.op==='side'&&(c.s==='q'||c.s==='a')){followPick=c.s;if(prefs.view!=='split')setView(c.s);
+    if(c.op==='side'&&(c.s==='q'||c.s==='a')){followPick=c.s;sideSeq++;if(prefs.view!=='split')setView(c.s);
       const st0=activeN!=null&&findS(c.s,activeN);if(st0)scrollToSticker(c.s,st0,false);lkLastSent='';syncFollowSoon()}}
 }
 function phoneStep(d){if(!syncOk())return;fbReq('POST','rooms/'+SY.room()+'/cmd',{op:'step',d,t:{'.sv':'timestamp'}}).catch(()=>toast('Could not reach the laptop. Check the internet.'))}
@@ -2976,7 +2978,12 @@ async function phoneFollow(f){
   if(f.k!==key){const set=LIB.sets.find(x=>x.key===f.k);
     if(!set){if(phoneFollow.miss!==f.k){phoneFollow.miss=f.k;openLib();setTimeout(()=>toast('The laptop opened a set that is not on this phone yet. Tap ⟲ Restore a backup and pick a “Back up with PDFs” file from your laptop.'),300)}return}
     if(!$('#lib').hidden)closeLib(true);await openSet(set.id);if(phFollowing!==f)return}
-  if(prefs.view!==f.s){if(Date.now()-phFlipT<4000)return;setView(f.s)}   // just flipped here: wait for the laptop to catch up
+  const lf0=phoneFollow.last;
+  const laptopChose=!lf0||lf0.k!==f.k||lf0.q!==f.q||lf0.sq!==f.sq;
+  if(prefs.view!==f.s){
+    if(phFlipT&&!laptopChose){phoneFollow.last=Object.assign({},f,{s:lf0?lf0.s:f.s});return}   // you flipped on the phone: stay on your side
+    phFlipT=0;setView(f.s)}
+  else if(laptopChose)phFlipT=0;
   const nopdf=!P[f.s].pages.length;$('#app').classList.toggle('nopdf',nopdf);
   if(nopdf){const cs=curSet();$('#phEmT').textContent='The PDF for “'+(cs?cs.name:'this set')+'” is not on this phone';return}
   // show the laptop's highlights for these pages
@@ -3024,7 +3031,7 @@ async function phonePair(code){
 function unlink(){$('#app').classList.remove('nopdf');linkStop();delete prefs.room;delete prefs.linkRole;delete prefs.linkCode;delete prefs.linkToolSet;savePrefs();lkMine=[];updLinkUI();toast('Unlinked')}
 function usageLine(){const u=usage(0,0);const f=n=>n<1024?n+' B':n<1048576?(n/1024).toFixed(1)+' KB':(n/1048576).toFixed(2)+' MB';
   const mon=new Date().toLocaleString('en',{month:'long'});
-  return '<p class="lkus">This device in '+mon+': about <b>'+f(u.up)+'</b> sent and <b>'+f(u.down)+'</b> received. Free limit: 10 GB received per month, 1 GB stored. Exact figures: Firebase console → Realtime Database → Usage.</p>'}
+  return '<p class="lkus">App version '+APPV+'. This device in '+mon+': about <b>'+f(u.up)+'</b> sent and <b>'+f(u.down)+'</b> received. Free limit: 10 GB received per month, 1 GB stored. Exact figures: Firebase console → Realtime Database → Usage.</p>'}
 function renderLinkDlg(){
   const b=$('#lkBody');const lp=SY.role()==='laptop'&&syncOk();$('#lkOff').hidden=!syncOk();
   if(PH&&SY.role()!=='laptop'){
