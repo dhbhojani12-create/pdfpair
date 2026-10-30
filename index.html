@@ -491,6 +491,9 @@ select.tin{appearance:auto}
 #phDrop{position:absolute;z-index:36;top:calc(46px + env(safe-area-inset-top,0px));left:8px;width:min(320px,calc(100% - 16px));background:var(--panel);color:var(--ink);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.3);padding:12px;flex-direction:column;gap:4px;font-size:13px}
 #app.phone.rv #phDrop.open{display:flex!important}#phDrop span{color:var(--mut);font-size:12px}#phDrop button{margin-top:8px;padding:9px;border:1px solid var(--line);border-radius:9px;font-weight:600}
 
+#xfer{position:absolute;z-index:60;top:calc(10px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);background:rgba(27,30,35,.95);color:#fff;padding:10px 16px;border-radius:14px;font-size:14px;display:flex;flex-direction:column;gap:7px;min-width:240px;max-width:calc(100% - 24px);box-shadow:0 6px 18px rgba(0,0,0,.3)}
+#xfer[hidden]{display:none}#xfer .xb{height:5px;border-radius:3px;background:rgba(255,255,255,.18);overflow:hidden}#xfer .xb i{display:block;height:100%;width:0;background:#5ad66d;transition:width .2s}
+.lksend{margin-top:12px;display:flex;flex-direction:column;gap:4px;align-items:flex-start}.lksend small{color:var(--mut)}
 /* MCQ practice */
 #mcqBar{position:absolute;z-index:31;left:50%;transform:translateX(-50%);bottom:calc(74px + env(safe-area-inset-bottom,0px));display:none;align-items:center;gap:6px;background:rgba(27,30,35,.94);color:#fff;padding:6px 8px;border-radius:26px;box-shadow:0 6px 18px rgba(0,0,0,.3);font-size:13px;white-space:nowrap;max-width:calc(100% - 16px)}
 #mcqBar.on{display:flex}
@@ -637,6 +640,7 @@ select.tin{appearance:auto}
     </section>
   </main>
 
+  <div id="xfer" hidden><span class="xt"></span><span class="xb"><i></i></span></div>
   <div id="mcqBar" role="group" aria-label="Pick an answer"><span class="mq"></span><button class="o" data-o="a">A</button><button class="o" data-o="b">B</button><button class="o" data-o="c">C</button><button class="o" data-o="d">D</button><span class="ms"></span><button class="nx" aria-label="Next question">›</button><button id="mcqEye" title="Hide the answer until I pick an option" aria-label="Hide answers until I pick">👁</button></div>
   <div id="bar" role="toolbar" aria-label="Tools">
     <button class="b" id="bSide" title="Index (I)">☰<span>Index</span></button>
@@ -3026,7 +3030,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='30 Oct 18:02';   // build label, so you can check both devices have the same version
+const APPV='30 Oct 19:57';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
@@ -3054,7 +3058,7 @@ async function keepAwake(on){
     else if(!on&&wakeL){await wakeL.release();wakeL=null}}catch(e){wakeL=null}
 }
 document.addEventListener('visibilitychange',()=>{if(SY.role()==='laptop'&&syncOk()&&document.visibilityState==='visible')keepAwake(true)});
-function linkStop(){keepAwake(false);if(lkCmd){lkCmd.close();lkCmd=null}if(lkES){lkES.close();lkES=null}clearInterval(lkBeat);lkBeat=0}
+function linkStop(){keepAwake(false);if(lkRtc){lkRtc.close();lkRtc=null}if(lkCmd){lkCmd.close();lkCmd=null}if(lkES){lkES.close();lkES=null}clearInterval(lkBeat);lkBeat=0}
 function linkStart(){
   linkStop();if(!syncOk())return updLinkUI();
   const room=SY.room();
@@ -3064,6 +3068,7 @@ function linkStart(){
     const beat=lkCheckPeer;
     beat();lkBeat=setInterval(beat,15000);lkLastSent='';syncFollowSoon();keepAwake(true);
   }else{
+    lkRtc=fbStream('rooms/'+room+'/rtc',(t,d)=>{if(t==='put'&&d.path==='/'&&d.data)phoneRtc(d.data).catch(e=>{xferUI(null);toast('Receiving stopped: '+(e.message||e))})});
     lkES=fbStream('rooms/'+room+'/follow',(t,d)=>{if(t==='put'&&d.path==='/'&&d.data)phoneFollow(d.data)});
     const beat=()=>fbReq('PUT','rooms/'+room+'/phone',{t:{'.sv':'timestamp'}}).catch(()=>{});
     beat();lkBeat=setInterval(beat,15000);
@@ -3125,12 +3130,108 @@ function laptopCmd(d){
     if(Date.now()-(c.t||0)>30000)continue;   // ignore old taps
     if(c.op==='step')stepQ(c.d>0?1:-1);
     if(c.op==='mcq')mcqFromPhone(c);
+    if(c.op==='rtc')laptopRtcAnswer(c);
     if(c.op==='pos'&&prefs.lkFollowPhone&&c.k===key&&(c.s==='q'||c.s==='a')&&P[c.s].pages.length){   // laptop follows the phone's scrolling
       followPick=c.s;if(prefs.view!=='split'&&prefs.view!==c.s)setView(c.s);lkQuiet=Date.now()+1200;setAnchor(P[c.s],{n:c.p,f:c.f})}
     if(c.op==='side'&&(c.s==='q'||c.s==='a')){followPick=c.s;sideSeq++;if(prefs.view!=='split')setView(c.s);
       showOtherSide(c.s);lkLastSent='';syncFollowSoon()}}
 }
 function phoneStep(d){if(!syncOk())return;fbReq('POST','rooms/'+SY.room()+'/cmd',{op:'step',d,t:{'.sv':'timestamp'}}).catch(()=>toast('Could not reach the laptop. Check the internet.'))}
+
+/* send one set straight to the linked phone over Wi-Fi (WebRTC). The link only carries the short "hello"; the PDF goes device to device */
+const RTC_CFG={iceServers:[{urls:'stun:stun.l.google.com:19302'}]};
+let xferPC=null,lkRtc=null;
+function xferUI(t,p){const e=$('#xfer');if(t==null){e.hidden=true;return}e.hidden=false;$('.xt',e).textContent=t;const b=$('.xb',e);b.style.display=p==null?'none':'';$('i',b).style.width=Math.round((p||0)*100)+'%'}
+function iceDone(pc,ms){return new Promise(r=>{if(pc.iceGatheringState==='complete')return r();const t=setTimeout(r,ms);pc.addEventListener('icegatheringstatechange',()=>{if(pc.iceGatheringState==='complete'){clearTimeout(t);r()}})})}
+async function setPackage(set){   // the same shape as a "safe" backup: just this set, its marks and its PDFs
+  const S=set.id===LIB.cur?st:(LS.get('pp:'+set.key)||{});const blobs=[];
+  for(const sd of ['q','a'])for(const f of set.files[sd]){if(blobs.some(b=>b.id===f.id))continue;const b=await idbGet('blob:'+f.id);if(!b)throw new Error('the PDF for “'+set.name+'” is not on this laptop');blobs.push({id:f.id,blob:b})}
+  const snap={app:'PDF Pair',version:1,at:Date.now(),current:null,prefs:{},projects:{[set.key]:S,lib:{subjects:[...LIB.subjects],sets:[set]}},pos:{},blobs:blobs.map(b=>b.id)};
+  return {snap,blobs};
+}
+async function sendToPhone(set){
+  if(SY.role()!=='laptop'||!syncOk()){toast('Link your phone first');return}
+  if(!window.RTCPeerConnection){toast('This browser cannot send directly. Use Share → PDF Pair on the phone instead.');return}
+  if(xferPC){toast('Already sending');return}
+  let pkg;try{pkg=await setPackage(set)}catch(e){toast('Could not send: '+(e.message||e));return}
+  const id=rid(10),pc=new RTCPeerConnection(RTC_CFG);xferPC=pc;pc.xid=id;
+  const ch=pc.createDataChannel('f',{ordered:true});ch.binaryType='arraybuffer';
+  let done=false;const end=m=>{if(done)return;done=true;clearTimeout(to);xferUI(null);setTimeout(()=>{try{pc.close()}catch(e){}},800);xferPC=null;fbReq('DELETE','rooms/'+SY.room()+'/rtc').catch(()=>{});if(m)toast(m)};
+  const total=pkg.blobs.reduce((a,b)=>a+b.blob.size,0)||1;
+  xferUI('Connecting to your phone over Wi-Fi…',null);
+  const to=setTimeout(()=>end('Could not reach the phone directly. Both need the same Wi-Fi, and some Wi-Fi (college, office) blocks this. On the phone, use Share → PDF Pair instead.'),30000);
+  ch.onopen=async()=>{clearTimeout(to);
+    try{
+      ch.send(JSON.stringify({h:1,id,name:set.name,snap:pkg.snap,files:pkg.blobs.map(b=>({id:b.id,size:b.blob.size})),total}));
+      let sent=0;const CH=16384;
+      for(const b of pkg.blobs){const buf=new Uint8Array(await b.blob.arrayBuffer());
+        for(let o=0;o<buf.length;o+=CH){
+          while(ch.bufferedAmount>1048576){if(ch.readyState!=='open')throw new Error('the connection dropped');await new Promise(r=>setTimeout(r,15))}
+          if(ch.readyState!=='open')throw new Error('the connection dropped');
+          ch.send(buf.subarray(o,Math.min(o+CH,buf.length)));sent+=Math.min(CH,buf.length-o);
+          if(o%(CH*16)===0)xferUI('Sending “'+set.name+'”… '+Math.round(sent/total*100)+'%',sent/total)}}
+      ch.send(JSON.stringify({end:1}));xferUI('The phone is saving it…',1);
+    }catch(e){end('Sending stopped: '+(e.message||e))}};
+  ch.onmessage=e=>{try{const m=JSON.parse(e.data);if(m.ok)end('Sent “'+set.name+'” to your phone');else if(m.err)end('The phone could not save it: '+m.err)}catch(x){}};
+  pc.onconnectionstatechange=()=>{if(pc.connectionState==='failed')end('The direct Wi-Fi connection failed. On the phone, use Share → PDF Pair instead.')};
+  try{await pc.setLocalDescription(await pc.createOffer());await iceDone(pc,4000);
+    await fbReq('PUT','rooms/'+SY.room()+'/rtc',{id,offer:pc.localDescription.sdp,name:set.name,t:{'.sv':'timestamp'}})}
+  catch(e){end('Could not start sending: '+(e.message||e))}
+}
+function laptopRtcAnswer(c){if(!xferPC||c.id!==xferPC.xid||xferPC.remoteDescription)return;xferPC.setRemoteDescription({type:'answer',sdp:c.sdp}).catch(e=>toast('Could not connect: '+(e.message||e)))}
+async function phoneRtc(o){
+  if(!o||!o.offer||!o.id||phoneRtc.seen===o.id)return;phoneRtc.seen=o.id;
+  if(o.t&&Math.abs(Date.now()-o.t)>120000)return;   // an old offer left behind
+  if(!window.RTCPeerConnection){toast('This phone browser cannot receive directly');return}
+  const pc=new RTCPeerConnection(RTC_CFG);let head=null,parts=[],got=0,last=0;
+  xferUI('Receiving “'+(o.name||'a set')+'” from the laptop…',null);
+  const to=setTimeout(()=>{if(!head){xferUI(null);try{pc.close()}catch(e){}}},30000);
+  pc.ondatachannel=ev=>{const ch=ev.channel;ch.binaryType='arraybuffer';
+    ch.onmessage=async e=>{
+      if(typeof e.data!=='string'){parts.push(e.data);got+=e.data.byteLength;if(head&&Date.now()-last>150){last=Date.now();xferUI('Receiving “'+head.name+'”… '+Math.round(got/head.total*100)+'%',got/head.total)}return}
+      const m=JSON.parse(e.data);
+      if(m.h){head=m;clearTimeout(to);return}
+      if(m.end&&head){
+        try{xferUI('Saving “'+head.name+'”…',1);
+          const big=new Blob(parts,{type:'application/pdf'});parts=[];const blobs={};let off=0;
+          for(const f of head.files){if(off+f.size>big.size)throw new Error('part of the file did not arrive');blobs[f.id]=new File([big.slice(off,off+f.size)],f.id+'.pdf',{type:'application/pdf'});off+=f.size}
+          await doRestore({snap:head.snap,files:{blobs}});
+          ch.send(JSON.stringify({ok:1}));xferUI(null);toast('Received “'+head.name+'” from the laptop');
+        }catch(x){xferUI(null);try{ch.send(JSON.stringify({err:x.message||String(x)}))}catch(y){}toast('Could not save it: '+(x.message||x))}
+        setTimeout(()=>{try{pc.close()}catch(y){}},1500)}
+    }};
+  pc.onconnectionstatechange=()=>{if(pc.connectionState==='failed'){clearTimeout(to);xferUI(null);toast('The direct Wi-Fi connection failed. Use Share → PDF Pair instead.')}};
+  await pc.setRemoteDescription({type:'offer',sdp:o.offer});
+  await pc.setLocalDescription(await pc.createAnswer());await iceDone(pc,4000);
+  await fbReq('POST','rooms/'+SY.room()+'/cmd',{op:'rtc',id:o.id,sdp:pc.localDescription.sdp,t:{'.sv':'timestamp'}});
+}
+/* files shared into the installed app from another app (Android "Share → PDF Pair") */
+async function takeShared(files){
+  files=[...files].filter(Boolean);if(!files.length)return;
+  const pack=files.find(f=>/\.(zip|json)$/i.test(f.name)||/zip|json/.test(f.type));
+  if(pack){if(!$('#open').hidden)closeDlg();$('#lib').hidden=true;$('#bBk').click();await readBackup(pack);return}
+  const pdfs=files.filter(f=>/\.pdf$/i.test(f.name)||f.type==='application/pdf');if(!pdfs.length){toast('Only PDFs and PDF Pair backups can be added');return}
+  // a PDF this phone already knows (same name and size) but whose file is missing: just put it back
+  const left=[];let fixed=null;
+  for(const f of pdfs){let hit=false;
+    for(const set of LIB.sets)for(const sd of ['q','a'])for(const r of set.files[sd])if(r.name===f.name&&r.size===f.size&&!(await idbGet('blob:'+r.id))){await idbPut('blob:'+r.id,f);hit=true;fixed=set}
+    if(!hit)left.push(f)}
+  if(fixed&&!left.length){toast('Added the PDF to “'+fixed.name+'”');await openSet(fixed.id);return}
+  if(fixed)toast('Added a PDF to “'+fixed.name+'”');
+  // otherwise open "Add set" with the files filled in (two PDFs: questions and answers)
+  if(!$('#lib').hidden)closeLib(true);showSetDialog('add');
+  const qf=left.find(f=>!/answer|solution|suggested/i.test(f.name))||left[0],af=left.find(f=>f!==qf);
+  const take=(sd,f)=>{if(!f)return;dlg.pick[sd]=f;slotShow(sd,f);if(!$('#oName').value.trim())$('#oName').value=f.name.replace(/\.pdf$/i,'')};
+  take('q',qf);take('a',af);updGo();
+}
+async function sharedCheck(){
+  if(!/[?&]share=1/.test(location.search))return;
+  try{history.replaceState(null,'',location.pathname)}catch(e){}
+  try{const db=await new Promise((r,j)=>{const q=indexedDB.open('ppshare',1);q.onupgradeneeded=()=>q.result.createObjectStore('f');q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error)});
+    const files=await new Promise(r=>{const t=db.transaction('f','readwrite'),os=t.objectStore('f'),g=os.get('in');g.onsuccess=()=>{os.delete('in');r(g.result||[])};g.onerror=()=>r([])});
+    if(files.length)setTimeout(()=>takeShared(files),600);else toast('Nothing arrived from the share. Try again.')}
+  catch(e){toast('Could not read the shared file')}
+}
 /* phone side: follow the laptop */
 let phFollowing=null,phProgT=0;
 ['q','a'].forEach(sd=>{let t=0;P[sd].sc.addEventListener('scroll',()=>{
@@ -3241,6 +3342,7 @@ function renderLinkDlg(){
   let qr='';try{const q=qrcode(0,'M');q.addData(url);q.make();qr=q.createDataURL(4,2)}catch(e){}
   const seen=Date.now()-lkPeer<45000;
   b.innerHTML='<div class="lkq">'+(qr?'<div class="qr"><img alt="QR code" src="'+qr+'"></div>':'')+'<div><div class="sub" style="margin:0">On your phone, open PDF Pair and scan this, or go to <b>⋯ More → Link to laptop</b> and type:</div><div class="lkcode">'+prefs.linkCode+'</div></div></div><div class="lkst"><i class="'+(seen?'on':'')+'"></i>'+(seen?'Phone connected. It follows what you open here.':'Waiting for the phone…')+'</div>'+'<label class="ck"><input type="checkbox" id="lkFP"'+(prefs.lkFollowPhone?' checked':'')+'><span>Laptop follows phone scrolling <small style="color:var(--mut)">(scroll on either device and the other follows when you stop)</small></span></label>'+('wakeLock' in navigator?'<p class="lkus">☀ This laptop stays awake while the phone is linked and this tab is open.</p>':'')+usageLine();
+  const cs=curSet();if(cs){b.insertAdjacentHTML('beforeend','<div class="lksend"><button class="btn" id="lkSend">📤 Send “'+esc(cs.name)+'” to the phone</button><small>Straight over your Wi-Fi: the PDF and its marks. Both devices on the same Wi-Fi.</small></div>');$('#lkSend').onclick=()=>{$('#linkDlg').hidden=true;sendToPhone(cs)}}
 }
 $('#bLink').addEventListener('click',async()=>{$('#linkDlg').hidden=false;renderLinkDlg();if(!(SY.role()==='laptop'&&syncOk()&&prefs.linkCode))await laptopPair();else{try{await fbReq('PUT','codes/'+prefs.linkCode,{r:prefs.room,t:{'.sv':'timestamp'}})}catch(e){}await lkCheckPeer()}renderLinkDlg()});
 $('#lkClose').addEventListener('click',()=>{$('#linkDlg').hidden=true});
@@ -3253,6 +3355,8 @@ $('#lkX').addEventListener('click',()=>{$('#linkDlg').hidden=false;renderLinkDlg
 // phone opened from the QR link
 (function(){const m=location.hash.match(/link=(\d{6})/);if(m){history.replaceState(null,'',location.pathname);setTimeout(()=>phonePair(m[1]),800)}})();
 window.__ppLink={laptopPair,phonePair,unlink,linkStart,get SY(){return {url:SY.url(),room:SY.room(),role:SY.role()}},syncFollowNow};
+sharedCheck();
+window.__ppXfer={sendToPhone,takeShared,curSet:()=>curSet()};
 window.__ppLib={get LIB(){return LIB},findConcept,toggleConcept,get activeTid(){return activeTid},openSet,startRv,qRows,openLib,get RV(){return RV}};
 /* ---------- boot ---------- */
 setRatio(prefs.rq);setSwap(prefs.swap);setSide(prefs.side);setView(prefs.view);
