@@ -2789,7 +2789,6 @@ document.addEventListener('pointerup',e=>{
     e.stopPropagation();if(fired){fired=false;return}if(moved||lp){moved=false;lp=false;return}
     const b=e.target.closest('button');if(b)act(b)});
   function act(b){wake();
-    if(b.dataset.dt==='hl'&&APP.classList.contains('linked')){if(prefs.tool!=='hl')setTool('hl');if(col.classList.contains('open'))col.classList.remove('open');else showCol();return}
     if(b.id==='dkQp'||b.id==='dkQn'){phoneStep(b.id==='dkQn'?1:-1);return}
     if(b.dataset.dt){const t=b.dataset.dt;setTool(prefs.tool===t?'none':t);if(prefs.tool==='hl')showCol();else col.classList.remove('open');return}
     if(b.id==='dkFlip'){const to=prefs.view==='a'?'q':'a';phFlip(to,to==='a'?-1:1);return}
@@ -2893,7 +2892,7 @@ function linkStart(){
     lkES=fbStream('rooms/'+room+'/follow',(t,d)=>{if(t==='put'&&d.path==='/'&&d.data)phoneFollow(d.data)});
     const beat=()=>fbReq('PUT','rooms/'+room+'/phone',{t:{'.sv':'timestamp'}}).catch(()=>{});
     beat();lkBeat=setInterval(beat,15000);
-    if(prefs.tool!=='hl')setTool('hl');
+    if(!prefs.linkToolSet){prefs.linkToolSet=1;if(prefs.tool!=='hl')setTool('hl')}
   }
   updLinkUI();
 }
@@ -2978,7 +2977,7 @@ async function phonePair(code){
     prefs.room=v.r;prefs.linkRole='phone';savePrefs();fbReq('DELETE','codes/'+code.trim()).catch(()=>{});linkStart();toast('Linked. This phone now follows your laptop.');return true}
   catch(e){toast('Could not reach the sync service. Check the internet.');return false}
 }
-function unlink(){linkStop();delete prefs.room;delete prefs.linkRole;delete prefs.linkCode;savePrefs();lkMine=[];updLinkUI();toast('Unlinked')}
+function unlink(){linkStop();delete prefs.room;delete prefs.linkRole;delete prefs.linkCode;delete prefs.linkToolSet;savePrefs();lkMine=[];updLinkUI();toast('Unlinked')}
 function renderLinkDlg(){
   const b=$('#lkBody');const lp=SY.role()==='laptop'&&syncOk();$('#lkOff').hidden=!syncOk();
   if(PH&&SY.role()!=='laptop'){
