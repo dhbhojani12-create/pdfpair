@@ -2950,7 +2950,11 @@ async function phoneFollow(f){
   // show the laptop's highlights for these pages
   const pages=new Set([f.p-1,f.p,f.p+1]);
   st.hl[f.s]=[...st.hl[f.s].filter(h=>!pages.has(h.page)),...(f.hl||[])];save();renderAnn(f.s);
-  const p=P[f.s];const go=()=>{if(phFollowing!==f)return;userMoved=true;setAnchor(p,{n:f.p,f:f.f})};
+  // only scroll when the laptop actually moved; an update that just carries new highlights must not shift the page you are marking
+  const lf=phoneFollow.last;phoneFollow.last=f;
+  const moved=!lf||lf.k!==f.k||lf.s!==f.s||lf.p!==f.p||Math.abs(lf.f-f.f)>0.002;
+  if(!moved)return;
+  const p=P[f.s];const go=()=>{if(phFollowing!==f||hlAbort)return;userMoved=true;setAnchor(p,{n:f.p,f:f.f})};
   go();setTimeout(go,300);setTimeout(go,900);
 }
 function syncSendHl(side,h){
