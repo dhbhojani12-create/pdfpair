@@ -262,6 +262,7 @@ body.t-hl .ov{cursor:text;touch-action:none}
 .bdot{position:absolute;top:6px;right:5px;width:8px;height:8px;border-radius:50%;background:#3fbf6a;box-shadow:0 0 0 2px var(--bar)}
 .bdot.warn{background:#f0b429}
 .bkpop{width:320px;padding:14px;z-index:48}
+#app:not(.phone) .phlk,#app:not(.phone) .phlk2{display:none}
 .rstl{margin:-8px 0 16px;font-size:13.5px;color:var(--mut);background:var(--chrome);border-radius:8px;padding:9px 12px}.rstl .lnk{margin:0;font-size:13.5px;font-weight:600}
 .bkpop h4{margin:0 0 6px;font-size:14px}
 .bkpop .stt{font-size:12.5px;color:var(--mut);line-height:1.5;margin:0 0 10px}
@@ -643,7 +644,7 @@ select.tin{appearance:auto}
     <div class="card" role="dialog" aria-labelledby="ot">
       <h1 id="ot">Add a set</h1>
       <p class="sub" id="osub">A set is one question PDF and its answer PDF, like a study module, an MTP, an RTP or a past paper.</p>
-      <p class="rstl" id="oRest">Moving from another device? <button class="lnk" id="oRestore">Restore a backup</button></p>
+      <p class="rstl" id="oRest">Moving from another device? <button class="lnk" id="oRestore">Restore a backup</button><span class="phlk"><br>Using this phone as your laptop's highlighter? <button class="lnk" id="oLink">📱 Link to laptop</button></span></p>
       <div class="slots">
         <label class="slot" id="slot-q"><input type="file" accept="application/pdf,.pdf" id="fq"><span class="tag" style="align-self:flex-start">QUESTIONS</span><span class="fn">Choose PDF…</span><span class="hint">e.g. the MTP question paper</span></label>
         <label class="slot" id="slot-a"><input type="file" accept="application/pdf,.pdf" id="fa"><span class="tag" style="align-self:flex-start;background:#2f8f5b">ANSWERS</span><span class="fn">Choose PDF…</span><span class="hint">e.g. its suggested answers</span></label>
@@ -674,6 +675,7 @@ select.tin{appearance:auto}
       <div id="setList"></div>
       <button class="addset" id="addSet">+ Add a set</button>
       <button class="addset" id="libRestore">⟲ Restore a backup</button>
+      <button class="addset phlk2" id="libLink">📱 Link to laptop</button>
     </aside>
     <section class="lmain">
       <div class="ltop"><h1 id="libTitle">Revise</h1><div class="tseg" id="libView"><button data-v="q">Questions</button><button data-v="c">Concepts</button></div><span class="lmeta" id="libMeta"></span><span class="sp"></span><button class="btn" id="rvAll">▶ Revise all</button></div>
@@ -1651,6 +1653,9 @@ $('#oCancel').addEventListener('click',closeDlg);
 function openRestore(){if(!$('#open').hidden)closeDlg();closePop();$('#bBk').click();const fi=$('#bkFile');if(fi)fi.click()}
 $('#oRestore').addEventListener('click',e=>{e.stopPropagation();openRestore()});
 $('#libRestore').addEventListener('click',e=>{e.stopPropagation();openRestore()});
+function openLinkPhone(){if(!$('#open').hidden)closeDlg();closeLib(true);$('#lib').hidden=true;$('#linkDlg').hidden=false;renderLinkDlg()}
+$('#oLink').addEventListener('click',e=>{e.stopPropagation();openLinkPhone()});
+$('#libLink').addEventListener('click',e=>{e.stopPropagation();openLinkPhone()});
 $('#oDel').addEventListener('click',async()=>{
   const b=$('#oDel'),set=dlg.set;if(!set)return;
   if(!dlg.arm){dlg.arm=true;b.classList.add('arm');b.textContent='Click again to delete it and its marks';return}
@@ -2262,6 +2267,7 @@ async function doRestore(c){
   else{const id=(curSet()||LIB.sets[0]||{}).id;if(id)await openSet(id)}
   if(!$('#lib').hidden)renderLib();
   toast('Restored '+countQ(c.snap)+' questions from the backup');
+  try{if(SY.role()==='phone'&&phFollowing){phoneFollow.miss=null;phoneFollow.last=null;const f=phFollowing;setTimeout(()=>phoneFollow(f),400)}}catch(e){}
 }
 // timers: every minute check if 3 hours have passed; also back up when the tab is hidden if the last one is over an hour old
 setInterval(()=>{if(due())autoRun(false)},60e3);
@@ -2948,7 +2954,7 @@ let phFollowing=null;
 async function phoneFollow(f){
   lkFollowT=Date.now();updLinkUI();phFollowing=f;
   if(f.k!==key){const set=LIB.sets.find(x=>x.key===f.k);
-    if(!set){toast('The laptop opened a set that is not on this phone yet. Restore a backup with PDFs here first.');return}
+    if(!set){if(phoneFollow.miss!==f.k){phoneFollow.miss=f.k;openLib();setTimeout(()=>toast('The laptop opened a set that is not on this phone yet. Tap ⟲ Restore a backup and pick a “Back up with PDFs” file from your laptop.'),300)}return}
     if(!$('#lib').hidden)closeLib(true);await openSet(set.id);if(phFollowing!==f)return}
   if(prefs.view!==f.s)setView(f.s);
   // show the laptop's highlights for these pages
