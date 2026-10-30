@@ -1070,7 +1070,7 @@ function scrollToSticker(side,s,smooth=true){
   setTimeout(()=>{const el=$('.stk[data-n="'+s.n+'"]',p.pg);if(el){el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash')}},smooth?350:30);
 }
 function jumpTo(n,from){
-  const to=other(from);const s=findS(to,n);setActive(n);
+  const to=other(from);try{followPick=to}catch(e){}const s=findS(to,n);setActive(n);
   if(!s){toast(label(n)+' has no '+(to==='a'?'answer':'question')+' sticker yet');return}
   if(prefs.view!=='split')setView(to);
   scrollToSticker(to,s);
@@ -2928,7 +2928,12 @@ function updLinkUI(){
 }
 setInterval(()=>{if(syncOk())updLinkUI()},10000);
 /* laptop side: tell the phone what is on screen */
-function followSide(){if(conceptShown&&conceptShown()&&lastPane&&lastPane.side==='c')return null;const p=activePane();return p&&p.pages.length?p:null}
+// which side the phone shows: the one you last clicked, scrolled or jumped to on the laptop (not just where the mouse passes over)
+let followPick='q';
+['q','a'].forEach(sd=>{const el=P[sd].sc;['pointerdown','wheel','touchstart'].forEach(ev=>el.addEventListener(ev,()=>{if(followPick!==sd){followPick=sd;syncFollowSoon()}},{passive:true}))});
+function followSide(){
+  if(prefs.view==='q'||prefs.view==='a')return P[prefs.view].pages.length?P[prefs.view]:null;
+  const p=P[followPick]&&isShown(followPick)?P[followPick]:activePane();return p&&p.pages.length?p:null}
 function syncFollowSoon(){if(SY.role()!=='laptop'||!syncOk())return;clearTimeout(syncFollowSoon.t);syncFollowSoon.t=setTimeout(syncFollowNow,400)}
 function syncFollowNow(){
   const p=followSide();if(!p||!key)return;
