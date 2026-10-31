@@ -1345,7 +1345,7 @@ function updIndex(){
   const ns=allNums();const list=$('#list');
   $('#cnt').textContent=isCset()?'Topics · '+(st.topics||[]).length:'Index · '+ns.length;
   $('#bmcnt').textContent='Bookmarks · '+(st.bm.q.length+st.bm.a.length+conBookmarks().length);
-  {const nt=new Set((st.topics||[]).map(t=>((t.ch||'')+'|'+(t.tp||'')).toLowerCase())).size;const tb=$('#tpcnt');tb.hidden=isCset()||!nt;tb.textContent='📖 '+nt;tb.title='Concepts marked in this set';if(!tb.hidden){$('#bmcnt').textContent='🔖 '+(st.bm.q.length+st.bm.a.length+conBookmarks().length);$('#bmcnt').title='Bookmarks'}if(tab==='tp'&&tb.hidden)tab='pairs'}
+  {const nt=new Set(idxTopics().map(({t})=>((t.ch||'')+'|'+(t.tp||'')).toLowerCase())).size;const tb=$('#tpcnt');tb.hidden=isCset()||!nt;tb.textContent='📖 '+nt;tb.title='Concepts marked in this set';if(!tb.hidden){$('#bmcnt').textContent='🔖 '+(st.bm.q.length+st.bm.a.length+conBookmarks().length);$('#bmcnt').title='Bookmarks'}if(tab==='tp'&&tb.hidden)tab='pairs'}
   $$('.tab').forEach(t=>t.classList.toggle('on',t.dataset.tab===tab));
   $('.srch').hidden=tab!=='pairs'||!ns.length||isCset();
   $('#foot').textContent=tab==='tp'?'Concepts marked in this set with 📖. Click to go there. A topic marked in more than one place shows once; click again for the next spot.':tab==='pairs'?'Right-click a sticker or row to set its chapter and topic. Ctrl or Shift-click to select several.':'Press B, or the ribbon button at the top of a side, to bookmark the page you are reading.';
@@ -2836,7 +2836,7 @@ function openConTag(t,x,y,isNew){
   const pop=$('#tagPop');pop.hidden=false;pop.style.left=clamp(x,8,innerWidth-pop.offsetWidth-8)+'px';pop.style.top=clamp(y,8,innerHeight-pop.offsetHeight-8)+'px';
   setTimeout(()=>{(t.ch?$('#tgTp'):$('#tgCh')).focus()},20);
 }
-function conTagKeep(){const c=P.c;if(c.cst===st){save();renderAll()}else LS.set('pp:'+c.ckey,c.cst);renderConPane()}
+function conTagKeep(){const c=P.c;if(c.cst===st){save();renderAll()}else LS.set('pp:'+c.ckey,c.cst);renderConPane();try{updIndex()}catch(e){}}
 function openTopicTag(id,x,y,isNew){
   const t=(st.topics||[]).find(z=>z.id===id);if(!t)return;closePop();
   tagCtx={kind:'topic',id,isNew:!!isNew};$('#tgAmdW').hidden=true;
@@ -2900,14 +2900,21 @@ function starTopicMenu(i,x,y){
   document.body.append(pop);
   pop.style.left=clamp(x,8,innerWidth-pop.offsetWidth-8)+'px';pop.style.top=clamp(y,8,innerHeight-pop.offsetHeight-8)+'px';
 }
+function idxTopics(){
+  const own=sortedTopics().map(t=>({t,set:null}));if(isCset())return own;
+  const cur=curSet(),out=[...own];
+  for(const set of LIB.sets.filter(x=>x.type==='con'&&cur&&x.subject===cur.subject)){const s0=LS.get('pp:'+set.key)||{};for(const t of s0.topics||[])out.push({t,set})}
+  return out}
 function renderTopicIndex(){
   const list=$('#list');list.innerHTML='';const cs=isCset();
-  $('#foot').textContent=cs?'Pick 📖 Topic and click where each topic starts. Click a row to go there, right-click to rename.':'Concepts marked in this set with 📖. Click to go there. A topic marked in more than one place shows once: click again for the next spot.';
-  const ts=sortedTopics();
+  $('#foot').textContent=cs?'Pick 📖 Topic and click where each topic starts. Click a row to go there, right-click to rename.':'Concepts marked with 📖 in this set and in your concept book (📕). Click to go there. A topic marked in more than one place shows once: click again for the next spot.';
+  const ts=idxTopics();
   if(!ts.length){list.innerHTML='<div class="empty">No topics marked yet. Pick <b>📖</b> and click where a topic starts, then give it its chapter and topic.</div>';return}
   // one row per chapter + topic, even if it is marked in several places
   const chs=new Map();
-  for(const t of ts){const k=(t.ch||'').toLowerCase();if(!chs.has(k))chs.set(k,{ch:t.ch,tps:new Map()});const g=chs.get(k);const tk=(t.tp||'').toLowerCase();if(!g.tps.has(tk))g.tps.set(tk,[]);g.tps.get(tk).push(t)}
+  // chapters in the order of this set's questions, then the rest A to Z
+  ts.sort((a,b)=>(!!a.set)-(!!b.set)||a.t.page-b.t.page||a.t.y-b.t.y);
+  for(const {t,set} of ts){const k=(t.ch||'').toLowerCase();if(!chs.has(k))chs.set(k,{ch:t.ch,tps:new Map()});const g=chs.get(k);const tk=(t.tp||'').toLowerCase();if(!g.tps.has(tk))g.tps.set(tk,[]);g.tps.get(tk).push(Object.assign(Object.create(t),{_t:t,_set:set}))}
   const tsc=topicStars(st);
   for(const g of chs.values()){
     const n=g.tps.size;
@@ -2917,13 +2924,15 @@ function renderTopicIndex(){
     for(const spots of g.tps.values()){
       const t=spots[0];const r=document.createElement('div');r.className='row'+(spots.some(x=>x.id===activeTid)?' act':'');r.dataset.tid=t.id;r.tabIndex=0;
       const v=(st.crev||{})[t.id];const sc=spots.reduce((a,x)=>a+(tsc[x.id]||0),0);
-      const side=!cs&&t.side==='a'?'<span class="tag a" style="font-size:9px;padding:1px 4px">A</span>':'';
+      const side=spots.every(x=>x._set)?'<span class="tag" style="font-size:9px;padding:1px 4px;background:#7a5bb5" title="In '+esc(spots[0]._set.name)+'">📕</span>':(!cs&&t.side==='a'?'<span class="tag a" style="font-size:9px;padding:1px 4px">A</span>':'');
       r.innerHTML='<span class="ti">📖</span><span class="nm"></span>'+side+(spots.length>1?'<span class="chc" title="Marked in '+spots.length+' places">×'+spots.length+'</span>':'')+(sc?'<span class="stc">★'+sc+'</span>':'')+(v?'<span class="rvd '+v+'"></span>':'')+'<span class="pg">p'+t.page+'</span><button class="del" title="Remove marker" aria-label="Remove marker">×</button>';
       $('.nm',r).textContent=t.tp||(g.ch?'(whole chapter)':'Untitled topic');
-      const go=()=>{const i=spots.findIndex(x=>x.id===activeTid);const nx=spots[(i+1)%spots.length];goTopic(nx.id);$('.pg',r).textContent='p'+nx.page};
-      r.addEventListener('click',e=>{if(e.target.closest('.del')){const cur=spots.find(x=>x.id===activeTid)||t;pushUndo();st.topics=st.topics.filter(z=>z!==cur);save();renderAll();return}go()});
+      const go=async()=>{const i=spots.findIndex(x=>x.id===activeTid||x.id===P.c.curTid&&conceptShown());const nx=spots[(i+1)%spots.length];$('.pg',r).textContent='p'+nx.page;
+        if(nx._set){activeTid=nx.id;await openConceptSpot({set:nx._set,t:nx._t,side:'q'});$$('#list .row').forEach(x=>x.classList.toggle('act',x===r))}else goTopic(nx.id)};
+      r.addEventListener('click',e=>{if(e.target.closest('.del')){const cur=spots.find(x=>x.id===activeTid)||t;if(cur._set){toast('This one is in '+cur._set.name+'. Open it beside a question and use the eraser on it there');return}pushUndo();st.topics=st.topics.filter(z=>z.id!==cur.id);save();renderAll();return}go()});
       r.addEventListener('keydown',e=>{if(e.key==='Enter')go()});
-      const ed=e=>{e.preventDefault();const b=r.getBoundingClientRect();openTopicTag((spots.find(x=>x.id===activeTid)||t).id,b.right+8,b.top,false)};
+      const ed=async e=>{e.preventDefault();const b=r.getBoundingClientRect();const cur=spots.find(x=>x.id===activeTid)||t;
+        if(cur._set){await openConceptSpot({set:cur._set,t:cur._t,side:'q'});const tt=(P.c.cst.topics||[]).find(z=>z.id===cur.id);if(tt)openConTag(tt,b.right+8,b.top,false);return}openTopicTag(cur.id,b.right+8,b.top,false)};
       r.addEventListener('dblclick',ed);r.addEventListener('contextmenu',ed);
       box.append(r);
     }
@@ -2999,7 +3008,7 @@ function conDown(e,p){
   const pageDiv=e.target.closest('.page');if(!pageDiv)return;const pg=c.pages[pageDiv.dataset.n-1];if(!pg)return;
   const r=pageDiv.getBoundingClientRect();const pt=ev=>({x:clamp((ev.clientX-r.left)/c.W,0,1),y:clamp((ev.clientY-r.top)/c.W,0,pg.ar)});
   const sd=c.cside||'q';cs.hl[sd]=cs.hl[sd]||[];cs.stars[sd]=cs.stars[sd]||[];
-  const keep=()=>{if(cs===st){save();renderAnn(sd)}else LS.set('pp:'+c.ckey,cs);renderConPane()};
+  const keep=()=>{if(cs===st){save();renderAnn(sd)}else LS.set('pp:'+c.ckey,cs);renderConPane();try{updIndex()}catch(e){}};
   if(e.target.closest('.rib')){e.preventDefault();toggleConBm(pg.n);return}
   const hl=e.target.closest('.hl'),sr=e.target.closest('.star'),tk=e.target.closest('.tmk'),cl=e.target.closest('.clp');
   if(cl&&(prefs.tool==='clip'||prefs.tool==='erase')){e.preventDefault();e.stopPropagation();const id=cl.dataset.id;
@@ -3627,7 +3636,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='31 Oct 12:41';   // build label, so you can check both devices have the same version
+const APPV='31 Oct 14:54';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
