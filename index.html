@@ -518,6 +518,25 @@ select.tin{appearance:auto}
 #xfer{position:absolute;z-index:60;top:calc(10px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);background:rgba(27,30,35,.95);color:#fff;padding:10px 16px;border-radius:14px;font-size:14px;display:flex;flex-direction:column;gap:7px;min-width:240px;max-width:calc(100% - 24px);box-shadow:0 6px 18px rgba(0,0,0,.3)}
 #xfer[hidden]{display:none}#xfer .xb{height:5px;border-radius:3px;background:rgba(255,255,255,.18);overflow:hidden}#xfer .xb i{display:block;height:100%;width:0;background:#5ad66d;transition:width .2s}
 .lksend{margin-top:12px;display:flex;flex-direction:column;gap:4px;align-items:flex-start}.lksend small{color:var(--mut)}
+/* quiz view (MCQ booklet) */
+#quizPane{order:3;flex-grow:var(--ra);flex-basis:0;min-width:0;display:none;flex-direction:column;background:var(--ground-2);border-left:1px solid var(--line)}
+#app.quiz #quizPane{display:flex}#app.quiz #pane-a,#app.quiz #div,#app.quiz #pane-c,#app.quiz #mcqBar,#app.quiz .seg.qonly,#app.quiz #bCon{display:none!important}#app.quiz #pane-q{display:flex!important}
+#bQuiz.on,#phQuiz.on{background:var(--acc,#2f6fe0);color:#fff}
+.qzh{display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
+.qzh button,.qzh select{font:inherit;font-size:13px;padding:5px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink)}.qzh .sp{flex:1}
+.qzh #qzImp.on{background:#fff4d0;border-color:#e0b000}.qzs{font-size:12.5px;color:var(--mut);white-space:nowrap}
+.qzb{flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:12px}
+.qzq{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}.qzq.act{border-color:#2f6fe0}
+.qzq .qn{display:flex;align-items:center;gap:8px;font-weight:650;color:#2f6fe0;font-size:12.5px;margin-bottom:4px}.qzq .qn .sp{flex:1}
+.qzq .qn button{font-size:12px;padding:3px 9px;border:1px solid var(--line);border-radius:14px;color:var(--mut)}.qzq .qn button.on{background:#fff4d0;border-color:#e0b000;color:#8a6500}
+.qzq .stem p{margin:0 0 8px;font-size:14px;line-height:1.5}.qzq pre{font:12px/1.45 var(--mono);background:var(--ground-2);border:1px solid var(--line);border-radius:8px;padding:7px 9px;overflow-x:auto;margin:0 0 8px}
+.qzo{display:flex;gap:10px;width:100%;text-align:left;margin:6px 0;padding:9px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--panel);font-size:14px;line-height:1.45;color:var(--ink)}
+.qzo b{min-width:24px;color:var(--mut)}.qzo span{flex:1;white-space:pre-wrap}.qzo:hover:not(:disabled){border-color:#2f6fe0}.qzo:disabled{cursor:default}
+.qzo.ok{background:#e4f4ea;border-color:#1d7a46}.qzo.no{background:#fbe8e6;border-color:#b3261e}
+.qze{margin-top:8px;padding:9px 12px;border-left:3px solid #1d7a46;background:var(--ground-2);border-radius:0 8px 8px 0;font-size:13.5px;line-height:1.5}.qze.no{border-left-color:#b3261e}.qze .h{font-weight:650;margin-bottom:4px}.qze p{margin:0 0 6px}
+.qzempty{margin:auto;max-width:420px;text-align:center;color:var(--mut);font-size:14px;line-height:1.6}
+#app.phone.quiz #stage{flex-direction:column}#app.phone.quiz #pane-q{flex:0 0 42%!important}#app.phone.quiz #quizPane{flex:1 1 auto;border-left:0;border-top:2px solid var(--line)}
+#app.phone.quiz.quiz.quiz.quiz #dock,#app.phone.quiz.quiz.quiz.quiz #phNav,#app.phone.quiz.quiz.quiz.quiz #fab,#app.phone.quiz.quiz.quiz.quiz #phPill{display:none!important}
 /* mock test */
 #mockBar{position:absolute;z-index:40;top:calc(10px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:12px;background:#1b1e23;color:#fff;padding:7px 8px 7px 16px;border-radius:24px;box-shadow:0 6px 18px rgba(0,0,0,.3);font-size:14px;white-space:nowrap}
 #mockBar[hidden]{display:none}#mockBar .mt{opacity:.8;max-width:240px;overflow:hidden;text-overflow:ellipsis}#mockBar .mc{font:700 17px var(--mono);font-variant-numeric:tabular-nums}
@@ -679,6 +698,10 @@ select.tin{appearance:auto}
         <span class="zm"><button data-z="-1" aria-label="Zoom out">−</button><button class="zp" data-z="0" title="Fit width">100%</button><button data-z="1" aria-label="Zoom in">+</button></span><button class="cxb" id="conAlt" title="This topic is marked in more than one place. Show the next one" hidden>1/2 ›</button><button class="cxb" id="conTopics" title="Jump to a topic in the concept book" aria-label="Topics">≡</button><button class="cxb" id="conClose" title="Back to the answer (C)" aria-label="Back to the answer">×</button></div></div>
       <div class="sc"><div class="pages"></div></div>
     </section>
+    <section id="quizPane" aria-label="Quiz view" hidden>
+      <div class="qzh"><button id="qzPrev" title="Previous case">‹</button><select id="qzSel" aria-label="Case scenario"></select><button id="qzNext" title="Next case">›</button><span class="sp"></span><button id="qzImp" title="Show only questions you starred">☆ Important only</button><button id="qzReset" title="Clear your answers in this case and try again">↺</button><span class="qzs" id="qzScore"></span><button id="qzClose" title="Back to PDF view">×</button></div>
+      <div class="qzb" id="qzBody"></div>
+    </section>
   </main>
 
   <div id="mockBar" hidden><span class="mt"></span><span class="mc">3:00:00</span><button id="mockFin">Finish</button></div>
@@ -716,6 +739,7 @@ select.tin{appearance:auto}
     <button class="b" id="bUndo" title="Undo (Ctrl+Z)"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button>
     <span class="sepv"></span>
     <button class="b" id="bBk" title="Backup and restore"><svg viewBox="0 0 24 24"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 9.5z"/><path d="M12 11v5M9.5 13.5 12 11l2.5 2.5"/></svg><span>Backup</span><i class="bdot" id="bkDot" hidden></i></button>
+    <button class="b" id="bQuiz" title="Quiz view: case text on the left, tap the options on the right" hidden>📝<span>Quiz</span></button>
     <button class="b" id="bSave" title="Save one linked PDF with stickers, highlights and bookmarks"><svg viewBox="0 0 24 24"><path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/></svg><span>Save PDF</span></button>
     <button class="b" id="bLink" title="Link your phone as a touch highlighter"><span style="font-size:15px">📱</span><span id="bLinkT">Link phone</span></button>
     <button class="b" id="bOpen" title="Library: your sets and subject-wise revision (L)"><svg viewBox="0 0 24 24"><path d="M4 5h4v14H4zM10 5h4v14h-4z"/><path d="M15.2 6.2l3.6-1 3.3 12.9-3.6 1z"/></svg><span>Library</span></button>
@@ -790,7 +814,7 @@ select.tin{appearance:auto}
     <div class="acts"><button class="btn ghost" id="tgCancel">Cancel</button><button class="btn" id="tgSave">Save</button></div>
   </div>
   <div id="phTop" class="ph"><button class="pb" id="phIdx" aria-label="Index and bookmarks">☰</button><button id="phName" title="Library"></button>
-    <div id="phSeg"><button data-pv="q">Q</button><button data-pv="a">A</button></div><button class="pb" id="phLib" aria-label="Library">📚</button></div>
+    <div id="phSeg"><button data-pv="q">Q</button><button data-pv="a">A</button></div><button class="pb" id="phQuiz" aria-label="Quiz view" hidden>📝</button><button class="pb" id="phLib" aria-label="Library">📚</button></div>
   <div id="phNav" class="ph"><button id="phPrev" aria-label="Previous question">‹</button><span id="phNl">Q –</span><button id="phNext" aria-label="Next question">›</button><button id="phCon" aria-label="Concept for this question" hidden>📖</button></div>
   <div id="phBar" class="ph">
     <button data-pt="sticker" class="qo"><b><span class="nb" id="phNb">1</span></b>Sticker</button>
@@ -1754,6 +1778,7 @@ async function openSet(id){
   await openFiles(recs.q,recs.a,set.key);
   applyMode();
   updSetLabel();
+  try{QZ=null;if($('#app').classList.contains('quiz')){if(quizAvail())quizData().then(()=>quizRender(true));else quizOff()}updQuizBtn()}catch(e){}
   if(missing)toast(missing+' PDF'+(missing>1?'s':'')+' of this set '+(missing>1?'are':'is')+' not in this browser. Add '+(missing>1?'them':'it')+' again with Edit set in the Library.');
   return true;
 }
@@ -2034,6 +2059,93 @@ $('#rvOk').addEventListener('click',()=>markRv('done'));
 $('#rvAg').addEventListener('click',()=>markRv('again'));
 $('#rvExit').addEventListener('click',()=>{stopRv();openLib()});
 
+
+
+/* ---------- quiz view for the MCQ booklet: case on the left (the real PDF), tap options on the right ---------- */
+var QZ=null;   // {key, cases:[{n,qs:[{n,stem,opts,ans,head,reason}]}]}
+let qzImp=false;
+function quizMap(){   // sticker numbers for "Case N" and "Case N · Qm"
+  const m={};for(const k in st.names||{}){const v=st.names[k];let r=/^Case (\d+)$/.exec(v);if(r){m['c'+r[1]]=+k;continue}r=/^Case (\d+) · Q(\d+)$/.exec(v);if(r)m[r[1]+'-'+r[2]]=+k}return m}
+async function quizData(){const c=curSet();if(!c)return null;if(QZ&&QZ.key===c.key)return QZ;const d=await idbGet('quiz:'+c.key);QZ=d?Object.assign({key:c.key},d):null;return QZ}
+function quizAvail(){const c=curSet();return !!(c&&c.type==='mcq')}
+function updQuizBtn(){const on=quizAvail();$('#bQuiz').hidden=!on;$('#phQuiz').hidden=!on;const q=$('#app').classList.contains('quiz');$('#bQuiz').classList.toggle('on',q);$('#phQuiz').classList.toggle('on',q);if(!on&&q)quizOff()}
+async function quizOn(){
+  if(!quizAvail())return;stopRv();conceptPref=false;hideConcept();
+  $('#app').classList.add('quiz');$('#quizPane').hidden=false;if(prefs.view!=='q')setView('q',true);updQuizBtn();
+  requestAnimationFrame(()=>layout(P.q,false));await quizData();quizRender(true);
+}
+function quizOff(){$('#app').classList.remove('quiz');$('#quizPane').hidden=true;updQuizBtn();requestAnimationFrame(()=>{layout(P.q,false);layout(P.a,false)})}
+$('#bQuiz').addEventListener('click',()=>{$('#app').classList.contains('quiz')?quizOff():quizOn()});
+$('#phQuiz').addEventListener('click',()=>{$('#app').classList.contains('quiz')?quizOff():quizOn()});
+$('#qzClose').addEventListener('click',quizOff);
+function qzEsc(t){return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/`/g,'₹')}
+function qzBlk(bs){return (bs||[]).map(b=>b[0]==='pre'?'<pre>'+qzEsc(b[1])+'</pre>':'<p>'+qzEsc(b[1])+'</p>').join('')}
+function qzStarred(n){return (st.stars.q||[]).some(t=>t.n===n)}
+function qzCaseIdx(){const c=curSet();const v=(prefs.quizCase||{})[c.key];const i=QZ.cases.findIndex(x=>String(x.n)===String(v));return i<0?0:i}
+function quizRender(scrollLeft){
+  const body=$('#qzBody');body.innerHTML='';const sel=$('#qzSel');
+  if(!QZ){sel.innerHTML='';$('#qzScore').textContent='';
+    body.innerHTML='<div class="qzempty"><p><b>Load your quiz file once</b></p><p>Pick the “Financial Reporting – Case Scenario Quiz” .html file. The app keeps only the question text, options and reasoning on this device, and links them to your stickers.</p><p><button class="btn" id="qzLoad">Choose quiz file…</button></p><input type="file" id="qzFile" accept=".html,.htm,text/html" hidden></div>';
+    $('#qzLoad').onclick=()=>$('#qzFile').click();$('#qzFile').onchange=e=>{const f=e.target.files[0];if(f)quizLoad(f)};return}
+  const map=quizMap();
+  if(sel.options.length!==QZ.cases.length){sel.innerHTML='';QZ.cases.forEach((c,i)=>{const o=document.createElement('option');o.value=i;o.textContent='Case Scenario '+c.n;sel.append(o)})}
+  let i=qzCaseIdx();const c=QZ.cases[i];sel.value=i;
+  const hasStar=ci=>QZ.cases[ci].qs.some(q=>{const n=map[QZ.cases[ci].n+'-'+q.n];return n!=null&&qzStarred(n)});
+  const stepC=d=>{let j=i+d;while(j>=0&&j<QZ.cases.length){if(!qzImp||hasStar(j))return j;j+=d}return -1};
+  $('#qzPrev').disabled=stepC(-1)<0;$('#qzNext').disabled=stepC(1)<0;$('#qzPrev').onclick=()=>{const j=stepC(-1);if(j>=0)quizGo(j)};$('#qzNext').onclick=()=>{const j=stepC(1);if(j>=0)quizGo(j)};
+  $('#qzImp').classList.toggle('on',qzImp);$('#qzImp').textContent=(qzImp?'★':'☆')+' Important only';
+  // score over the whole booklet, from the same answers PDF view uses
+  let a=0,okc=0,stc=0;for(const k in st.mcq||{}){const m=(st.mans||{})[k];if(m){a++;if(m.ok)okc++}}for(const cc of QZ.cases)for(const q of cc.qs){const n=map[cc.n+'-'+q.n];if(n!=null&&qzStarred(n))stc++}
+  $('#qzScore').textContent='Score '+okc+' / '+a+' · ★ '+stc;
+  const list=qzImp?c.qs.filter(q=>{const n=map[c.n+'-'+q.n];return n!=null&&qzStarred(n)}):c.qs;
+  if(!list.length){body.innerHTML='<div class="qzempty">No important questions starred in this case.</div>'}
+  for(const q of list){
+    const n=map[c.n+'-'+q.n];const d=document.createElement('div');d.className='qzq'+(n!=null&&n===activeN?' act':'');
+    d.innerHTML='<div class="qn"><span>Question '+q.n+' of '+c.qs.length+'</span><span class="sp"></span><button class="qst"></button></div><div class="stem">'+qzBlk(q.stem)+'</div>';
+    const sb=$('.qst',d);const paint=()=>{const on=n!=null&&qzStarred(n);sb.textContent=on?'★ Important':'☆ Mark important';sb.classList.toggle('on',on)};paint();
+    sb.onclick=e=>{e.stopPropagation();if(n==null){toast('This question has no sticker in your set');return}const sk=findS('q',n);pushUndo();
+      if(qzStarred(n))st.stars.q=st.stars.q.filter(t=>t.n!==n);else if(sk)st.stars.q.push({page:sk.page,x:.94,y:sk.y,n,l:''});save();renderAll();paint();quizScoreOnly()};
+    const box=document.createElement('div');d.append(box);
+    const ans=n!=null?(st.mans||{})[n]:null;const key=(n!=null&&st.mcq&&st.mcq[n])||q.ans;
+    for(const o of q.opts){const b=document.createElement('button');b.className='qzo';b.innerHTML='<b>('+o.k+')</b><span>'+qzEsc(o.t)+'</span>';
+      if(ans){b.disabled=true;if(o.k===key)b.classList.add('ok');else if(o.k===ans.c)b.classList.add('no')}
+      else b.onclick=()=>quizPick(n,o.k);box.append(b)}
+    if(ans){const e=document.createElement('div');e.className='qze'+(ans.ok?'':' no');e.innerHTML='<div class="h">'+(ans.ok?'Correct. ':'Not quite. ')+'Answer: ('+key+') '+qzEsc((q.head||'').replace(/^\s*:\s*/,''))+'</div>'+qzBlk(q.reason);box.append(e)}
+    d.addEventListener('click',e=>{if(e.target.closest('button'))return;if(n!=null){setActive(n);const sk=findS('q',n);if(sk)scrollToSticker('q',sk);$$('.qzq',body).forEach(x=>x.classList.toggle('act',x===d))}});
+    body.append(d);
+  }
+  const f=document.createElement('div');f.className='qzempty';f.style.margin='4px auto 10px';f.textContent=i<QZ.cases.length-1?'End of Case Scenario '+c.n+'.':'End of the booklet.';body.append(f);
+  if(scrollLeft){const hn=map['c'+c.n];const sk=hn!=null?findS('q',hn):null;if(sk)setTimeout(()=>scrollToSticker('q',sk,false),60);body.scrollTop=0}
+}
+function quizScoreOnly(){try{const y=$('#qzBody').scrollTop;quizRender(false);$('#qzBody').scrollTop=y}catch(e){}}
+function quizGo(i){const c=curSet();prefs.quizCase=prefs.quizCase||{};prefs.quizCase[c.key]=QZ.cases[i].n;savePrefs();quizRender(true)}
+$('#qzSel').addEventListener('change',e=>quizGo(+e.target.value));
+$('#qzImp').addEventListener('click',()=>{qzImp=!qzImp;if(qzImp&&!$('#qzScore').textContent.match(/★ [1-9]/)){qzImp=false;toast('No questions starred yet. Tap ☆ Mark important on a question first');return}quizRender(true)});
+$('#qzReset').addEventListener('click',()=>{if(!QZ)return;const c=QZ.cases[qzCaseIdx()],map=quizMap();const ns=c.qs.map(q=>map[c.n+'-'+q.n]).filter(n=>n!=null&&(st.mans||{})[n]);
+  if(!ns.length){toast('Nothing answered in this case yet');return}pushUndo();ns.forEach(n=>delete st.mans[n]);save();renderAll();quizScoreOnly();toast('Case '+c.n+' cleared. Try it again (your ↻ marks stay)')});
+function quizPick(n,o){
+  if(n==null){toast('This question has no sticker in your set, so it cannot be saved');return}
+  if(!st.mcq||!st.mcq[n]){toast('No answer key for this question');return}
+  mcqRecord(st,n,o);save();renderAll();
+  try{if(mcqLinkedPhone())fbReq('POST','rooms/'+SY.room()+'/cmd',{op:'mcq',k:key,n,o,t:{'.sv':'timestamp'}}).catch(()=>{})}catch(e){}
+  setActive(n);quizScoreOnly();
+}
+// read the quiz .html once: keep the text (not the page pictures)
+async function quizLoad(f){
+  try{const t=await f.text();const i=t.indexOf('const DATA=');if(i<0)throw new Error('this is not the case scenario quiz file');
+    let j=t.indexOf('[',i),dep=0,inS=false,esc0=false,end=-1;
+    for(let k=j;k<t.length;k++){const ch=t[k];if(inS){if(esc0)esc0=false;else if(ch==='\\')esc0=true;else if(ch==='"')inS=false;continue}
+      if(ch==='"')inS=true;else if(ch==='[')dep++;else if(ch===']'){dep--;if(!dep){end=k+1;break}}}
+    if(end<0)throw new Error('could not read the questions');
+    const data=JSON.parse(t.slice(j,end));const cases=data.map(c=>({n:c.n,qs:(c.qs||[]).map(q=>({n:q.n,stem:q.stem,opts:q.opts,ans:q.ans,head:q.head,reason:q.reason}))}));
+    const c=curSet();await idbPut('quiz:'+c.key,{cases,at:Date.now()});QZ=null;await quizData();
+    const map=quizMap();let tot=0,hit=0,fixed=0;st.mcq=st.mcq||{};
+    for(const cc of cases)for(const q of cc.qs){tot++;const n=map[cc.n+'-'+q.n];if(n==null||!q.ans)continue;hit++;
+      if(st.mcq[n]!==q.ans){st.mcq[n]=q.ans;fixed++;const m=(st.mans||{})[n];if(m){m.ok=m.c===q.ans;st.rev=st.rev||{};st.rev[n]=m.ok?'done':'again'}}}   // the quiz file's key is the checked one
+    if(fixed){save();renderAll()}
+    toast('Loaded '+cases.length+' cases, '+tot+' questions, '+hit+' linked to your stickers'+(fixed?'. Corrected '+fixed+' answer key'+(fixed===1?'':'s')+' from the quiz file':''));quizRender(true);
+  }catch(e){toast('Could not load the quiz: '+(e.message||e))}
+}
 
 /* ---------- mock test: write a paper on time, answers locked, then check it ---------- */
 var MT=null,mtTick=0;   // var: setView reads it before this line runs
@@ -3355,7 +3467,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='31 Oct 10:02';   // build label, so you can check both devices have the same version
+const APPV='31 Oct 10:16';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
