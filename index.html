@@ -518,6 +518,9 @@ select.tin{appearance:auto}
 #xfer{position:absolute;z-index:60;top:calc(10px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);background:rgba(27,30,35,.95);color:#fff;padding:10px 16px;border-radius:14px;font-size:14px;display:flex;flex-direction:column;gap:7px;min-width:240px;max-width:calc(100% - 24px);box-shadow:0 6px 18px rgba(0,0,0,.3)}
 #xfer[hidden]{display:none}#xfer .xb{height:5px;border-radius:3px;background:rgba(255,255,255,.18);overflow:hidden}#xfer .xb i{display:block;height:100%;width:0;background:#5ad66d;transition:width .2s}
 .lksend{margin-top:12px;display:flex;flex-direction:column;gap:4px;align-items:flex-start}.lksend small{color:var(--mut)}
+/* concept page index */
+.cell .ctp{display:block;font:600 11px/1.3 var(--sans);text-transform:none;letter-spacing:0;color:#7a5bb5;margin-top:3px;max-height:2.7em;overflow:hidden;text-align:center;white-space:normal}
+.cell .ctp[hidden]{display:none}
 /* compact toolbar */
 #bar #bSide span{display:none}#bar .b.ico{font-size:16px;min-width:34px;justify-content:center}
 #bCol .sw,#colDot{display:block;width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.7)}
@@ -703,7 +706,7 @@ select.tin{appearance:auto}
     </section>
     <section class="pane" id="pane-c" data-side="c" aria-label="Concept book">
       <div class="chip"><div class="cname"><span class="tag">📖</span><span class="fn"></span><span class="pc"></span>
-        <span class="zm"><button data-z="-1" aria-label="Zoom out">−</button><button class="zp" data-z="0" title="Fit width">100%</button><button data-z="1" aria-label="Zoom in">+</button></span><button class="cxb" id="conBook" title="Open your concept book (where you left it)" hidden>📕</button><button class="cxb" id="conAlt" title="This topic is marked in more than one place. Show the next one" hidden>1/2 ›</button><button class="cxb" id="conTopics" title="Jump to a topic in the concept book" aria-label="Topics">≡</button><button class="cxb" id="conClose" title="Back to the answer (C)" aria-label="Back to the answer">×</button></div></div>
+        <span class="zm"><button data-z="-1" aria-label="Zoom out">−</button><button class="zp" data-z="0" title="Fit width">100%</button><button data-z="1" aria-label="Zoom in">+</button></span><button class="cxb gbtn" id="conGrid" title="Page index of the concept book (G)" aria-label="Page index"><svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8"><rect x="4" y="4" width="6.5" height="6.5"/><rect x="13.5" y="4" width="6.5" height="6.5"/><rect x="4" y="13.5" width="6.5" height="6.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5"/></svg></button><button class="cxb" id="conBook" title="Open your concept book (where you left it)" hidden>📕</button><button class="cxb" id="conAlt" title="This topic is marked in more than one place. Show the next one" hidden>1/2 ›</button><button class="cxb" id="conTopics" title="Jump to a topic in the concept book" aria-label="Topics">≡</button><button class="cxb" id="conClose" title="Back to the answer (C)" aria-label="Back to the answer">×</button></div></div>
       <div class="sc"><div class="pages"></div></div>
     </section>
     <section id="quizPane" aria-label="Quiz view" hidden>
@@ -935,6 +938,7 @@ const P={};
     const d=clamp(e.deltaMode===1?e.deltaY*16:e.deltaY,-60,60);
     zoomTo(p,p.zoom*Math.exp(-d*0.0018),e.clientX,e.clientY)},{passive:false});
   p.el.addEventListener('pointerenter',()=>{lastPane=p});
+  if(side==='c')$('.gbtn',el).addEventListener('click',e=>{e.stopPropagation();toggleGrid(p)});
   if(side!=='c'){
   $('.gbtn',el).addEventListener('click',()=>toggleGrid(p));
   const addin=$('.addin',el);addin.id='add-'+side;
@@ -1551,7 +1555,7 @@ function buildGridShell(p){
   p.gio=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){const pg=p.pages[+e.target.dataset.n-1];if(pg)queueThumb(p,pg)}}),{root:p.gb,rootMargin:'500px 0px'});
   p.gb.addEventListener('click',e=>{
     const cell=e.target.closest('.cell');if(!cell)return;const n=+cell.dataset.n;
-    if(e.target.closest('.trib')){toggleBm(p.side,n);return}
+    if(e.target.closest('.trib')){if(p.side!=='c')toggleBm(p.side,n);return}
     toggleGrid(p,false);goPage(p,n);
   });
 }
@@ -1568,12 +1572,18 @@ function buildCells(p){
 }
 function updGrid(p){
   if(!gridOpen(p))return;
-  const cur=curPage(p),bm=new Set(st.bm[p.side]),by={};
-  st.stickers[p.side].forEach(s=>{(by[s.page]=by[s.page]||[]).push(s)});
+  const isC=p.side==='c',S=isC?(p.cst||{}):st,sd=isC?(p.cside||'q'):p.side;
+  const cur=curPage(p),bm=new Set(isC?[]:st.bm[p.side]),by={};
+  if(!isC)st.stickers[p.side].forEach(s=>{(by[s.page]=by[s.page]||[]).push(s)});
+  // topic names on each page: the page index of a concept book
+  const tps={};(isC?(p.topics||[]):(S.topics||[]).filter(t=>isCset()||(t.side||'q')===sd)).forEach(t=>{(tps[t.page]=tps[t.page]||[]).push(t)});
+  $('.gf',p.gridEl).hidden=isC;
   p.cells.forEach((c,i)=>{const n=i+1;
     c.classList.toggle('cur',n===cur);c.classList.toggle('bm',bm.has(n));c.hidden=!!p.bmOnly&&!bm.has(n);
     $('.trib',c).title=bm.has(n)?(bmName(p.side,n)?'“'+bmName(p.side,n)+'”. ':'')+'Remove bookmark':'Bookmark page '+n;$('.cn',c).textContent=bm.has(n)&&bmName(p.side,n)?n+' · '+bmName(p.side,n):n;
-    const ns0=(st.stars[p.side]||[]).filter(t=>t.page===n).length;
+    const ns0=((S.stars||{})[sd]||[]).filter(t=>t.page===n).length;
+    const tl=(tps[n]||[]).sort((a,b)=>a.y-b.y).map(t=>t.tp||t.ch||'Topic');let tg=$('.ctp',c);if(!tg){tg=document.createElement('span');tg.className='ctp';c.append(tg)}tg.textContent=tl.join(' · ');tg.hidden=!tl.length;tg.title=tl.join('\n');
+    if(isC)$('.trib',c).hidden=true;
     $('.tbs',c).innerHTML=(by[n]||[]).sort((a,b)=>a.y-b.y).map(s=>'<span class="badge'+(findS(other(p.side),s.n)?'':' half')+'">'+s.n+'</span>').join('')+(ns0?'<span class="sbadge">★'+ns0+'</span>':'');
   });
   p.gempty.hidden=!(p.bmOnly&&!bm.size);
@@ -1716,7 +1726,7 @@ document.addEventListener('keydown',e=>{
     case 'ArrowRight':e.preventDefault();stepQ(1);break;
     case 'ArrowLeft':e.preventDefault();stepQ(-1);break;
     case 'l':case 'L':openLib();break;
-    case 'g':case 'G':toggleGrid(activePane());break;
+    case 'g':case 'G':toggleGrid(conceptShown()&&lastPane===P.c?P.c:activePane());break;
     case 'b':case 'B':{const ap=activePane();if(ap.pages.length)toggleBm(ap.side,curPage(ap));break}
     case 'Escape':if(closePop())break;if(sel.size){sel.clear();updIndex();break}{const g=['q','a'].map(s=>P[s]).find(gridOpen);if(g){toggleGrid(g,false);break}}setTool('none');break;
   }
@@ -3535,7 +3545,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='31 Oct 11:45';   // build label, so you can check both devices have the same version
+const APPV='31 Oct 11:52';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
