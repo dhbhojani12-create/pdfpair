@@ -314,6 +314,13 @@ body.t-hl .ov{cursor:text;touch-action:none}
 .flt .gap{width:10px}
 .flt input{margin-left:auto;width:220px;max-width:100%;font:inherit;font-size:13px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:5px 12px}
 .lbody{flex:1;overflow:auto;padding:0 24px 40px;min-height:0}
+.ma{display:grid;grid-template-columns:34px minmax(0,1fr) 200px 120px;align-items:center;gap:12px;padding:10px 16px;border-top:1px solid var(--line);font-size:13px;cursor:pointer;width:100%;text-align:left}
+.ma:first-of-type{border-top:0}.ma:hover{background:var(--ground-2)}
+.ma .rk{font:700 15px var(--mono);color:var(--mut);text-align:center}.ma:nth-of-type(-n+3) .rk{color:#e5484d}
+.ma .tt{min-width:0}.ma .tt b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ma .tt small{color:var(--mut);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.ma .bar{display:flex;align-items:center;gap:8px}.ma .bar i{display:block;height:10px;border-radius:5px;background:linear-gradient(90deg,#f08a24,#e5484d)}.ma .bar span{font:700 14px var(--mono)}
+.ma .br{font-size:11.5px;color:var(--mut);line-height:1.35}.ma .br em{font-style:normal;color:#2f8f5b}
+@media (max-width:760px){.ma{grid-template-columns:26px minmax(0,1fr) 90px}.ma .br{grid-column:2 / 4}}
 .cc{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin-bottom:14px;overflow:hidden}
 .cch{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .cch b{font-size:15px;min-width:0}.cch .c{color:var(--mut);font-size:12.5px}.cch .sp,.ctp .sp{flex:1}
@@ -716,7 +723,7 @@ select.tin{appearance:auto}
       <button class="addset phlk2" id="libLink">📱 Link to laptop</button>
     </aside>
     <section class="lmain">
-      <div class="ltop"><h1 id="libTitle">Revise</h1><div class="tseg" id="libView"><button data-v="q">Questions</button><button data-v="c">Concepts</button></div><span class="lmeta" id="libMeta"></span><span class="sp"></span><button class="btn" id="rvAll">▶ Revise all</button><button class="btn ghost" id="rvTopic" title="Topic by topic: the concept first, then all its questions" hidden>▶ Concept first</button></div>
+      <div class="ltop"><h1 id="libTitle">Revise</h1><div class="tseg" id="libView"><button data-v="q">Questions</button><button data-v="c">Concepts</button><button data-v="m">Most asked</button></div><span class="lmeta" id="libMeta"></span><span class="sp"></span><button class="btn" id="rvAll">▶ Revise all</button><button class="btn ghost" id="rvTopic" title="Topic by topic: the concept first, then all its questions" hidden>▶ Concept first</button></div>
       <div class="flt" id="libFlt"></div>
       <div class="lbody" id="libBody"></div>
     </section>
@@ -1837,6 +1844,7 @@ function renderLib(){
   });
   $$('#libView button').forEach(b=>b.classList.toggle('on',b.dataset.v===libView));
   if(libView==='c'){renderConLib(sets);return}
+  if(libView==='m'){renderMostLib(sets);return}
   const all=qRows(libSub);
   const q=libQ.trim().toLowerCase();
   const rows=all.filter(r=>libTypes.has(r.set.type)&&(libStat==='all'||libStat==='noq'||(libStat==='star'?r.stars>0:libStat==='not'?r.rev!=='done':r.rev==='again'))&&(!q||(r.name+' '+r.ch+' '+r.tp+' '+r.set.name+' '+r.n).toLowerCase().includes(q)));
@@ -1910,11 +1918,12 @@ function startRv(rows,lab){
   closeLib(true);$('#rvbar').hidden=false;$('#app').classList.add('rv');goRv(0);
 }
 // concept first: for each topic (library order) its concept, then its questions from every set
-function startTRv(rows){
+function startTRv(rows,keepOrder){
   if(!rows.length){toast('No questions here');return}
   const eq=(a,b)=>(a||'').toLowerCase()===(b||'').toLowerCase();
   const spots=cRows(libSub);const items=[];let tn=0,withC=0;
-  for(const g of libGroups(rows)){
+  const gs=libGroups(rows);if(keepOrder){const at=new Map();rows.forEach((r,i)=>{const k=r.ch.toLowerCase();if(!at.has(k))at.set(k,i)});gs.sort((a,b)=>at.get(a.ch.toLowerCase())-at.get(b.ch.toLowerCase()))}
+  for(const g of gs){
     const parts=[...g.topics.map(t=>({tp:t.tp,items:t.items})),...(g.loose.length?[{tp:'',items:g.loose}]:[])];
     for(const T of parts){tn++;
       const sp=g.ch||T.tp?(spots.filter(r=>eq(r.ch,g.ch)&&eq(r.tp,T.tp)).sort((a,b)=>(a.set.type!=='con')-(b.set.type!=='con'))[0]):null;
@@ -2742,6 +2751,45 @@ function renderConLib(sets){
     body.append(c);
   }
 }
+/* most asked: how often each topic comes in your RTP, past paper and MTP sets (from your own chapter/topic tags) */
+const EXAM_T=['rtp','pyq','mtp'];
+function renderMostLib(sets){
+  const mode=prefs.maMode||'tp',src=prefs.maSrc||'all',q=libQ.trim().toLowerCase();
+  const all=qRows(libSub),exam=all.filter(r=>EXAM_T.includes(r.set.type)&&(src==='all'||r.set.type===src));
+  const key=r=>mode==='ch'?r.ch.toLowerCase():(r.ch+'|'+r.tp).toLowerCase();
+  const groups=new Map();let untagged=0;
+  for(const r of exam){if(!r.ch){untagged++;continue}const k=key(r);if(!groups.has(k))groups.set(k,{ch:r.ch,tp:mode==='ch'?'':r.tp,n:0,by:{}});const g=groups.get(k);g.n++;g.by[r.set.type]=(g.by[r.set.type]||0)+1}
+  // every question (any set) with the same chapter/topic, to practise
+  for(const g of groups.values())g.qs=all.filter(r=>r.ch.toLowerCase()===g.ch.toLowerCase()&&(mode==='ch'||r.tp.toLowerCase()===g.tp.toLowerCase()));
+  const list=[...groups.values()].filter(g=>!q||(g.ch+' '+g.tp).toLowerCase().includes(q)).sort((a,b)=>b.n-a.n||a.ch.localeCompare(b.ch,undefined,{numeric:true}));
+  $('#libTitle').textContent='Most asked · '+libSub;
+  $('#libMeta').textContent=exam.length?exam.length+' exam questions counted from your RTP, past paper and MTP tags':'';
+  const ra=$('#rvAll'),rt=$('#rvTopic');rt.hidden=true;const top=list.slice(0,10);
+  ra.hidden=!top.length;ra.textContent='▶ Revise top '+top.length+' (concept first)';ra.onclick=()=>startTRv(top.flatMap(g=>g.qs),true);
+  const f=$('#libFlt');const had=document.activeElement&&document.activeElement.id==='libSearch';f.innerHTML='';
+  const chip=(lab,on,fn)=>{const b=document.createElement('button');b.className='fc'+(on?' on':'');b.textContent=lab;b.addEventListener('click',fn);f.append(b)};
+  chip('By topic',mode==='tp',()=>{prefs.maMode='tp';savePrefs();renderLib()});chip('By chapter',mode==='ch',()=>{prefs.maMode='ch';savePrefs();renderLib()});
+  const sp=document.createElement('span');sp.style.width='10px';f.append(sp);
+  chip('All exam sets',src==='all',()=>{prefs.maSrc='all';savePrefs();renderLib()});
+  for(const t of EXAM_T)if(sets.some(x=>x.type===t))chip(TYPES[t],src===t,()=>{prefs.maSrc=src===t?'all':t;savePrefs();renderLib()});
+  const si=document.createElement('input');si.type='search';si.id='libSearch';si.placeholder='Search chapter or topic';si.value=libQ;si.setAttribute('aria-label','Search topics');
+  si.addEventListener('input',()=>{libQ=si.value;renderLib()});f.append(si);if(had){si.focus();si.setSelectionRange(si.value.length,si.value.length)}
+  const body=$('#libBody');body.innerHTML='';
+  if(!exam.length){body.innerHTML='<div class="lempty">No RTP, past paper or MTP sets in '+esc(libSub)+' yet. Add them and tag their questions with chapter and topic to see what comes most often.</div>';return}
+  if(!list.length){body.innerHTML='<div class="lempty">'+(groups.size?'Nothing matches the search.':'None of these exam questions has a chapter yet. Tag them in the Index (🏷) to see the ranking.')+'</div>';return}
+  const box=document.createElement('div');box.className='cc';const mx=list[0].n;
+  list.forEach((g,i)=>{
+    const b=document.createElement('button');b.className='ma';
+    const done=g.qs.filter(r=>r.rev==='done').length;
+    b.innerHTML='<span class="rk">'+(i+1)+'</span><span class="tt"><b></b><small></small></span><span class="bar"><i style="width:'+Math.max(8,Math.round(150*g.n/mx))+'px"></i><span>'+g.n+'</span></span><span class="br"></span>';
+    $('b',b).textContent=mode==='ch'||!g.tp?g.ch:g.tp;$('small',b).textContent=mode==='ch'?'Whole chapter':g.tp?g.ch:'Chapter tagged, no topic yet';
+    $('.br',b).innerHTML=EXAM_T.filter(t=>g.by[t]).map(t=>TSHORT[t]+' '+g.by[t]).join(' · ')+'<br><em>'+done+'/'+g.qs.length+' revised</em>';
+    b.title='Asked '+g.n+' time'+(g.n===1?'':'s')+'. Click to revise it: concept first, then all '+g.qs.length+' question'+(g.qs.length===1?'':'s')+' from every set';
+    b.addEventListener('click',()=>startTRv(g.qs));box.append(b);
+  });
+  body.append(box);
+  if(untagged){const n=document.createElement('div');n.className='lempty';n.style.padding='10px 4px';n.textContent=untagged+' exam question'+(untagged===1?' has':'s have')+' no chapter yet, so '+(untagged===1?'it is':'they are')+' not counted.';body.append(n)}
+}
 function startCRv(rows,lab){
   if(!rows.length){toast('No topics here');return}
   conceptPref=false;hideConcept();
@@ -3085,7 +3133,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='31 Oct 09:50';   // build label, so you can check both devices have the same version
+const APPV='31 Oct 09:53';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
