@@ -635,7 +635,7 @@ select.tin{appearance:auto}
     </section>
     <section class="pane" id="pane-c" data-side="c" aria-label="Concept book">
       <div class="chip"><div class="cname"><span class="tag">📖</span><span class="fn"></span><span class="pc"></span>
-        <span class="zm"><button data-z="-1" aria-label="Zoom out">−</button><button class="zp" data-z="0" title="Fit width">100%</button><button data-z="1" aria-label="Zoom in">+</button></span><button class="cxb" id="conTopics" title="Jump to a topic in the concept book" aria-label="Topics">≡</button><button class="cxb" id="conClose" title="Back to the answer (C)" aria-label="Back to the answer">×</button></div></div>
+        <span class="zm"><button data-z="-1" aria-label="Zoom out">−</button><button class="zp" data-z="0" title="Fit width">100%</button><button data-z="1" aria-label="Zoom in">+</button></span><button class="cxb" id="conAlt" title="This topic is marked in more than one place. Show the next one" hidden>1/2 ›</button><button class="cxb" id="conTopics" title="Jump to a topic in the concept book" aria-label="Topics">≡</button><button class="cxb" id="conClose" title="Back to the answer (C)" aria-label="Back to the answer">×</button></div></div>
       <div class="sc"><div class="pages"></div></div>
     </section>
   </main>
@@ -659,7 +659,7 @@ select.tin{appearance:auto}
     <span class="sepv"></span>
     <button class="b qonly" id="bNum" title="Change next sticker number" style="padding:0 4px"><span class="nb" id="nb">1</span></button>
     <button class="b qonly" data-t="sticker" title="Sticker (S)">Sticker</button>
-    <button class="b conly" data-t="topic" title="Topic marker (T): click where a topic starts in your concept book">📖 Topic</button>
+    <button class="b" data-t="topic" id="bTopic" title="Concept marker (T): click where a concept or topic starts, on any page">📖 Concept</button>
     <button class="b" data-t="hl" title="Highlighter (H): drag across a line">Highlight</button>
     <button class="b" data-t="star" title="Star (K): click to mark a point you want to remember. Not linked to anything." aria-label="Star"><span style="color:#f5b400;font-size:16px">★</span></button>
     <button class="b cb" data-c="0" aria-label="Yellow"><span class="sw" style="background:#ffd400"></span></button>
@@ -713,7 +713,7 @@ select.tin{appearance:auto}
       <button class="addset phlk2" id="libLink">📱 Link to laptop</button>
     </aside>
     <section class="lmain">
-      <div class="ltop"><h1 id="libTitle">Revise</h1><div class="tseg" id="libView"><button data-v="q">Questions</button><button data-v="c">Concepts</button></div><span class="lmeta" id="libMeta"></span><span class="sp"></span><button class="btn" id="rvAll">▶ Revise all</button></div>
+      <div class="ltop"><h1 id="libTitle">Revise</h1><div class="tseg" id="libView"><button data-v="q">Questions</button><button data-v="c">Concepts</button></div><span class="lmeta" id="libMeta"></span><span class="sp"></span><button class="btn" id="rvAll">▶ Revise all</button><button class="btn ghost" id="rvTopic" title="Topic by topic: the concept first, then all its questions" hidden>▶ Concept first</button></div>
       <div class="flt" id="libFlt"></div>
       <div class="lbody" id="libBody"></div>
     </section>
@@ -1046,7 +1046,7 @@ function renderAnn(side){try{syncFollowSoon()}catch(e){}
     if(t.l){const l=document.createElement('span');l.className='sl';l.textContent=t.l;el.append(l)}
     el.title=imp?(()=>{const m=starTopic(st,t);return 'Important point'+(m?' in '+(m.tp||m.ch):'')+'. Right-click to change its topic, drag to move'})():t.l?(mate?'★'+t.l+' of '+label(t.n)+'. Click to see its '+(side==='q'?'working in the answer':'place in the question'):'☆'+t.l+' of '+label(t.n)+'. Click beside the matching spot on the '+(side==='q'?'answer':'question')+' side to link it'):'Star. Drag to move, or use the eraser to remove';
     pos(el,t.x,t.y);pg.ov.append(el)});
-  if(side==='q')(st.topics||[]).forEach(t=>{const pg=p.pages[t.page-1];if(!pg)return;pg.ov.append(tmkEl(t,t.id===activeTid))});
+  (st.topics||[]).filter(t=>(isCset()?'q':(t.side||'q'))===side).forEach(t=>{const pg=p.pages[t.page-1];if(!pg)return;pg.ov.append(tmkEl(t,t.id===activeTid))});
   st.bm[side].forEach(n=>{const pg=p.pages[n-1];if(!pg)return;const r=document.createElement('div');r.className='rib';r.title='Bookmarked. Click to remove';pg.ov.append(r)});
   st.stickers[side].forEach(s=>{const pg=p.pages[s.page-1];if(!pg)return;
     const el=document.createElement('div');el.className='stk';el.dataset.n=s.n;el.textContent=s.n;el.title=label(s.n)+(meta(s.n).ch?' · '+meta(s.n).ch:'')+(meta(s.n).tp?' › '+meta(s.n).tp:'')+'  (right-click to set chapter and topic)';
@@ -1171,10 +1171,9 @@ function onDown(e,p){
   const tk=e.target.closest('.tmk');
   if(tk){tmkDown(e,p,pg,tk,pt);return}
   if(prefs.tool==='topic'){
-    if(!isCset()){toast('Topic markers go in a concept book set');return}
     const x0=e.clientX,y0=e.clientY;
     const up=ev=>{window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',cancel);
-      if(Math.hypot(ev.clientX-x0,ev.clientY-y0)<8){const q=pt(ev);placeTopic(pg.n,q.x,q.y,ev.clientX,ev.clientY)}};
+      if(Math.hypot(ev.clientX-x0,ev.clientY-y0)<8){const q=pt(ev);placeTopic(pg.n,q.x,q.y,ev.clientX,ev.clientY,p.side)}};
     const cancel=()=>{window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',cancel)};
     window.addEventListener('pointerup',up);window.addEventListener('pointercancel',cancel);return;
   }
@@ -1582,7 +1581,7 @@ document.addEventListener('keydown',e=>{
     case 's':case 'S':setTool('sticker');break;
     case 'h':case 'H':setTool('hl');break;
     case 'k':case 'K':setTool('star');break;
-    case 't':case 'T':if(isCset())setTool('topic');break;
+    case 't':case 'T':setTool('topic');break;
     case 'c':case 'C':toggleConcept();break;
     case 'e':case 'E':setTool('erase');break;
     case 'ArrowRight':e.preventDefault();stepQ(1);break;
@@ -1829,6 +1828,7 @@ function renderLib(){
   const ra=$('#rvAll');ra.hidden=!rows.length;ra.textContent=rows.length===all.length?'▶ Revise all':'▶ Revise these '+rows.length;
   // go in the same order as the list: chapter by chapter, and topic by topic inside each chapter
   ra.onclick=()=>startRv(libGroups(rows).flatMap(g=>[...g.loose,...g.topics.flatMap(t=>t.items)]),'All');
+  const rt=$('#rvTopic');rt.hidden=!rows.length;rt.onclick=()=>startTRv(rows);
   // filters
   const f=$('#libFlt');const had=document.activeElement&&document.activeElement.id==='libSearch';f.innerHTML='';
   function saveF(){prefs.libTypes=[...libTypes];prefs.libStat=libStat;savePrefs();renderLib()}
@@ -1890,9 +1890,27 @@ function startRv(rows,lab){
   RV={kind:'q',q:rows.map(r=>({id:r.set.id,n:r.n,ch:r.ch,tp:r.tp})),i:0,label:lab,sub:libSub};
   closeLib(true);$('#rvbar').hidden=false;$('#app').classList.add('rv');goRv(0);
 }
+// concept first: for each topic (library order) its concept, then its questions from every set
+function startTRv(rows){
+  if(!rows.length){toast('No questions here');return}
+  const eq=(a,b)=>(a||'').toLowerCase()===(b||'').toLowerCase();
+  const spots=cRows(libSub);const items=[];let tn=0,withC=0;
+  for(const g of libGroups(rows)){
+    const parts=[...g.topics.map(t=>({tp:t.tp,items:t.items})),...(g.loose.length?[{tp:'',items:g.loose}]:[])];
+    for(const T of parts){tn++;
+      const sp=g.ch||T.tp?(spots.filter(r=>eq(r.ch,g.ch)&&eq(r.tp,T.tp)).sort((a,b)=>(a.set.type!=='con')-(b.set.type!=='con'))[0]):null;
+      if(sp){withC++;items.push({k:'c',id:sp.set.id,tid:sp.tid,ch:g.ch,tp:T.tp,ti:tn,qn:T.items.length})}
+      T.items.forEach((r,j)=>items.push({k:'q',id:r.set.id,n:r.n,ch:r.ch,tp:r.tp,ti:tn,qi:j+1,qn:T.items.length,nc:!sp}));
+    }
+  }
+  conceptPref=false;hideConcept();
+  RV={kind:items[0].k,mode:'t',tn,q:items,i:0,label:'Concept first',sub:libSub};
+  closeLib(true);$('#rvbar').hidden=false;$('#app').classList.add('rv');goRv(0);
+  toast(tn+' topic'+(tn===1?'':'s')+', '+withC+' with a concept marked. Each topic: concept first, then its questions');
+}
 function stopRv(){RV=null;$('#rvbar').hidden=true;$('#app').classList.remove('rv','ans','rvclean');$('#phDrop').classList.remove('open');updPh()}
 async function goRv(i){
-  if(!RV)return;RV.i=i;if(PH){$('#app').classList.toggle('ans',!!prefs.rvBoth&&RV.kind==='q');$('#phDrop').classList.remove('open');if(conceptShown()){conceptPref=false;hideConcept()}if(RV.kind==='q'&&prefs.view!=='q')setView('q')}const it=RV.q[i];
+  if(!RV)return;RV.i=i;if(RV.mode==='t'){RV.kind=RV.q[i].k;if(conceptShown()){conceptPref=false;hideConcept()}}if(PH){$('#app').classList.toggle('ans',!!prefs.rvBoth&&RV.kind==='q');$('#phDrop').classList.remove('open');if(conceptShown()){conceptPref=false;hideConcept()}if(RV.kind==='q'&&prefs.view!=='q')setView('q')}const it=RV.q[i];
   if(LIB.cur!==it.id)await openSet(it.id);
   if(!RV)return;
   if(RV.kind==='c'){goTopic(it.tid);updRv();return}
@@ -1902,16 +1920,17 @@ function updRv(){
   if(!RV)return;const it=RV.q[RV.i],set=LIB.sets.find(x=>x.id===it.id);
   if(RV.kind==='c'){
     $('#rvSeg').hidden=true;
-    $('#rvCrumb').innerHTML=esc(RV.sub)+' › Concepts › '+(it.ch?esc(it.ch)+' › ':'')+'<b>'+esc(it.tp||it.ch||'Untitled topic')+'</b>';
-    $('#rvPos').textContent=(RV.i+1)+' / '+RV.q.length;
+    $('#rvCrumb').innerHTML=esc(RV.sub)+' › '+(RV.mode==='t'?'':'Concepts › ')+(it.ch?esc(it.ch)+' › ':'')+'<b>'+esc(it.tp||it.ch||'Untitled topic')+'</b>';
+    $('#rvPos').textContent=RV.mode==='t'?'Topic '+it.ti+' / '+RV.tn+' · Concept':(RV.i+1)+' / '+RV.q.length;
     const t=(st.topics||[]).find(x=>x.id===it.tid);
-    if(set)$('#rvSrc').innerHTML='<span class="ty con">CON</span>'+esc(set.name)+(t?' · p'+t.page:'');
+    if(set)$('#rvSrc').innerHTML='<span class="ty con">📖</span>'+esc(set.name)+(t&&t.side==='a'?' · answer':'')+(t?' · p'+t.page:'')+(RV.mode==='t'?' · then '+it.qn+' question'+(it.qn===1?'':'s'):'');
+    $('#rvOk').textContent=RV.mode==='t'?'✓ Got it':'✓ Revised';
     const v=(st.crev||{})[it.tid];$('#rvOk').classList.toggle('on',v==='done');$('#rvAg').classList.toggle('on',v==='again');updPh();return;
   }
   $('#rvSeg').hidden=!hasConcepts();updConUI();updPh();
   $('#rvCrumb').innerHTML=esc(RV.sub)+' › '+(it.ch&&it.tp?esc(it.ch)+' › ':'')+'<b>'+esc(it.tp||it.ch||RV.label)+'</b>';
-  $('#rvPos').textContent=(RV.i+1)+' / '+RV.q.length;
-  if(set)$('#rvSrc').innerHTML='<span class="ty '+set.type+'">'+TSHORT[set.type]+'</span>'+esc(set.name)+' · '+esc(label(it.n));
+  $('#rvPos').textContent=RV.mode==='t'?'Topic '+it.ti+' / '+RV.tn+' · Question '+it.qi+' / '+it.qn:(RV.i+1)+' / '+RV.q.length;$('#rvOk').textContent='✓ Revised';
+  if(set)$('#rvSrc').innerHTML='<span class="ty '+set.type+'">'+TSHORT[set.type]+'</span>'+esc(set.name)+' · '+esc(label(it.n))+(RV.mode==='t'&&it.nc&&it.qi===1?' · <i>no concept marked for this topic</i>':'');
   const v=(st.rev||{})[it.n];$('#rvOk').classList.toggle('on',v==='done');$('#rvAg').classList.toggle('on',v==='again');updPh();
 }
 function markRv(v){
@@ -2420,13 +2439,15 @@ function tmkEl(t,act){
 function applyMode(){
   const c=isCset();$('#app').classList.toggle('cset',c);$('#pane-q .tag').textContent=c?'📖':'Q';
   if(c&&prefs.tool==='sticker')setTool('topic');
-  if(!c&&prefs.tool==='topic')setTool('sticker');
+  $('#bTopic').textContent=c?'📖 Topic':'📖 Concept';
   activeTid=null;updBar();updNav();
   requestAnimationFrame(()=>{layout(P.q);layout(P.a)});
 }
-function placeTopic(page,x,y,cx,cy){
+function placeTopic(page,x,y,cx,cy,side){
   pushUndo();st.topics=st.topics||[];
-  const t={id:uid(),page,x,y,ch:st.lastCh||'',tp:''};st.topics.push(t);save();activeTid=t.id;renderAll();
+  const t={id:uid(),page,x,y,ch:st.lastCh||'',tp:''};
+  if(!isCset()){t.side=side||'q';const n=ownerIn(st.stickers[t.side]||[],page,y),m=n!=null?meta(n):{};if(m.ch||m.tp){t.ch=m.ch||'';t.tp=m.tp||''}}   // in a question set: start from the question it sits under
+  st.topics.push(t);save();activeTid=t.id;renderAll();
   openTopicTag(t.id,cx+16,cy-20,true);
 }
 function openTopicTag(id,x,y,isNew){
@@ -2435,7 +2456,7 @@ function openTopicTag(id,x,y,isNew){
   $('#tgTitle').innerHTML='<span class="ti">📖</span>Topic starts here';$('#tgNameW').hidden=true;
   $('#tgCh').value=t.ch||'';$('#tgCh').placeholder='e.g. Ind AS 102 Share Based Payment';
   $('#tgTp').value=t.tp||'';$('#tgTp').placeholder='e.g. Modification';
-  $('#tgHint').textContent='Questions with this chapter and topic show this page when you press C.';
+  $('#tgHint').textContent=isCset()?'Questions with this chapter and topic show this page when you press C.':'This marks a concept explanation. Questions with this chapter and topic open this spot with 📖 (C), and it starts the topic in Concept first revise.';
   const pop=$('#tagPop');pop.hidden=false;
   pop.style.left=clamp(x,8,innerWidth-pop.offsetWidth-8)+'px';pop.style.top=clamp(y,8,innerHeight-pop.offsetHeight-8)+'px';
   setTimeout(()=>{(t.ch?$('#tgTp'):$('#tgCh')).focus()},20);
@@ -2452,7 +2473,8 @@ function tmkDown(e,p,pg,el,pt){
 }
 function goTopic(id,smooth){
   const t=(st.topics||[]).find(z=>z.id===id);if(!t)return;activeTid=id;
-  const p=P.q,pg=p.pages[t.page-1];
+  const sd=isCset()?'q':(t.side||'q');if(!isShown(sd))setView(PH?sd:'split');
+  const p=P[sd],pg=p.pages[t.page-1];
   $$('.tmk',p.pg).forEach(x=>x.classList.toggle('act',x.dataset.id===id));$$('#list .row').forEach(r=>r.classList.toggle('act',r.dataset.tid===id));updNav();
   if(!pg)return;
   const go=()=>{p.sc.scrollTo({top:Math.max(0,pg.div.offsetTop+t.y*p.W-p.sc.clientHeight*.1),behavior:smooth===false?'auto':'smooth'});
@@ -2521,68 +2543,81 @@ function typeUI(){const c=$('#oType').value==='con';$('#slot-a').hidden=c;$('#oS
 $('#oType').addEventListener('change',typeUI);
 
 /* quick look at the concept for the open question (C) */
-function hasConcepts(){const c=curSet();return !!(c&&c.type!=='con'&&LIB.sets.some(x=>x.type==='con'&&x.subject===c.subject))}
+function hasConcepts(){const c=curSet();return !!(c&&c.type!=='con'&&LIB.sets.some(x=>x.subject===c.subject&&(x.type==='con'||((x.id===LIB.cur?st:stOf(x)).topics||[]).length)))}
+// every place a concept for this chapter/topic is marked: concept books first, then markers inside question sets
+function conceptSpots(ch,tp,sub){
+  const eq=(a,b)=>!!a&&!!b&&a.toLowerCase()===b.toLowerCase();const out=[];
+  for(const set of LIB.sets.filter(x=>x.subject===sub)){
+    const s=set.id===LIB.cur?st:(LS.get('pp:'+set.key)||{});
+    for(const t of s.topics||[]){const sc=(eq(t.tp,tp)?2:0)+(eq(t.ch,ch)?1:0);if(sc)out.push({set,t,sc,side:set.type==='con'?'q':(t.side||'q')})}
+  }
+  const best=Math.max(0,...out.map(o=>o.sc));
+  return out.filter(o=>o.sc===best).sort((a,b)=>(a.set.type!=='con')-(b.set.type!=='con')||a.t.page-b.t.page||a.t.y-b.t.y);
+}
 function findConcept(n){
   const cur=curSet();const m=meta(n);if(!cur||(!m.ch&&!m.tp))return null;
-  const eq=(a,b)=>!!a&&!!b&&a.toLowerCase()===b.toLowerCase();let best=null;
-  for(const set of LIB.sets.filter(x=>x.type==='con'&&x.subject===cur.subject)){
-    const s=LS.get('pp:'+set.key)||{};
-    for(const t of [...(s.topics||[])].sort((a,b)=>a.page-b.page||a.y-b.y)){
-      const sc=(eq(t.tp,m.tp)?2:0)+(eq(t.ch,m.ch)?1:0);
-      if(sc&&(!best||sc>best.sc))best={set,t,sc};
-    }
-  }
-  if(best&&m.tp&&best.sc===1)best.chapterOnly=true;
+  const L=conceptSpots(m.ch,m.tp,cur.subject);if(!L.length)return null;
+  const best=Object.assign({},L[0],{alts:L});if(m.tp&&best.sc===1)best.chapterOnly=true;
   return best;
 }
 async function showConcept(n,quiet){
   const r=findConcept(n);
-  if(!r){hideConcept();if(!quiet||conceptPref){const m=meta(n);toast(m.ch||m.tp?'No concept marked yet for '+(m.tp||m.ch)+'. Mark it in your concept book with 📖 Topic':'Give this question a chapter and topic first (right-click its sticker)')}return false}
-  const c=P.c;
-  if(c.setId!==r.set.id){
-    const recs=[];for(const f of r.set.files.q){const b=await idbGet('blob:'+f.id);if(b)recs.push({name:f.name,size:f.size,blob:b,id:f.id})}
-    if(!recs.length){toast('The concept book PDF is not in this browser. Add it again with Edit set');return false}
-    $('#app').classList.add('cv');await loadDoc('c',recs);c.setId=r.set.id;
+  if(!r){hideConcept();if(!quiet||conceptPref){const m=meta(n);toast(m.ch||m.tp?'No concept marked yet for '+(m.tp||m.ch)+'. Mark it with 📖 Concept in any set':'Give this question a chapter and topic first (right-click its sticker)')}return false}
+  P.c.alts=r.alts;P.c.altI=0;
+  if(!(await openConceptSpot(r)))return false;
+  if(r.chapterOnly&&!quiet)toast('No marker for '+meta(n).tp+' yet, so this is the start of '+r.t.ch);
+  return true;
+}
+async function openConceptSpot(r){
+  const c=P.c,sd=r.side||'q',sid=r.set.id+':'+sd;
+  if(c.setId!==sid){
+    const recs=[];for(const f of r.set.files[sd]||[]){const b=await idbGet('blob:'+f.id);if(b)recs.push({name:f.name,size:f.size,blob:b,id:f.id})}
+    if(!recs.length){toast('The PDF with this concept is not in this browser. Add it again with Edit set');return false}
+    $('#app').classList.add('cv');await loadDoc('c',recs);c.setId=sid;
   }
-  c.ckey=r.set.key;c.cst=Object.assign({hl:{q:[],a:[]},stars:{q:[],a:[]},topics:[]},LS.get('pp:'+r.set.key)||{});c.topics=c.cst.topics||[];c.curTid=r.t.id;
-  $('#app').classList.add('cv');if(prefs.view==='q'&&!(PH&&(quiet||RV)))setView(PH?'a':'split');
+  c.ckey=r.set.key;c.cside=sd;
+  c.cst=r.set.id===LIB.cur?st:Object.assign({hl:{q:[],a:[]},stars:{q:[],a:[]},topics:[]},LS.get('pp:'+r.set.key)||{});
+  c.cst.hl=c.cst.hl||{q:[],a:[]};c.cst.stars=c.cst.stars||{q:[],a:[]};
+  c.topics=(c.cst.topics||[]).filter(t=>r.set.type==='con'||(t.side||'q')===sd);c.curTid=r.t.id;
+  $('#app').classList.add('cv');if(prefs.view==='q'&&!(PH&&RV))setView(PH?'a':'split');
   layout(c,false);
   renderConPane();
   const pg=c.pages[r.t.page-1];
   if(pg){c.sc.scrollTop=Math.max(0,pg.div.offsetTop+r.t.y*c.W-c.sc.clientHeight*.1);const el=$('.tmk[data-id="'+r.t.id+'"]',c.pg);if(el){el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash')}}
-  c.fn.textContent=r.set.name+' · '+(r.t.tp||r.t.ch);c.fn.title=r.set.name;
-  if(r.chapterOnly&&!quiet)toast('No marker for '+meta(n).tp+' yet, so this is the start of '+r.t.ch);
+  c.fn.textContent=(r.set.type==='con'?r.set.name:r.set.name+(sd==='a'?' · Answer':''))+' · '+(r.t.tp||r.t.ch);c.fn.title=r.set.name;
+  const ab=$('#conAlt'),n0=(c.alts||[]).length;ab.hidden=n0<2;if(n0>1)ab.textContent=((c.altI||0)+1)+'/'+n0+' ›';
   updConUI();return true;
 }
 // the concept side (C): show and edit the concept book's own highlights and important stars
 function renderConPane(){
-  const c=P.c,cs=c.cst;if(!cs)return;
+  const c=P.c,cs=c.cst;if(!cs)return;const sd=c.cside||'q';
   c.pages.forEach(pg=>pg.ov.innerHTML='');
-  (cs.hl.q||[]).forEach((h,i)=>{const pg=c.pages[h.page-1];if(!pg)return;const el=document.createElement('div');el.className='hl';el.dataset.i=i;hlStyle(el,h);pg.ov.append(el)});
-  (cs.stars.q||[]).forEach((t,i)=>{const pg=c.pages[t.page-1];if(!pg)return;const el=document.createElement('div');el.className='star';el.dataset.i=i;el.textContent='★';el.title='Important point. Use the eraser to remove';pos(el,t.x,t.y);pg.ov.append(el)});
-  (cs.topics||[]).forEach(t=>{const pg=c.pages[t.page-1];if(pg)pg.ov.append(tmkEl(t,t.id===c.curTid))});
+  ((cs.hl||{})[sd]||[]).forEach((h,i)=>{const pg=c.pages[h.page-1];if(!pg)return;const el=document.createElement('div');el.className='hl';el.dataset.i=i;hlStyle(el,h);pg.ov.append(el)});
+  ((cs.stars||{})[sd]||[]).forEach((t,i)=>{const pg=c.pages[t.page-1];if(!pg)return;const el=document.createElement('div');el.className='star';el.dataset.i=i;el.textContent='★';el.title='Important point. Use the eraser to remove';pos(el,t.x,t.y);pg.ov.append(el)});
+  (c.topics||[]).forEach(t=>{const pg=c.pages[t.page-1];if(pg)pg.ov.append(tmkEl(t,t.id===c.curTid))});
 }
 function conDown(e,p){
   const c=P.c,cs=c.cst;if(!cs)return;
   const pageDiv=e.target.closest('.page');if(!pageDiv)return;const pg=c.pages[pageDiv.dataset.n-1];if(!pg)return;
   const r=pageDiv.getBoundingClientRect();const pt=ev=>({x:clamp((ev.clientX-r.left)/c.W,0,1),y:clamp((ev.clientY-r.top)/c.W,0,pg.ar)});
-  const keep=()=>{LS.set('pp:'+c.ckey,cs);renderConPane()};
+  const sd=c.cside||'q';cs.hl[sd]=cs.hl[sd]||[];cs.stars[sd]=cs.stars[sd]||[];
+  const keep=()=>{if(cs===st){save();renderAnn(sd)}else LS.set('pp:'+c.ckey,cs);renderConPane()};
   const hl=e.target.closest('.hl'),sr=e.target.closest('.star');
-  if(prefs.tool==='erase'){if(hl){const gone=cs.hl.q.splice(+hl.dataset.i,1)[0];keep();try{if(gone)syncEraseHl('q',gone,c.ckey)}catch(e){}}else if(sr){cs.stars.q.splice(+sr.dataset.i,1);keep()}return}
+  if(prefs.tool==='erase'){if(hl){const gone=cs.hl[sd].splice(+hl.dataset.i,1)[0];keep();try{if(gone)syncEraseHl(sd,gone,c.ckey)}catch(e){}}else if(sr){cs.stars[sd].splice(+sr.dataset.i,1);keep()}return}
   if(prefs.tool==='hl'){
     e.preventDefault();const a=pt(e),t=SIZES[prefs.size],col=prefs.color;
     const tmp=document.createElement('div');tmp.className='hl';pg.ov.append(tmp);let seg={x1:a.x,y1:a.y,x2:a.x,y2:a.y,t,c:col};hlStyle(tmp,seg);
     const mv=ev=>{const b=pt(ev);seg=Math.abs(b.x-a.x)>=Math.abs(b.y-a.y)?{x1:Math.min(a.x,b.x),x2:Math.max(a.x,b.x),y1:a.y,y2:a.y,t,c:col}:{x1:a.x,x2:a.x,y1:Math.min(a.y,b.y),y2:Math.max(a.y,b.y),t,c:col};hlStyle(tmp,seg)};
     const off=()=>{hlAbort=null;window.removeEventListener('pointermove',mv);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',up);tmp.remove()};
     const up=()=>{off();
-      if((seg.x2-seg.x1)+(seg.y2-seg.y1)>.008){const h=Object.assign({page:pg.n},seg);cs.hl.q.push(h);keep();try{syncSendHl('q',h,c.ckey)}catch(e){}}};hlAbort=off;
+      if((seg.x2-seg.x1)+(seg.y2-seg.y1)>.008){const h=Object.assign({page:pg.n},seg);cs.hl[sd].push(h);keep();try{syncSendHl(sd,h,c.ckey)}catch(e){}}};hlAbort=off;
     window.addEventListener('pointermove',mv);window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up);return;
   }
   if(prefs.tool==='star'){
     const x0=e.clientX,y0=e.clientY;
     const up=ev=>{window.removeEventListener('pointerup',up);if(Math.hypot(ev.clientX-x0,ev.clientY-y0)>=8)return;
-      const q=pt(ev);const tp=topicAbove([...(cs.topics||[])].sort((a,b)=>a.page-b.page||a.y-b.y),pg.n,q.y);
-      cs.stars.q.push(tp?{page:pg.n,x:q.x,y:q.y,tid:tp.id}:{page:pg.n,x:q.x,y:q.y});keep();
+      const q=pt(ev);const tp=topicAbove([...(c.topics||[])].sort((a,b)=>a.page-b.page||a.y-b.y),pg.n,q.y);
+      cs.stars[sd].push(tp?{page:pg.n,x:q.x,y:q.y,tid:tp.id}:{page:pg.n,x:q.x,y:q.y});keep();
       toast('Important point'+(tp?' in '+(tp.tp||tp.ch):'')+'. To change its topic, open the concept book itself and right-click the star')};
     window.addEventListener('pointerup',up);return;
   }
@@ -2602,12 +2637,12 @@ async function toggleConcept(force){
 }
 async function openConceptBrowse(){
   const cur=curSet();const books=LIB.sets.filter(x=>x.type==='con'&&(!cur||x.subject===cur.subject));if(!books.length)return false;
-  const c=P.c;const set=books.find(x=>x.id===c.setId)||books.find(x=>x.id===prefs.lastCon)||books[0];
-  const fresh=c.setId!==set.id;
+  const c=P.c;const set=books.find(x=>x.id+':q'===c.setId)||books.find(x=>x.id===prefs.lastCon)||books[0];
+  const fresh=c.setId!==set.id+':q';
   if(fresh){const recs=[];for(const f of set.files.q){const b=await idbGet('blob:'+f.id);if(b)recs.push({name:f.name,size:f.size,blob:b,id:f.id})}
     if(!recs.length){toast('The concept book PDF is not on this device. Add it again with Edit set');return false}
-    $('#app').classList.add('cv');await loadDoc('c',recs);c.setId=set.id}
-  c.ckey=set.key;c.cst=Object.assign({hl:{q:[],a:[]},stars:{q:[],a:[]},topics:[]},LS.get('pp:'+set.key)||{});c.topics=c.cst.topics||[];
+    $('#app').classList.add('cv');await loadDoc('c',recs);c.setId=set.id+':q'}
+  c.ckey=set.key;c.cside='q';c.alts=null;$('#conAlt').hidden=true;c.cst=Object.assign({hl:{q:[],a:[]},stars:{q:[],a:[]},topics:[]},LS.get('pp:'+set.key)||{});c.topics=c.cst.topics||[];
   $('#app').classList.add('cv');if(prefs.view==='q')setView(PH?'a':'split');
   layout(c,false);renderConPane();
   if(fresh){const lp=LS.get('cpos:'+set.key);if(lp)setTimeout(()=>setAnchor(c,lp),60)}
@@ -2631,6 +2666,7 @@ function updConUI(){try{syncFollowSoon()}catch(e){}const on=conceptShown();const
   $$('#rvSeg button').forEach(x=>x.classList.toggle('on',(x.dataset.c==='1')===on));updPh()}
 $('#bCon').addEventListener('click',()=>toggleConcept());
 $('#conClose').addEventListener('click',()=>toggleConcept(false));
+$('#conAlt').addEventListener('click',e=>{e.stopPropagation();const c=P.c;if(!c.alts||c.alts.length<2)return;c.altI=((c.altI||0)+1)%c.alts.length;openConceptSpot(c.alts[c.altI])});
 $$('#rvSeg button').forEach(b=>b.addEventListener('click',()=>toggleConcept(b.dataset.c==='1')));
 
 /* Library: concepts view */
@@ -2644,9 +2680,9 @@ function topicStars(s0){const out={};for(const t of ((s0.stars||{}).q||[])){cons
 function topicQCounts(sub){const out={};for(const r of qRows(sub)){const k=(r.ch+'|'+r.tp).toLowerCase();out[k]=(out[k]||0)+1;const k2=(r.ch+'|').toLowerCase();out[k2]=(out[k2]||0)+1}return out}
 function cRows(sub){
   const rows=[];
-  for(const set of setsOf(sub).filter(x=>x.type==='con')){
-    const s=stOf(set),sc=topicStars(s);
-    for(const t of [...(s.topics||[])].sort((a,b)=>a.page-b.page||a.y-b.y))rows.push({set,tid:t.id,ch:t.ch||'',tp:t.tp||'',page:t.page,rev:(s.crev||{})[t.id]||'',stars:sc[t.id]||0});
+  for(const set of setsOf(sub)){
+    const s=stOf(set),sc=set.type==='con'?topicStars(s):{};
+    for(const t of [...(s.topics||[])].sort((a,b)=>a.page-b.page||a.y-b.y))rows.push({set,tid:t.id,ch:t.ch||'',tp:t.tp||'',page:t.page,side:set.type==='con'?'q':(t.side||'q'),rev:(s.crev||{})[t.id]||'',stars:sc[t.id]||0});
   }
   return rows;
 }
@@ -2657,7 +2693,7 @@ function renderConLib(sets){
   const books=sets.filter(x=>x.type==='con');
   $('#libTitle').textContent='Revise · '+libSub;
   $('#libMeta').textContent=all.length?all.length+' topic'+(all.length===1?'':'s')+' in '+books.length+' concept book'+(books.length===1?'':'s')+' · '+all.filter(r=>r.rev==='done').length+' revised':'';
-  const ra=$('#rvAll');ra.hidden=!rows.length;ra.textContent=rows.length===all.length?'▶ Revise concepts':'▶ Revise these '+rows.length;ra.onclick=()=>startCRv(rows,'Concepts');
+  const ra=$('#rvAll');ra.hidden=!rows.length;ra.textContent=rows.length===all.length?'▶ Revise concepts':'▶ Revise these '+rows.length;ra.onclick=()=>startCRv(rows,'Concepts');$('#rvTopic').hidden=true;
   const f=$('#libFlt');const had=document.activeElement&&document.activeElement.id==='libSearch';f.innerHTML='';
   const chip=(lab,on,fn)=>{const b=document.createElement('button');b.className='fc'+(on?' on':'');b.textContent=lab;b.addEventListener('click',fn);f.append(b)};
   const sf=v=>()=>{libStat=v;prefs.libStat=v;savePrefs();renderLib()};
@@ -2724,7 +2760,7 @@ function updPh(){
     fl.classList.toggle('a',prefs.view==='a');fl.classList.toggle('q',prefs.view!=='a');fl.textContent=prefs.view==='a'?'A':'Q';
     $('#dock').classList.toggle('l',prefs.dock==='l');
     if(RV){const it=RV.q[RV.i];const v=it?(RV.kind==='c'?(st.crev||{})[it.tid]:(st.rev||{})[it.n]):null;
-      $('#phLt').textContent=it?(it.tp||it.ch||RV.label||''):'';$('#phLp').textContent=(RV.i+1)+' / '+RV.q.length;
+      $('#phLt').textContent=it?(it.tp||it.ch||RV.label||''):'';$('#phLp').textContent=RV.mode==='t'?'Topic '+it.ti+'/'+RV.tn+(it.k==='c'?' · concept':' · Q'+it.qi+'/'+it.qn):(RV.i+1)+' / '+RV.q.length;
       $('#phDc').textContent=$('#rvCrumb').textContent;$('#phDs').textContent=$('#rvSrc').textContent;
       $('#ppOk').classList.toggle('on',v==='done');$('#ppAg').classList.toggle('on',v==='again');
       $('#prOk').classList.toggle('on',v==='done');$('#prAg').classList.toggle('on',v==='again');
@@ -3030,7 +3066,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='30 Oct 19:57';   // build label, so you can check both devices have the same version
+const APPV='31 Oct 09:47';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
@@ -3099,11 +3135,11 @@ function syncFollowSoon(){if(SY.role()!=='laptop'||!syncOk())return;clearTimeout
 function syncFollowNow(){
   const p=followSide();if(!p||!key)return;
   const a=getAnchor(p);if(!a)return;
-  const isC=p===P.c;const hl=(isC?(p.cst&&p.cst.hl.q||[]):st.hl[p.side]).filter(h=>Math.abs(h.page-a.n)<=1);
+  const isC=p===P.c;const hl=(isC?(p.cst&&p.cst.hl&&p.cst.hl[p.cside||'q']||[]):st.hl[p.side]).filter(h=>Math.abs(h.page-a.n)<=1);
   if(Date.now()<lkQuiet)return;
-  const body={k:isC?p.ckey:key,qk:key,s:p.side,p:a.n,f:+a.f.toFixed(4),hl,q:activeN==null?-1:activeN,sq:sideSeq,fp:prefs.lkFollowPhone?1:0,t:{'.sv':'timestamp'}};
+  const body={k:isC?p.ckey:key,qk:key,s:p.side,p:a.n,f:+a.f.toFixed(4),hl,q:activeN==null?-1:activeN,sq:sideSeq,fp:prefs.lkFollowPhone?1:0,t:{'.sv':'timestamp'}};if(isC&&p.cside==='a')body.cs='a';
   if(!isC&&st.mcq&&activeN!=null&&st.mcq[activeN])body.mq={n:activeN,o:mcqPick&&mcqPick.n===activeN?mcqPick.o:'',sc:mcqScoreText(activeN)};
-  const sig=JSON.stringify([body.k,body.s,body.p,body.f,body.q,body.sq,body.fp,hl,body.mq||0]);if(sig===lkLastSent)return;lkLastSent=sig;
+  const sig=JSON.stringify([body.k,body.s,body.p,body.f,body.q,body.sq,body.fp,hl,body.mq||0,body.cs||'']);if(sig===lkLastSent)return;lkLastSent=sig;
   fbReq('PUT','rooms/'+SY.room()+'/follow',body).catch(()=>{lkLastSent=''});
 }
 setInterval(()=>{if(SY.role()==='laptop'&&syncOk()){lkLastSent='';syncFollowNow()}},20000);   // keep-alive so the phone knows the laptop is on
@@ -3121,7 +3157,7 @@ function applyRemote(it){
   if(mine)pushUndo();
   if(it.op==='del'){const i=list.findIndex(h=>same(h,it.h));if(i>=0)list.splice(i,1)}
   else if(!list.some(h=>same(h,it.h)))list.push(it.h);
-  if(onCon){LS.set('pp:'+it.k,S);renderConPane();syncFollowSoon()}
+  if(onCon){if(S===st){save();renderAnn(it.s)}else LS.set('pp:'+it.k,S);renderConPane();syncFollowSoon()}
   else if(mine){save();renderAnn(it.s)}else LS.set('pp:'+it.k,S);
 }
 function laptopCmd(d){
@@ -3244,12 +3280,14 @@ async function phoneFollowConcept(f){
   const set=LIB.sets.find(x=>x.key===f.k);const c=P.c;
   if(!set){if(phoneFollow.miss!==f.k){phoneFollow.miss=f.k;toast('The laptop opened a concept book that is not on this phone. Restore a “Back up with PDFs” here first.')}return}
   if(f.qk&&f.qk!==key){const qs=LIB.sets.find(x=>x.key===f.qk);if(qs){await openSet(qs.id);if(phFollowing!==f)return}}
-  if(c.setId!==set.id){const recs=[];for(const fl of set.files.q){const b=await idbGet('blob:'+fl.id);if(b)recs.push({name:fl.name,size:fl.size,blob:b,id:fl.id})}
+  const sd=f.cs==='a'?'a':'q',sid=set.id+':'+sd;
+  if(c.setId!==sid){const recs=[];for(const fl of set.files[sd]||[]){const b=await idbGet('blob:'+fl.id);if(b)recs.push({name:fl.name,size:fl.size,blob:b,id:fl.id})}
     if(!recs.length){$('#app').classList.add('nopdf');$('#phEmT').textContent='The PDF for “'+set.name+'” is not on this phone';return}
-    $('#app').classList.add('cv');await loadDoc('c',recs);c.setId=set.id;if(phFollowing!==f)return}
+    $('#app').classList.add('cv');await loadDoc('c',recs);c.setId=sid;if(phFollowing!==f)return}
   $('#app').classList.remove('nopdf');
-  c.ckey=set.key;c.cst=Object.assign({hl:{q:[],a:[]},stars:{q:[],a:[]},topics:[]},LS.get('pp:'+set.key)||{});c.topics=c.cst.topics||[];
-  const pages=new Set([f.p-1,f.p,f.p+1]);c.cst.hl.q=[...(c.cst.hl.q||[]).filter(h=>!pages.has(h.page)),...(f.hl||[])];LS.set('pp:'+set.key,c.cst);
+  c.ckey=set.key;c.cside=sd;c.cst=set.id===LIB.cur?st:Object.assign({hl:{q:[],a:[]},stars:{q:[],a:[]},topics:[]},LS.get('pp:'+set.key)||{});c.cst.hl=c.cst.hl||{q:[],a:[]};c.cst.stars=c.cst.stars||{q:[],a:[]};
+  c.topics=(c.cst.topics||[]).filter(t=>set.type==='con'||(t.side||'q')===sd);
+  const pages=new Set([f.p-1,f.p,f.p+1]);c.cst.hl[sd]=[...(c.cst.hl[sd]||[]).filter(h=>!pages.has(h.page)),...(f.hl||[])];if(c.cst===st)save();else LS.set('pp:'+set.key,c.cst);
   $('#app').classList.add('cv');if(prefs.view!=='a')setView('a');layout(c,false);renderConPane();c.fn.textContent=set.name;
   const lf=phoneFollow.last;phoneFollow.last=f;
   if(lf&&lf.s==='c'&&lf.k===f.k&&lf.p===f.p&&Math.abs(lf.f-f.f)<=0.002)return;
