@@ -1265,6 +1265,7 @@ function onDown(e,p){
       let ch='',tp='';
       if(isCset()){const tt=topicAbove(sortedTopics(),pg.n,y1+.005);if(tt){ch=tt.ch||'';tp=tt.tp||''}}
       else{const n=ownerIn(st.stickers[p.side]||[],pg.n,y1+.01);const m=n!=null?meta(n):{};ch=m.ch||'';tp=m.tp||''}
+      const lc=prefs.lastClip;if(lc&&lc.k===key&&lc.ch){ch=lc.ch;tp=lc.tp||''}   // same set: carry on with the chapter/topic of your last card
       pushUndo();st.clips=st.clips||[];const cid=uid();st.clips.push({id:cid,side:p.side,page:pg.n,x1:+x1.toFixed(4),y1:+y1.toFixed(4),x2:+x2.toFixed(4),y2:+y2.toFixed(4),ch,tp,at:Date.now()});save();renderAll();
       const rr=pageDiv.getBoundingClientRect();openClipTag(cid,rr.left+x2*p.W+12,rr.top+y1*p.W,true)};
     window.addEventListener('pointermove',mv);window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up);return;
@@ -1431,6 +1432,7 @@ function saveTag(){
     const c=(st.clips||[]).find(x=>x.id===tagCtx.id);if(!c){closeTag();return}
     const canon=(v,list)=>list.find(x=>x.toLowerCase()===v.toLowerCase())||v;
     if(!tagCtx.isNew)pushUndo();c.ch=canon($('#tgCh').value.trim(),allChapters());c.tp=canon($('#tgTp').value.trim(),allTopics(''));
+    if(c.ch){prefs.lastClip={k:key,ch:c.ch,tp:c.tp};savePrefs()}
     save();const nw=tagCtx.isNew;closeTag();renderAll();toast((nw?'Card added':'Card saved')+(c.tp||c.ch?' to '+(c.tp||c.ch):'')+'. See it in Library → Last-day');return;
   }
   if(tagCtx.kind==='topic'){
@@ -3517,7 +3519,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='31 Oct 10:45';   // build label, so you can check both devices have the same version
+const APPV='31 Oct 10:54';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
