@@ -679,7 +679,7 @@ select.tin{appearance:auto}
 <div id="app" class="v-split">
   <aside id="side" aria-label="Index">
     <button class="setl" id="setl" title="Open your library (L)"><span class="ty mod">SET</span><span class="nm">No set open</span><span class="sb"></span></button>
-    <div class="sh"><div class="tabs"><button class="tab on" data-tab="pairs" id="cnt">Index</button><button class="tab" data-tab="bm" id="bmcnt">Bookmarks</button></div>
+    <div class="sh"><div class="tabs"><button class="tab on" data-tab="pairs" id="cnt">Index</button><button class="tab" data-tab="tp" id="tpcnt" hidden>Concepts</button><button class="tab" data-tab="bm" id="bmcnt">Bookmarks</button></div>
       <button class="ib tvb" id="tagView" title="Tag view: type chapter and topic beside each question" aria-label="Tag view">🏷</button><button class="ib" id="hideSide" title="Hide index (I)" aria-label="Hide index">«</button></div>
     <div class="srch"><input id="isearch" type="search" placeholder="Search name, chapter or topic" aria-label="Search questions"></div>
     <div id="list"></div>
@@ -1345,12 +1345,13 @@ function updIndex(){
   const ns=allNums();const list=$('#list');
   $('#cnt').textContent=isCset()?'Topics · '+(st.topics||[]).length:'Index · '+ns.length;
   $('#bmcnt').textContent='Bookmarks · '+(st.bm.q.length+st.bm.a.length);
+  {const nt=new Set((st.topics||[]).map(t=>((t.ch||'')+'|'+(t.tp||'')).toLowerCase())).size;const tb=$('#tpcnt');tb.hidden=isCset()||!nt;tb.textContent='📖 '+nt;tb.title='Concepts marked in this set';if(!tb.hidden){$('#bmcnt').textContent='🔖 '+(st.bm.q.length+st.bm.a.length);$('#bmcnt').title='Bookmarks'}if(tab==='tp'&&tb.hidden)tab='pairs'}
   $$('.tab').forEach(t=>t.classList.toggle('on',t.dataset.tab===tab));
   $('.srch').hidden=tab!=='pairs'||!ns.length||isCset();
-  $('#foot').textContent=tab==='pairs'?'Right-click a sticker or row to set its chapter and topic. Ctrl or Shift-click to select several.':'Press B, or the ribbon button at the top of a side, to bookmark the page you are reading.';
+  $('#foot').textContent=tab==='tp'?'Concepts marked in this set with 📖. Click to go there. A topic marked in more than one place shows once; click again for the next spot.':tab==='pairs'?'Right-click a sticker or row to set its chapter and topic. Ctrl or Shift-click to select several.':'Press B, or the ribbon button at the top of a side, to bookmark the page you are reading.';
   updBulk();
   if(tab==='bm'){renderBmList();return}
-  if(isCset()){renderTopicIndex();return}
+  if(isCset()||tab==='tp'){renderTopicIndex();return}
   if(!ns.length){list.innerHTML='<div class="empty">No stickers yet. Pick <b>Sticker</b>, click beside a question, then beside its answer.</div>';return}
   const q=query.trim().toLowerCase();
   const hit=n=>!q||String(n)===q||label(n).toLowerCase().includes(q)||(meta(n).ch||'').toLowerCase().includes(q)||(meta(n).tp||'').toLowerCase().includes(q);
@@ -1430,23 +1431,24 @@ function saveTag(){
   if(!tagCtx)return;
   if(tagCtx.kind==='clip'){
     const c=(st.clips||[]).find(x=>x.id===tagCtx.id);if(!c){closeTag();return}
-    const canon=(v,list)=>list.find(x=>x.toLowerCase()===v.toLowerCase())||v;
+    const canon=(v,list)=>{const z=w=>w.replace(/\s+/g,' ').trim().toLowerCase();v=v.replace(/\s+/g,' ').trim();return list.find(x=>z(x)===z(v))||v};
     if(!tagCtx.isNew)pushUndo();c.ch=canon($('#tgCh').value.trim(),allChapters());c.tp=canon($('#tgTp').value.trim(),allTopics(''));
     if(c.ch){prefs.lastClip={k:key,ch:c.ch,tp:c.tp};savePrefs()}
     save();const nw=tagCtx.isNew;closeTag();renderAll();toast((nw?'Card added':'Card saved')+(c.tp||c.ch?' to '+(c.tp||c.ch):'')+'. See it in Library → Last-day');return;
   }
   if(tagCtx.kind==='topic'){
     const t=(st.topics||[]).find(x=>x.id===tagCtx.id);if(!t){closeTag();return}
-    const canon=(v,list)=>list.find(x=>x.toLowerCase()===v.toLowerCase())||v;
+    const canon=(v,list)=>{const z=w=>w.replace(/\s+/g,' ').trim().toLowerCase();v=v.replace(/\s+/g,' ').trim();return list.find(x=>z(x)===z(v))||v};
     const ch=$('#tgCh').value.trim(),tp=$('#tgTp').value.trim();
     if(!tagCtx.isNew)pushUndo();
     t.ch=canon(ch,allChapters());t.tp=canon(tp,allTopics(''));if(t.ch)st.lastCh=t.ch;
     save();const wasNew=tagCtx.isNew;tagCtx.isNew=false;closeTag();activeTid=t.id;renderAll();
-    toast(t.tp||t.ch?(wasNew?'Topic marked: ':'Saved: ')+(t.tp||t.ch):'Topic left without a name');return;
+    const dup=(st.topics||[]).filter(z=>z!==t&&(z.ch||'').toLowerCase()===(t.ch||'').toLowerCase()&&(z.tp||'').toLowerCase()===(t.tp||'').toLowerCase());
+    toast(t.tp||t.ch?(wasNew?'Topic marked: ':'Saved: ')+(t.tp||t.ch)+(dup.length?' (already marked on p'+dup.map(z=>z.page).join(', p')+'; it shows once in the list)':''):'Topic left without a name');return;
   }
   const {ns,mixed}=tagCtx;const one=ns.length===1;
   const ch=$('#tgCh').value.trim(),tp=$('#tgTp').value.trim();
-  const canon=(v,list)=>list.find(x=>x.toLowerCase()===v.toLowerCase())||v;   // reuse existing spelling
+  const canon=(v,list)=>{const z=w=>w.replace(/\s+/g,' ').trim().toLowerCase();v=v.replace(/\s+/g,' ').trim();return list.find(x=>z(x)===z(v))||v};   // reuse existing spelling
   const chV=canon(ch,allChapters()),tpV=canon(tp,allTopics(''));
   pushUndo();
   for(const n of ns){
@@ -2846,24 +2848,29 @@ function starTopicMenu(i,x,y){
   pop.style.left=clamp(x,8,innerWidth-pop.offsetWidth-8)+'px';pop.style.top=clamp(y,8,innerHeight-pop.offsetHeight-8)+'px';
 }
 function renderTopicIndex(){
-  const list=$('#list');list.innerHTML='';
-  $('#foot').textContent='Pick 📖 Topic and click where each topic starts. Click a row to go there, right-click to rename.';
+  const list=$('#list');list.innerHTML='';const cs=isCset();
+  $('#foot').textContent=cs?'Pick 📖 Topic and click where each topic starts. Click a row to go there, right-click to rename.':'Concepts marked in this set with 📖. Click to go there. A topic marked in more than one place shows once: click again for the next spot.';
   const ts=sortedTopics();
-  if(!ts.length){list.innerHTML='<div class="empty">No topics marked yet. Pick <b>📖 Topic</b> and click where a topic starts, then give it its chapter and topic.</div>';return}
-  const chs=new Map();for(const t of ts){const k=(t.ch||'').toLowerCase();if(!chs.has(k))chs.set(k,{ch:t.ch,items:[]});chs.get(k).items.push(t)}
+  if(!ts.length){list.innerHTML='<div class="empty">No topics marked yet. Pick <b>📖</b> and click where a topic starts, then give it its chapter and topic.</div>';return}
+  // one row per chapter + topic, even if it is marked in several places
+  const chs=new Map();
+  for(const t of ts){const k=(t.ch||'').toLowerCase();if(!chs.has(k))chs.set(k,{ch:t.ch,tps:new Map()});const g=chs.get(k);const tk=(t.tp||'').toLowerCase();if(!g.tps.has(tk))g.tps.set(tk,[]);g.tps.get(tk).push(t)}
+  const tsc=topicStars(st);
   for(const g of chs.values()){
-    const h=document.createElement('div');h.className='gch'+(g.ch?'':' none');h.innerHTML='<span class="car">▾</span><span class="cht"></span><span class="chc">'+g.items.length+'</span>';
+    const n=g.tps.size;
+    const h=document.createElement('div');h.className='gch'+(g.ch?'':' none');h.innerHTML='<span class="car">▾</span><span class="cht"></span><span class="chc">'+n+'</span>';
     $('.cht',h).textContent=g.ch||'No chapter yet';list.append(h);
     const box=document.createElement('div');box.className='grp';list.append(box);
-    for(const t of g.items){
-      const r=document.createElement('div');r.className='row'+(t.id===activeTid?' act':'');r.dataset.tid=t.id;r.tabIndex=0;
-      const v=(st.crev||{})[t.id];
-      const tsc=topicStars(st)[t.id]||0;
-      r.innerHTML='<span class="ti">📖</span><span class="nm"></span>'+(tsc?'<span class="stc" title="'+tsc+' star'+(tsc===1?'':'s')+'">★'+tsc+'</span>':'')+(v?'<span class="rvd '+v+'"></span>':'')+'<span class="pg">p'+t.page+'</span><button class="del" title="Remove marker" aria-label="Remove marker">×</button>';
-      $('.nm',r).textContent=t.tp||'Untitled topic';
-      r.addEventListener('click',e=>{if(e.target.closest('.del')){pushUndo();st.topics=st.topics.filter(z=>z!==t);save();renderAll();return}goTopic(t.id)});
-      r.addEventListener('keydown',e=>{if(e.key==='Enter')goTopic(t.id)});
-      const ed=e=>{e.preventDefault();const b=r.getBoundingClientRect();openTopicTag(t.id,b.right+8,b.top,false)};
+    for(const spots of g.tps.values()){
+      const t=spots[0];const r=document.createElement('div');r.className='row'+(spots.some(x=>x.id===activeTid)?' act':'');r.dataset.tid=t.id;r.tabIndex=0;
+      const v=(st.crev||{})[t.id];const sc=spots.reduce((a,x)=>a+(tsc[x.id]||0),0);
+      const side=!cs&&t.side==='a'?'<span class="tag a" style="font-size:9px;padding:1px 4px">A</span>':'';
+      r.innerHTML='<span class="ti">📖</span><span class="nm"></span>'+side+(spots.length>1?'<span class="chc" title="Marked in '+spots.length+' places">×'+spots.length+'</span>':'')+(sc?'<span class="stc">★'+sc+'</span>':'')+(v?'<span class="rvd '+v+'"></span>':'')+'<span class="pg">p'+t.page+'</span><button class="del" title="Remove marker" aria-label="Remove marker">×</button>';
+      $('.nm',r).textContent=t.tp||(g.ch?'(whole chapter)':'Untitled topic');
+      const go=()=>{const i=spots.findIndex(x=>x.id===activeTid);const nx=spots[(i+1)%spots.length];goTopic(nx.id);$('.pg',r).textContent='p'+nx.page};
+      r.addEventListener('click',e=>{if(e.target.closest('.del')){const cur=spots.find(x=>x.id===activeTid)||t;pushUndo();st.topics=st.topics.filter(z=>z!==cur);save();renderAll();return}go()});
+      r.addEventListener('keydown',e=>{if(e.key==='Enter')go()});
+      const ed=e=>{e.preventDefault();const b=r.getBoundingClientRect();openTopicTag((spots.find(x=>x.id===activeTid)||t).id,b.right+8,b.top,false)};
       r.addEventListener('dblclick',ed);r.addEventListener('contextmenu',ed);
       box.append(r);
     }
@@ -3519,7 +3526,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='31 Oct 10:54';   // build label, so you can check both devices have the same version
+const APPV='31 Oct 11:03';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
