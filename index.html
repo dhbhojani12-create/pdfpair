@@ -2769,7 +2769,13 @@ function applyMode(){
 function placeTopic(page,x,y,cx,cy,side){
   pushUndo();st.topics=st.topics||[];
   const t={id:uid(),page,x,y,ch:st.lastCh||'',tp:''};
-  if(!isCset()){t.side=side||'q';const n=ownerIn(st.stickers[t.side]||[],page,y),m=n!=null?meta(n):{};if(m.ch||m.tp){t.ch=m.ch||'';t.tp=m.tp||''}}   // in a question set: start from the question it sits under
+  if(!isCset()){t.side=side||'q';   // in a question set: take the chapter from whatever is just above, the last concept marker or the question
+    const at=(pg,yy)=>pg*10+yy,me=at(page,y);
+    const mk=(st.topics||[]).filter(z=>(z.side||'q')===t.side&&at(z.page,z.y)<=me+.001).sort((a,b)=>at(b.page,b.y)-at(a.page,a.y))[0];
+    const sk=[...(st.stickers[t.side]||[])].filter(z=>at(z.page,z.y)<=me+.01).sort((a,b)=>at(b.page,b.y)-at(a.page,a.y))[0];
+    if(mk&&mk.ch&&(!sk||at(mk.page,mk.y)>=at(sk.page,sk.y)||!(meta(sk.n).ch))){t.ch=mk.ch;t.tp=''}
+    else if(sk){const m=meta(sk.n);if(m.ch||m.tp){t.ch=m.ch||'';t.tp=m.tp||''}}
+    else if(st.lastCh)t.ch=st.lastCh}
   st.topics.push(t);save();activeTid=t.id;renderAll();
   openTopicTag(t.id,cx+16,cy-20,true);
 }
@@ -3526,7 +3532,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='31 Oct 11:03';   // build label, so you can check both devices have the same version
+const APPV='31 Oct 11:36';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
