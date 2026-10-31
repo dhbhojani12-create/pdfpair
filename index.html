@@ -703,7 +703,7 @@ select.tin{appearance:auto}
     </section>
     <section class="pane" id="pane-c" data-side="c" aria-label="Concept book">
       <div class="chip"><div class="cname"><span class="tag">📖</span><span class="fn"></span><span class="pc"></span>
-        <span class="zm"><button data-z="-1" aria-label="Zoom out">−</button><button class="zp" data-z="0" title="Fit width">100%</button><button data-z="1" aria-label="Zoom in">+</button></span><button class="cxb" id="conAlt" title="This topic is marked in more than one place. Show the next one" hidden>1/2 ›</button><button class="cxb" id="conTopics" title="Jump to a topic in the concept book" aria-label="Topics">≡</button><button class="cxb" id="conClose" title="Back to the answer (C)" aria-label="Back to the answer">×</button></div></div>
+        <span class="zm"><button data-z="-1" aria-label="Zoom out">−</button><button class="zp" data-z="0" title="Fit width">100%</button><button data-z="1" aria-label="Zoom in">+</button></span><button class="cxb" id="conBook" title="Open your concept book (where you left it)" hidden>📕</button><button class="cxb" id="conAlt" title="This topic is marked in more than one place. Show the next one" hidden>1/2 ›</button><button class="cxb" id="conTopics" title="Jump to a topic in the concept book" aria-label="Topics">≡</button><button class="cxb" id="conClose" title="Back to the answer (C)" aria-label="Back to the answer">×</button></div></div>
       <div class="sc"><div class="pages"></div></div>
     </section>
     <section id="quizPane" aria-label="Quiz view" hidden>
@@ -2931,6 +2931,7 @@ async function openConceptSpot(r){
   if(pg){c.sc.scrollTop=Math.max(0,pg.div.offsetTop+r.t.y*c.W-c.sc.clientHeight*.1);const el=$('.tmk[data-id="'+r.t.id+'"]',c.pg);if(el){el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash')}}
   c.fn.textContent=(r.set.type==='con'?r.set.name:r.set.name+(sd==='a'?' · Answer':''))+' · '+(r.t.tp||r.t.ch);c.fn.title=r.set.name;
   const ab=$('#conAlt'),n0=(c.alts||[]).length;ab.hidden=n0<2;if(n0>1)ab.textContent=((c.altI||0)+1)+'/'+n0+' ›';
+  $('#conBook').hidden=r.set.type==='con'||!LIB.sets.some(x=>x.type==='con'&&x.subject===(curSet()||{}).subject);
   updConUI();return true;
 }
 // the concept side (C): show and edit the concept book's own highlights and important stars
@@ -2991,7 +2992,7 @@ async function openConceptBrowse(){
   $('#app').classList.add('cv');if(prefs.view==='q')setView(PH?'a':'split');
   layout(c,false);renderConPane();
   if(fresh){const lp=LS.get('cpos:'+set.key);if(lp)setTimeout(()=>setAnchor(c,lp),60)}
-  c.fn.textContent=set.name;c.fn.title=set.name;prefs.lastCon=set.id;savePrefs();
+  c.fn.textContent=set.name;c.fn.title=set.name;prefs.lastCon=set.id;savePrefs();$('#conBook').hidden=true;
   updConUI();return true;
 }
 // remember where you were in the concept book
@@ -3011,7 +3012,9 @@ function updConUI(){try{syncFollowSoon()}catch(e){}const on=conceptShown();const
   $$('#rvSeg button').forEach(x=>x.classList.toggle('on',(x.dataset.c==='1')===on));updPh()}
 $('#bCon').addEventListener('click',()=>toggleConcept());
 $('#conClose').addEventListener('click',()=>toggleConcept(false));
-$('#conAlt').addEventListener('click',e=>{e.stopPropagation();const c=P.c;if(!c.alts||c.alts.length<2)return;c.altI=((c.altI||0)+1)%c.alts.length;openConceptSpot(c.alts[c.altI])});
+$('#conAlt').addEventListener('click',e=>{e.stopPropagation();const c=P.c;if(!c.alts||!c.alts.length)return;if(c.alts.length<2&&c.altI!==-1)return;c.altI=((c.altI==null?0:c.altI)+1)%c.alts.length;openConceptSpot(c.alts[c.altI])});
+$('#conBook').addEventListener('click',async e=>{e.stopPropagation();const c=P.c,keep=c.alts;
+  if(await openConceptBrowse()){c.alts=keep;c.altI=-1;if(keep&&keep.length){const ab=$('#conAlt');ab.hidden=false;ab.textContent='↩ Back'}toast('Concept book opened where you left it. ≡ jumps to a topic, ↩ goes back')}});
 $$('#rvSeg button').forEach(b=>b.addEventListener('click',()=>toggleConcept(b.dataset.c==='1')));
 
 /* Library: concepts view */
@@ -3532,7 +3535,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='31 Oct 11:36';   // build label, so you can check both devices have the same version
+const APPV='31 Oct 11:45';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
