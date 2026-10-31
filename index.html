@@ -370,6 +370,9 @@ select.tin{appearance:auto}
 .tab.on{background:var(--panel);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.1)}
 .row .tag{flex:none;font-size:9px;padding:2px 5px}
 .row.bmr .tag.a{background:#2f8f5b}
+.row.bmr .nm.dim{color:var(--mut)}.row.bmr .pg{font-size:12px;color:var(--mut);margin-left:auto;padding:0 4px}.row.bmr .ren{opacity:.55;font-size:13px;padding:2px 6px;border-radius:6px}.row.bmr .ren:hover{opacity:1;background:var(--ground-2)}
+.bmin{flex:1;min-width:0;font:inherit;font-size:13px;padding:4px 7px;border:1.5px solid #2f6fe0;border-radius:6px;background:var(--panel,#fff);color:inherit}
+.ribl{position:absolute;right:38px;top:3px;z-index:4;white-space:nowrap;font-size:11px;font-weight:600;background:var(--bm);color:#fff;padding:2px 7px;border-radius:5px;pointer-events:none;max-width:260px;overflow:hidden;text-overflow:ellipsis}
 
 /* bookmark ribbon */
 .rib,.trib{position:absolute;top:-3px;right:14px;width:18px;height:26px;background:var(--bm);clip-path:polygon(0 0,100% 0,100% 100%,50% 76%,0 100%);z-index:4;cursor:pointer;border:0;padding:0}
@@ -1047,7 +1050,7 @@ function renderAnn(side){try{syncFollowSoon()}catch(e){}
     el.title=imp?(()=>{const m=starTopic(st,t);return 'Important point'+(m?' in '+(m.tp||m.ch):'')+'. Right-click to change its topic, drag to move'})():t.l?(mate?'★'+t.l+' of '+label(t.n)+'. Click to see its '+(side==='q'?'working in the answer':'place in the question'):'☆'+t.l+' of '+label(t.n)+'. Click beside the matching spot on the '+(side==='q'?'answer':'question')+' side to link it'):'Star. Drag to move, or use the eraser to remove';
     pos(el,t.x,t.y);pg.ov.append(el)});
   (st.topics||[]).filter(t=>(isCset()?'q':(t.side||'q'))===side).forEach(t=>{const pg=p.pages[t.page-1];if(!pg)return;pg.ov.append(tmkEl(t,t.id===activeTid))});
-  st.bm[side].forEach(n=>{const pg=p.pages[n-1];if(!pg)return;const r=document.createElement('div');r.className='rib';r.title='Bookmarked. Click to remove';pg.ov.append(r)});
+  st.bm[side].forEach(n=>{const pg=p.pages[n-1];if(!pg)return;const r=document.createElement('div');r.className='rib';const nm=bmName(side,n);r.title=(nm?'“'+nm+'”. ':'')+'Bookmarked. Click to remove';pg.ov.append(r);if(nm){const l=document.createElement('div');l.className='ribl';l.textContent=nm;pg.ov.append(l)}});
   st.stickers[side].forEach(s=>{const pg=p.pages[s.page-1];if(!pg)return;
     const el=document.createElement('div');el.className='stk';el.dataset.n=s.n;el.textContent=s.n;el.title=label(s.n)+(meta(s.n).ch?' · '+meta(s.n).ch:'')+(meta(s.n).tp?' › '+meta(s.n).tp:'')+'  (right-click to set chapter and topic)';
     if(!findS(other(side),s.n))el.classList.add('half');
@@ -1386,23 +1389,39 @@ $('#tgName').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault
 
 let tab='pairs';
 $$('.tab').forEach(t=>t.addEventListener('click',()=>{tab=t.dataset.tab;updIndex()}));
+// a bookmark can have its own name (st.bmn: "q:12" -> "Ind AS 116 summary")
+function bmName(sd,n){return ((st.bmn||{})[sd+':'+n])||''}
+function bmTitle(sd,n){const nm=bmName(sd,n);return nm?nm+' · '+(sd==='q'?'Q':'A')+' p'+n:(sd==='q'?'Questions':'Answers')+' · page '+n}
+function renameBm(sd,n,row){
+  const nm=$('.nm',row),old=bmName(sd,n);
+  const inp=document.createElement('input');inp.className='bmin';inp.value=old;inp.placeholder='Name this bookmark, e.g. Ind AS 116 summary';inp.setAttribute('aria-label','Bookmark name');
+  nm.replaceWith(inp);inp.focus();inp.select();let done=false;
+  const fin=ok=>{if(done)return;done=true;
+    if(ok){const v=inp.value.trim();if(v!==old){pushUndo();st.bmn=st.bmn||{};if(v)st.bmn[sd+':'+n]=v;else delete st.bmn[sd+':'+n];save();toast(v?'Renamed to “'+v+'”':'Name removed')}}
+    renderAll()};
+  inp.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter')fin(true);if(e.key==='Escape')fin(false)});
+  inp.addEventListener('click',e=>e.stopPropagation());inp.addEventListener('blur',()=>fin(true));
+}
 function renderBmList(){
   const list=$('#list');list.innerHTML='';
   const items=[...st.bm.q.map(n=>['q',n]),...st.bm.a.map(n=>['a',n])];
   if(!items.length){list.innerHTML='<div class="empty">No bookmarks yet. Press <b>B</b>, or the ribbon button at the top of a side, to bookmark the page you are reading.</div>';return}
   items.forEach(([s,n])=>{
     const row=document.createElement('div');row.className='row bmr';row.tabIndex=0;
-    row.innerHTML='<span class="tag '+s+'">'+s.toUpperCase()+'</span><span class="nm">'+(s==='q'?'Questions':'Answers')+' · page '+n+'</span><button class="del" title="Remove bookmark" aria-label="Remove bookmark">×</button>';
+    const nm=bmName(s,n);
+    row.innerHTML='<span class="tag '+s+'">'+s.toUpperCase()+'</span><span class="nm"></span><span class="pg">p'+n+'</span><button class="ren" title="Rename bookmark" aria-label="Rename bookmark">✎</button><button class="del" title="Remove bookmark" aria-label="Remove bookmark">×</button>';
+    $('.nm',row).textContent=nm||(s==='q'?'Questions':'Answers')+' · page '+n;if(!nm)$('.nm',row).classList.add('dim');
     const go=()=>{if(!isShown(s))setView(s);toggleGrid(P[s],false);goPage(P[s],n);if((PH||matchMedia('(max-width:720px)').matches))setSide(false)};
-    row.addEventListener('click',e=>{if(e.target.closest('.del')){toggleBm(s,n);return}go()});
-    row.addEventListener('keydown',e=>{if(e.key==='Enter')go()});
+    row.addEventListener('click',e=>{if(e.target.closest('.bmin'))return;if(e.target.closest('.del')){toggleBm(s,n);return}if(e.target.closest('.ren')){renameBm(s,n,row);return}go()});
+    row.addEventListener('keydown',e=>{if(e.target.closest('.bmin'))return;if(e.key==='Enter')go();if(e.key==='F2'){e.preventDefault();renameBm(s,n,row)}});
+    const ed=e=>{e.preventDefault();renameBm(s,n,row)};row.addEventListener('dblclick',ed);row.addEventListener('contextmenu',ed);
     list.append(row);
   });
 }
 function toggleBm(side,n){
   pushUndo();const a=st.bm[side];const i=a.indexOf(n);
-  if(i>=0)a.splice(i,1);else{a.push(n);a.sort((x,y)=>x-y)}
-  save();renderAll();toast((i>=0?'Bookmark removed: ':'Bookmarked: ')+(side==='q'?'Questions':'Answers')+' page '+n);
+  if(i>=0){a.splice(i,1);if(st.bmn)delete st.bmn[side+':'+n]}else{a.push(n);a.sort((x,y)=>x-y)}
+  save();renderAll();toast(i>=0?'Bookmark removed: '+(side==='q'?'Questions':'Answers')+' page '+n:'Bookmarked page '+n+'. Rename it in the Bookmarks tab (✎)');
 }
 function goPage(p,n){const pg=p.pages[n-1];if(!pg)return;if(!p.W)layout(p,false);p.sc.scrollTop=Math.max(0,pg.div.offsetTop-12);updChip(p)}
 
@@ -1445,7 +1464,7 @@ function updGrid(p){
   st.stickers[p.side].forEach(s=>{(by[s.page]=by[s.page]||[]).push(s)});
   p.cells.forEach((c,i)=>{const n=i+1;
     c.classList.toggle('cur',n===cur);c.classList.toggle('bm',bm.has(n));c.hidden=!!p.bmOnly&&!bm.has(n);
-    $('.trib',c).title=bm.has(n)?'Remove bookmark':'Bookmark page '+n;
+    $('.trib',c).title=bm.has(n)?(bmName(p.side,n)?'“'+bmName(p.side,n)+'”. ':'')+'Remove bookmark':'Bookmark page '+n;$('.cn',c).textContent=bm.has(n)&&bmName(p.side,n)?n+' · '+bmName(p.side,n):n;
     const ns0=(st.stars[p.side]||[]).filter(t=>t.page===n).length;
     $('.tbs',c).innerHTML=(by[n]||[]).sort((a,b)=>a.y-b.y).map(s=>'<span class="badge'+(findS(other(p.side),s.n)?'':' half')+'">'+s.n+'</span>').join('')+(ns0?'<span class="sbadge">★'+ns0+'</span>':'');
   });
@@ -2149,7 +2168,7 @@ async function exportPdf(){
       for(const n of allNums()){const nd=pairNode(n);if(nd)tree.push(nd)}
     }
     const bmk=[];
-    for(const sd of ['q','a'])for(const n of st.bm[sd]){const d=pageDest(sd,n);if(d)bmk.push({title:(sd==='q'?'Questions':'Answers')+' · page '+n,dest:d,kids:[]})}
+    for(const sd of ['q','a'])for(const n of st.bm[sd]){const d=pageDest(sd,n);if(d)bmk.push({title:bmTitle(sd,n),dest:d,kids:[]})}
     if(bmk.length)tree.push({title:'Bookmarked pages',dest:bmk[0].dest,kids:bmk,open:true});
     if(tree.length){
       const write=(nodes,parent)=>{
@@ -3066,7 +3085,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='31 Oct 09:47';   // build label, so you can check both devices have the same version
+const APPV='31 Oct 09:50';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
