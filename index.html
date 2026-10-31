@@ -518,6 +518,8 @@ select.tin{appearance:auto}
 #xfer{position:absolute;z-index:60;top:calc(10px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);background:rgba(27,30,35,.95);color:#fff;padding:10px 16px;border-radius:14px;font-size:14px;display:flex;flex-direction:column;gap:7px;min-width:240px;max-width:calc(100% - 24px);box-shadow:0 6px 18px rgba(0,0,0,.3)}
 #xfer[hidden]{display:none}#xfer .xb{height:5px;border-radius:3px;background:rgba(255,255,255,.18);overflow:hidden}#xfer .xb i{display:block;height:100%;width:0;background:#5ad66d;transition:width .2s}
 .lksend{margin-top:12px;display:flex;flex-direction:column;gap:4px;align-items:flex-start}.lksend small{color:var(--mut)}
+/* concept book switcher */
+.cxsel{font:inherit;font-size:12px;max-width:160px;padding:3px 6px;border:1px solid var(--line);border-radius:7px;background:var(--panel);color:var(--ink)}.cxsel[hidden]{display:none}
 /* compact toolbar */
 #bar #bSide span{display:none}#bar .b.ico{font-size:16px;min-width:34px;justify-content:center}
 #bCol .sw,#colDot{display:block;width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.7)}
@@ -703,7 +705,7 @@ select.tin{appearance:auto}
     </section>
     <section class="pane" id="pane-c" data-side="c" aria-label="Concept book">
       <div class="chip"><div class="cname"><span class="tag">📖</span><span class="fn"></span><span class="pc"></span>
-        <span class="zm"><button data-z="-1" aria-label="Zoom out">−</button><button class="zp" data-z="0" title="Fit width">100%</button><button data-z="1" aria-label="Zoom in">+</button></span><button class="cxb" id="conBm" title="Bookmark this concept page (B)" aria-label="Bookmark this page">🔖</button><button class="cxb" id="conBook" title="Open your concept book (where you left it)" hidden>📕</button><button class="cxb" id="conAlt" title="This topic is marked in more than one place. Show the next one" hidden>1/2 ›</button><button class="cxb" id="conTopics" title="Jump to a topic in the concept book" aria-label="Topics">≡</button><button class="cxb" id="conClose" title="Back to the answer (C)" aria-label="Back to the answer">×</button></div></div>
+        <span class="zm"><button data-z="-1" aria-label="Zoom out">−</button><button class="zp" data-z="0" title="Fit width">100%</button><button data-z="1" aria-label="Zoom in">+</button></span><select id="conPick" class="cxsel" title="Switch concept book" hidden></select><button class="cxb" id="conFav" title="Make this my main concept book: C opens it first" hidden>☆</button><button class="cxb" id="conBm" title="Bookmark this concept page (B)" aria-label="Bookmark this page">🔖</button><button class="cxb" id="conBook" title="Open your concept book (where you left it)" hidden>📕</button><button class="cxb" id="conAlt" title="This topic is marked in more than one place. Show the next one" hidden>1/2 ›</button><button class="cxb" id="conTopics" title="Jump to a topic in the concept book" aria-label="Topics">≡</button><button class="cxb" id="conClose" title="Back to the answer (C)" aria-label="Back to the answer">×</button></div></div>
       <div class="sc"><div class="pages"></div></div>
     </section>
     <section id="quizPane" aria-label="Quiz view" hidden>
@@ -2942,7 +2944,8 @@ function conceptSpots(ch,tp,sub){
     for(const t of s.topics||[]){const sc=(eq(t.tp,tp)?2:0)+(eq(t.ch,ch)?1:0);if(sc)out.push({set,t,sc,side:set.type==='con'?'q':(t.side||'q')})}
   }
   const best=Math.max(0,...out.map(o=>o.sc));
-  return out.filter(o=>o.sc===best).sort((a,b)=>(a.set.type!=='con')-(b.set.type!=='con')||a.t.page-b.t.page||a.t.y-b.t.y);
+  const fav=(prefs.favCon||{})[sub];   // your main concept book comes first, then other books, then markers in answer books
+  return out.filter(o=>o.sc===best).sort((a,b)=>(a.set.type!=='con')-(b.set.type!=='con')||(b.set.id===fav)-(a.set.id===fav)||a.t.page-b.t.page||a.t.y-b.t.y);
 }
 function findConcept(n){
   const cur=curSet();const m=meta(n);if(!cur||(!m.ch&&!m.tp))return null;
@@ -3079,10 +3082,27 @@ $('#conTopics').addEventListener('click',e=>{
   $('#app').append(pop);const r=e.target.getBoundingClientRect(),a=$('#app').getBoundingClientRect();
   pop.style.top=(r.bottom-a.top+6)+'px';pop.style.left=Math.max(8,Math.min(r.right-a.left-260,a.width-270))+'px';
 });
-function updConUI(){try{syncFollowSoon()}catch(e){}const on=conceptShown();const b=$('#bCon');if(b){b.hidden=!hasConcepts();b.classList.toggle('on',on)}
+function conBooks(){const cur=curSet();return LIB.sets.filter(x=>x.type==='con'&&(!cur||x.subject===cur.subject))}
+function updConPick(){
+  const bs=conBooks(),sel=$('#conPick'),fv=$('#conFav'),c=P.c;const curId=(c.setId||'').split(':')[0];const isBook=bs.some(b=>b.id===curId);
+  sel.hidden=fv.hidden=bs.length<2;if(bs.length<2)return;
+  sel.innerHTML='';if(!isBook){const o=document.createElement('option');o.value='';o.textContent='Concept book…';sel.append(o)}
+  const sub=(curSet()||{}).subject,fav=(prefs.favCon||{})[sub];
+  bs.forEach(b=>{const o=document.createElement('option');o.value=b.id;o.textContent=(b.id===fav?'★ ':'')+b.name;sel.append(o)});sel.value=isBook?curId:'';
+  fv.hidden=!isBook;fv.textContent=curId===fav?'★':'☆';fv.title=curId===fav?'Your main concept book (C opens it first). Click to unset':'Make this my main concept book: C opens it first';
+}
+function updConUI(){try{updConPick()}catch(e){}try{syncFollowSoon()}catch(e){}const on=conceptShown();const b=$('#bCon');if(b){b.hidden=!hasConcepts();b.classList.toggle('on',on)}
   $$('#rvSeg button').forEach(x=>x.classList.toggle('on',(x.dataset.c==='1')===on));updPh()}
 $('#bCon').addEventListener('click',()=>toggleConcept());
 $('#conClose').addEventListener('click',()=>toggleConcept(false));
+$('#conPick').addEventListener('change',async e=>{const id=e.target.value;if(!id)return;const c=P.c,keep=c.alts;
+  const hit=(keep||[]).findIndex(a=>a.set.id===id&&a.set.type==='con');   // that book has this topic: open it there
+  if(hit>=0){c.altI=hit;await openConceptSpot(keep[hit]);return}
+  const set=LIB.sets.find(x=>x.id===id);prefs.lastCon=id;c.setId=null;
+  if(await openConceptBrowse()){c.alts=keep;c.altI=-1;if(keep&&keep.length){const ab=$('#conAlt');ab.hidden=false;ab.textContent='↩ Back'}toast(set.name+' opened where you left it')}});
+$('#conPick').addEventListener('pointerdown',e=>e.stopPropagation());
+$('#conFav').addEventListener('click',e=>{e.stopPropagation();const id=(P.c.setId||'').split(':')[0],sub=(curSet()||{}).subject;prefs.favCon=prefs.favCon||{};
+  if(prefs.favCon[sub]===id){delete prefs.favCon[sub];toast('No main concept book now')}else{prefs.favCon[sub]=id;toast((LIB.sets.find(x=>x.id===id)||{}).name+' is your main concept book. C opens it first')}savePrefs();updConPick()});
 $('#conBm').addEventListener('click',e=>{e.stopPropagation();if(P.c.pages.length)toggleConBm(curPage(P.c))});
 $('#conAlt').addEventListener('click',e=>{e.stopPropagation();const c=P.c;if(!c.alts||!c.alts.length)return;if(c.alts.length<2&&c.altI!==-1)return;c.altI=((c.altI==null?0:c.altI)+1)%c.alts.length;openConceptSpot(c.alts[c.altI])});
 $('#conBook').addEventListener('click',async e=>{e.stopPropagation();const c=P.c,keep=c.alts;
@@ -3607,7 +3627,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='31 Oct 12:24';   // build label, so you can check both devices have the same version
+const APPV='31 Oct 12:41';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
