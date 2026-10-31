@@ -94,6 +94,20 @@ button:focus-visible,input:focus-visible,.row:focus-visible{outline:2px solid #4
 .tmk.flash{animation:sflash .9s ease-out 2}
 #pane-c .tmk{cursor:default}
 body.t-topic .ov{cursor:cell}
+body.t-clip .ov{cursor:crosshair;touch-action:none}
+.clipbox{position:absolute;border:2px dashed #2f6fe0;background:rgba(47,111,224,.10);z-index:6;pointer-events:none}
+.clp{position:absolute;border:2px dashed rgba(47,111,224,.55);border-radius:4px;z-index:3;pointer-events:none;display:none}
+body.t-clip .clp{display:block}.clp .cx{position:absolute;right:-10px;top:-10px;width:22px;height:22px;border-radius:50%;background:#2f6fe0;color:#fff;font-size:13px;line-height:22px;text-align:center;pointer-events:auto;cursor:pointer}
+.stk.amd::after{content:'⚠';position:absolute;right:-9px;top:-9px;font-size:12px;line-height:1;filter:drop-shadow(0 0 1px #fff)}
+.amdb{color:#c27c00;font-size:11px;font-weight:700;margin-left:4px}
+.deckc{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;padding:12px 16px}
+.dcard{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff;display:flex;flex-direction:column}
+.dcard .im{min-height:80px;display:grid;place-items:center;background:#f6f7f9;cursor:pointer}.dcard img{width:100%;display:block}
+.dcard .dm{display:flex;align-items:center;gap:6px;padding:6px 8px;font-size:11.5px;color:var(--mut);border-top:1px solid var(--line)}.dcard .dm span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dcard .dm button{padding:2px 6px;border-radius:6px}.dcard .dm button:hover{background:var(--ground-2);color:var(--ink)}
+.dtag{display:flex;gap:6px;padding:6px 8px;border-top:1px solid var(--line)}.dtag input{flex:1;min-width:0;font:inherit;font-size:12px;padding:4px 6px;border:1px solid var(--line);border-radius:6px}
+.dtp{padding:10px 16px 0;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mut)}
+.damd{display:flex;align-items:center;gap:8px;padding:7px 16px;border-top:1px solid var(--line);font-size:13px;cursor:pointer;width:100%;text-align:left}.damd:hover{background:var(--ground-2)}
 body.t-erase .tmk:hover{opacity:.5}
 .ti{flex:none;width:22px;height:22px;border-radius:6px;background:#7a5bb5;color:#fff;display:grid;place-items:center;font-size:11px}
 .tseg{display:flex;background:var(--chrome);border-radius:8px;padding:2px;flex:none}
@@ -693,7 +707,7 @@ select.tin{appearance:auto}
     <button class="b qonly" data-t="sticker" title="Sticker (S)">Sticker</button>
     <button class="b" data-t="topic" id="bTopic" title="Concept marker (T): click where a concept or topic starts, on any page">📖 Concept</button>
     <button class="b" data-t="hl" title="Highlighter (H): drag across a line">Highlight</button>
-    <button class="b" data-t="star" title="Star (K): click to mark a point you want to remember. Not linked to anything." aria-label="Star"><span style="color:#f5b400;font-size:16px">★</span></button>
+    <button class="b" data-t="clip" title="Clip card (X): drag a box around a journal entry, chart or formula for your Last-day deck">✂ Clip</button><button class="b" data-t="star" title="Star (K): click to mark a point you want to remember. Not linked to anything." aria-label="Star"><span style="color:#f5b400;font-size:16px">★</span></button>
     <button class="b cb" data-c="0" aria-label="Yellow"><span class="sw" style="background:#ffd400"></span></button>
     <button class="b cb" data-c="1" aria-label="Green"><span class="sw" style="background:#5ad66d"></span></button>
     <button class="b cb" data-c="2" aria-label="Pink"><span class="sw" style="background:#ff6fa5"></span></button>
@@ -745,7 +759,7 @@ select.tin{appearance:auto}
       <button class="addset phlk2" id="libLink">📱 Link to laptop</button>
     </aside>
     <section class="lmain">
-      <div class="ltop"><h1 id="libTitle">Revise</h1><div class="tseg" id="libView"><button data-v="q">Questions</button><button data-v="c">Concepts</button><button data-v="m">Most asked</button></div><span class="lmeta" id="libMeta"></span><span class="sp"></span><button class="btn" id="rvAll">▶ Revise all</button><button class="btn ghost" id="mtBtn" title="Write a paper under a timer, then check it">⏱ Mock test</button><button class="btn ghost" id="rvTopic" title="Topic by topic: the concept first, then all its questions" hidden>▶ Concept first</button></div>
+      <div class="ltop"><h1 id="libTitle">Revise</h1><div class="tseg" id="libView"><button data-v="q">Questions</button><button data-v="c">Concepts</button><button data-v="m">Most asked</button><button data-v="d">Last-day</button></div><span class="lmeta" id="libMeta"></span><span class="sp"></span><button class="btn" id="rvAll">▶ Revise all</button><button class="btn ghost" id="mtBtn" title="Write a paper under a timer, then check it">⏱ Mock test</button><button class="btn ghost" id="rvTopic" title="Topic by topic: the concept first, then all its questions" hidden>▶ Concept first</button></div>
       <div class="flt" id="libFlt"></div>
       <div class="lbody" id="libBody"></div>
     </section>
@@ -771,6 +785,7 @@ select.tin{appearance:auto}
     <div id="tgNameW"><label for="tgName">Name</label><div class="fw"><input id="tgName" autocomplete="off"></div></div>
     <label for="tgCh">Chapter</label><div class="fw"><input id="tgCh" autocomplete="off"><div class="sug" hidden></div></div>
     <label for="tgTp">Topic</label><div class="fw"><input id="tgTp" autocomplete="off"><div class="sug" hidden></div></div>
+    <label class="ck" id="tgAmdW"><input type="checkbox" id="tgAmd"><span>⚠ Affected by an amendment</span></label>
     <p class="hint" id="tgHint"></p>
     <div class="acts"><button class="btn ghost" id="tgCancel">Cancel</button><button class="btn" id="tgSave">Save</button></div>
   </div>
@@ -841,7 +856,7 @@ function starCounts(s0){
 const LET='abcdefghijklmnopqrstuvwxyz';
 function starPartner(side,t){if(t.n==null||!t.l)return null;return (st.stars[other(side)]||[]).find(x=>x.n===t.n&&x.l===t.l)||null}
 function meta(n){return (st.meta&&st.meta[n])||{}}
-function setMeta(n,m){st.meta=st.meta||{};const v=Object.assign({},st.meta[n]||{},m);if(!v.ch)delete v.ch;if(!v.tp)delete v.tp;if(v.ch||v.tp)st.meta[n]=v;else delete st.meta[n]}
+function setMeta(n,m){st.meta=st.meta||{};const v=Object.assign({},st.meta[n]||{},m);if(!v.ch)delete v.ch;if(!v.tp)delete v.tp;if(!v.amd)delete v.amd;if(v.ch||v.tp||v.amd)st.meta[n]=v;else delete st.meta[n]}
 // chapters and topics in the order of their first question
 function groups(ns){
   ns=ns||allNums();const chs=new Map();
@@ -1078,10 +1093,11 @@ function renderAnn(side){try{syncFollowSoon()}catch(e){}
     if(t.l){const l=document.createElement('span');l.className='sl';l.textContent=t.l;el.append(l)}
     el.title=imp?(()=>{const m=starTopic(st,t);return 'Important point'+(m?' in '+(m.tp||m.ch):'')+'. Right-click to change its topic, drag to move'})():t.l?(mate?'★'+t.l+' of '+label(t.n)+'. Click to see its '+(side==='q'?'working in the answer':'place in the question'):'☆'+t.l+' of '+label(t.n)+'. Click beside the matching spot on the '+(side==='q'?'answer':'question')+' side to link it'):'Star. Drag to move, or use the eraser to remove';
     pos(el,t.x,t.y);pg.ov.append(el)});
+  (st.clips||[]).filter(c=>c.side===side).forEach(c=>{const pg=p.pages[c.page-1];if(!pg)return;const el=document.createElement('div');el.className='clp';el.dataset.id=c.id;el.style.left='calc(var(--W) * '+c.x1+')';el.style.top='calc(var(--W) * '+c.y1+')';el.style.width='calc(var(--W) * '+(c.x2-c.x1)+')';el.style.height='calc(var(--W) * '+(c.y2-c.y1)+')';el.innerHTML='<span class="cx" title="Remove this card">×</span>';pg.ov.append(el)});
   (st.topics||[]).filter(t=>(isCset()?'q':(t.side||'q'))===side).forEach(t=>{const pg=p.pages[t.page-1];if(!pg)return;pg.ov.append(tmkEl(t,t.id===activeTid))});
   st.bm[side].forEach(n=>{const pg=p.pages[n-1];if(!pg)return;const r=document.createElement('div');r.className='rib';const nm=bmName(side,n);r.title=(nm?'“'+nm+'”. ':'')+'Bookmarked. Click to remove';pg.ov.append(r);if(nm){const l=document.createElement('div');l.className='ribl';l.textContent=nm;pg.ov.append(l)}});
   st.stickers[side].forEach(s=>{const pg=p.pages[s.page-1];if(!pg)return;
-    const el=document.createElement('div');el.className='stk';el.dataset.n=s.n;el.textContent=s.n;el.title=label(s.n)+(meta(s.n).ch?' · '+meta(s.n).ch:'')+(meta(s.n).tp?' › '+meta(s.n).tp:'')+'  (right-click to set chapter and topic)';
+    const el=document.createElement('div');el.className='stk'+(meta(s.n).amd?' amd':'');el.dataset.n=s.n;el.textContent=s.n;el.title=label(s.n)+(meta(s.n).ch?' · '+meta(s.n).ch:'')+(meta(s.n).tp?' › '+meta(s.n).tp:'')+'  (right-click to set chapter and topic)';
     if(!findS(other(side),s.n))el.classList.add('half');
     if(s.n===activeN)el.classList.add('act');
     pos(el,s.x,s.y);pg.ov.append(el)});
@@ -1202,6 +1218,21 @@ function onDown(e,p){
   const pt=ev=>({x:clamp((ev.clientX-r.left)/p.W,0,1),y:clamp((ev.clientY-r.top)/p.W,0,pg.ar)});
   const tk=e.target.closest('.tmk');
   if(tk){tmkDown(e,p,pg,tk,pt);return}
+  if(prefs.tool==='clip'){
+    if(e.target.closest('.cx')){const id=e.target.closest('.clp').dataset.id;pushUndo();st.clips=(st.clips||[]).filter(c=>c.id!==id);save();renderAll();toast('Clip card removed');return}
+    e.preventDefault();const a=pt(e);let b=a;const box=document.createElement('div');box.className='clipbox';pg.ov.append(box);
+    const draw=()=>{box.style.left='calc(var(--W) * '+Math.min(a.x,b.x)+')';box.style.top='calc(var(--W) * '+Math.min(a.y,b.y)+')';box.style.width='calc(var(--W) * '+Math.abs(b.x-a.x)+')';box.style.height='calc(var(--W) * '+Math.abs(b.y-a.y)+')'};
+    const mv=ev=>{b=pt(ev);draw()};
+    const up=()=>{window.removeEventListener('pointermove',mv);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',up);box.remove();
+      const x1=Math.min(a.x,b.x),x2=Math.max(a.x,b.x),y1=Math.min(a.y,b.y),y2=Math.max(a.y,b.y);
+      if(x2-x1<.04||y2-y1<.02){toast('Drag a box around the part you want as a card');return}
+      let ch='',tp='';
+      if(isCset()){const tt=topicAbove(sortedTopics(),pg.n,y1+.005);if(tt){ch=tt.ch||'';tp=tt.tp||''}}
+      else{const n=ownerIn(st.stickers[p.side]||[],pg.n,y1+.01);const m=n!=null?meta(n):{};ch=m.ch||'';tp=m.tp||''}
+      pushUndo();st.clips=st.clips||[];st.clips.push({id:uid(),side:p.side,page:pg.n,x1:+x1.toFixed(4),y1:+y1.toFixed(4),x2:+x2.toFixed(4),y2:+y2.toFixed(4),ch,tp,at:Date.now()});save();renderAll();
+      toast('Card added'+(tp||ch?' to '+(tp||ch):'')+'. See it in Library → Last-day deck')};
+    window.addEventListener('pointermove',mv);window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up);return;
+  }
   if(prefs.tool==='topic'){
     const x0=e.clientX,y0=e.clientY;
     const up=ev=>{window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',cancel);
@@ -1316,7 +1347,7 @@ function mkRow(n){
   const row=document.createElement('div');row.className='row'+(q&&a?'':' open')+(n===activeN?' act':'')+(sel.has(n)?' sel':'');row.dataset.n=n;row.tabIndex=0;
   const sc=starCounts(st)[n]||0;
   row.innerHTML='<span class="badge'+(q&&a?'':' half')+'">'+n+'</span><span class="nm">'+'</span>'+(sc?'<span class="stc" title="'+sc+' star'+(sc===1?'':'s')+'">★'+sc+'</span>':'')+((st.rev||{})[n]?'<span class="rvd '+st.rev[n]+'" title="'+(st.rev[n]==='done'?'Revised':'Revise again')+'"></span>':'')+'<span class="pg">'+(q?'p'+q.page:'?')+' → '+(a?'p'+a.page:'?')+'</span><button class="del" title="Delete both stickers" aria-label="Delete">×</button>';
-  $('.nm',row).textContent=label(n);
+  $('.nm',row).textContent=label(n);if(meta(n).amd){const t=document.createElement('span');t.className='amdb';t.textContent='⚠';t.title='Affected by an amendment';$('.nm',row).append(t)}
   row.title=label(n)+(meta(n).ch?'\n'+meta(n).ch:'')+(meta(n).tp?' › '+meta(n).tp:'');
   row.addEventListener('click',e=>{
     if(e.target.closest('.del'))return;
@@ -1348,6 +1379,7 @@ function openTag(ns,x,y){
   if(one){$('#tgName').value=st.names[n]||'';$('#tgName').placeholder='Illus '+n}
   for(const [k,id] of [['ch','#tgCh'],['tp','#tgTp']]){const c=common(k);const el=$(id);el.value=c||'';el.placeholder=c===null?'Mixed. Leave empty to keep each one as it is':(k==='ch'?'e.g. Ind AS 102 Share Based Payment':'e.g. Equity settled')}
   $('#tgHint').textContent=one?'':'Empty boxes leave those questions unchanged.';
+  $('#tgAmdW').hidden=false;$('#tgAmd').checked=ns.every(i=>!!meta(i).amd);$('#tgAmd').indeterminate=!$('#tgAmd').checked&&ns.some(i=>!!meta(i).amd);
   pop.hidden=false;
   const w=pop.offsetWidth,h=pop.offsetHeight;
   pop.style.left=clamp(x,8,innerWidth-w-8)+'px';pop.style.top=clamp(y,8,innerHeight-h-8)+'px';
@@ -1379,6 +1411,7 @@ function saveTag(){
     if(one||chV||!mixed.ch)m.ch=chV;
     if(one||tpV||!mixed.tp)m.tp=tpV;
     if(!one&&!chV&&mixed.ch)delete m.ch;if(!one&&!tpV&&mixed.tp)delete m.tp;
+    if(!$('#tgAmd').indeterminate)m.amd=$('#tgAmd').checked;
     setMeta(n,m);
   }
   if(chV)st.lastCh=chV;
@@ -1552,7 +1585,7 @@ function setSide(on){prefs.side=on;savePrefs();$('#app').classList.toggle('nosid
 function setTool(t){
   if(prefs.tool===t&&t!=='none')t='none';
   prefs.tool=t;savePrefs();
-  document.body.classList.remove('t-sticker','t-hl','t-erase','t-star','t-topic');if(t!=='none')document.body.classList.add('t-'+t);
+  document.body.classList.remove('t-sticker','t-hl','t-erase','t-star','t-topic','t-clip');if(t!=='none')document.body.classList.add('t-'+t);
   $$('[data-t]').forEach(b=>b.classList.toggle('on',b.dataset.t===t));updPh();
 }
 function updBar(){
@@ -1630,6 +1663,7 @@ document.addEventListener('keydown',e=>{
     case 's':case 'S':setTool('sticker');break;
     case 'h':case 'H':setTool('hl');break;
     case 'k':case 'K':setTool('star');break;
+    case 'x':case 'X':setTool('clip');break;
     case 't':case 'T':setTool('topic');break;
     case 'c':case 'C':toggleConcept();break;
     case 'e':case 'E':setTool('erase');break;
@@ -1815,7 +1849,7 @@ $('#oGo').addEventListener('click',async()=>{
 let libSub=prefs.libSub||null,libQ='';
 const libTypes=new Set(prefs.libTypes||TORD);let libStat=prefs.libStat||'all';
 function openLib(){renderLib();$('#lib').hidden=false}
-function closeLib(force){if(!force&&!curSet())return;$('#lib').hidden=true}
+function closeLib(force){if(!force&&!curSet())return;$('#lib').hidden=true;try{deckRelease()}catch(e){}}
 function qRows(sub){
   const rows=[];
   for(const set of setsOf(sub)){
@@ -1823,7 +1857,7 @@ function qRows(sub){
     const s=stOf(set),k=s.stickers||{q:[],a:[]};const ns=[...new Set([...k.q,...k.a].map(x=>x.n))].sort((a,b)=>a-b);
     const sc0=starCounts(s);
     for(const n of ns){const m=(s.meta||{})[n]||{};const q=k.q.find(x=>x.n===n),a=k.a.find(x=>x.n===n);
-      rows.push({set,n,name:(s.names||{})[n]||'Illus '+n,ch:m.ch||'',tp:m.tp||'',qp:q&&q.page,ap:a&&a.page,rev:(s.rev||{})[n]||'',stars:sc0[n]||0})}
+      rows.push({set,n,amd:!!m.amd,name:(s.names||{})[n]||'Illus '+n,ch:m.ch||'',tp:m.tp||'',qp:q&&q.page,ap:a&&a.page,rev:(s.rev||{})[n]||'',stars:sc0[n]||0})}
   }
   return rows;
 }
@@ -1868,9 +1902,10 @@ function renderLib(){
   $$('#libView button').forEach(b=>b.classList.toggle('on',b.dataset.v===libView));
   if(libView==='c'){renderConLib(sets);return}
   if(libView==='m'){renderMostLib(sets);return}
+  if(libView==='d'){renderDeckLib(sets);return}
   const all=qRows(libSub);
   const q=libQ.trim().toLowerCase();
-  const rows=all.filter(r=>libTypes.has(r.set.type)&&(libStat==='all'||libStat==='noq'||(libStat==='star'?r.stars>0:libStat==='not'?r.rev!=='done':r.rev==='again'))&&(!q||(r.name+' '+r.ch+' '+r.tp+' '+r.set.name+' '+r.n).toLowerCase().includes(q)));
+  const rows=all.filter(r=>libTypes.has(r.set.type)&&(libStat==='all'||libStat==='noq'||(libStat==='amd'?r.amd:libStat==='star'?r.stars>0:libStat==='not'?r.rev!=='done':r.rev==='again'))&&(!q||(r.name+' '+r.ch+' '+r.tp+' '+r.set.name+' '+r.n).toLowerCase().includes(q)));
   $('#libTitle').textContent='Revise · '+libSub;
   const done=all.filter(r=>r.rev==='done').length;
   const qsets=sets.filter(x=>x.type!=='con');
@@ -1897,6 +1932,7 @@ function renderLib(){
   chip('Any status',libStat==='all'||libStat==='noq',()=>{libStat='all';saveF()});
   chip('Not revised',libStat==='not',()=>{libStat='not';saveF()});
   chip('Revise again',libStat==='again',()=>{libStat='again';saveF()});
+  if(all.some(r=>r.amd))chip('⚠ Amendments',libStat==='amd',()=>{libStat='amd';saveF()});
   chip('★ Starred',libStat==='star',()=>{libStat='star';saveF()});
   const si=document.createElement('input');si.type='search';si.id='libSearch';si.placeholder='Search questions';si.value=libQ;si.setAttribute('aria-label','Search questions');
   si.addEventListener('input',()=>{libQ=si.value;renderLib()});f.append(si);if(had){si.focus();si.setSelectionRange(si.value.length,si.value.length)}
@@ -1923,7 +1959,7 @@ function renderLib(){
 function qRowEl(r){
   const b=document.createElement('button');b.className='qr';
   b.innerHTML='<span class="badge">'+r.n+'</span><span class="nm"></span><span class="src"><span class="ty '+r.set.type+'">'+TSHORT[r.set.type]+'</span><span></span></span><span class="pgs">'+(r.qp?'p'+r.qp:'?')+' → '+(r.ap?'p'+r.ap:'?')+'</span><span class="pill '+(r.rev||'not')+'">'+(r.rev==='done'?'Revised':r.rev==='again'?'Again':'Not yet')+'</span>';
-  $('.nm',b).textContent=r.name;if(r.stars){const t=document.createElement('span');t.className='stc';t.textContent=' ★'+r.stars;$('.nm',b).append(t)}
+  $('.nm',b).textContent=r.name;if(r.amd){const t=document.createElement('span');t.className='amdb';t.textContent='⚠';$('.nm',b).append(t)}if(r.stars){const t=document.createElement('span');t.className='stc';t.textContent=' ★'+r.stars;$('.nm',b).append(t)}
   $('.src span:last-child',b).textContent=r.set.name;b.title=r.name+' · '+r.set.name+(r.stars?' · '+r.stars+' star'+(r.stars===1?'':'s'):'');
   b.addEventListener('click',async()=>{closeLib(true);stopRv();await openSet(r.set.id);openPairSettled(r.n)});
   return b;
@@ -2584,7 +2620,7 @@ function placeTopic(page,x,y,cx,cy,side){
 }
 function openTopicTag(id,x,y,isNew){
   const t=(st.topics||[]).find(z=>z.id===id);if(!t)return;closePop();
-  tagCtx={kind:'topic',id,isNew:!!isNew};
+  tagCtx={kind:'topic',id,isNew:!!isNew};$('#tgAmdW').hidden=true;
   $('#tgTitle').innerHTML='<span class="ti">📖</span>Topic starts here';$('#tgNameW').hidden=true;
   $('#tgCh').value=t.ch||'';$('#tgCh').placeholder='e.g. Ind AS 102 Share Based Payment';
   $('#tgTp').value=t.tp||'';$('#tgTp').placeholder='e.g. Modification';
@@ -2893,6 +2929,88 @@ function renderMostLib(sets){
   });
   body.append(box);
   if(untagged){const n=document.createElement('div');n.className='lempty';n.style.padding='10px 4px';n.textContent=untagged+' exam question'+(untagged===1?' has':'s have')+' no chapter yet, so '+(untagged===1?'it is':'they are')+' not counted.';body.append(n)}
+}
+/* last-day deck: clip cards and amended questions, chapter by chapter */
+const deckImg=new Map(),deckDocs=new Map();let deckQ=Promise.resolve();
+async function deckDoc(f){if(deckDocs.has(f.id))return deckDocs.get(f.id);const b=await idbGet('blob:'+f.id);if(!b)return null;const d=await getDoc({id:f.id,blob:b});deckDocs.set(f.id,d);return d}
+function deckRelease(){for(const d of deckDocs.values())releaseDoc(d);deckDocs.clear()}
+function clipImg(set,c){   // the card as a picture, rendered from the PDF (queued so pages render one at a time)
+  const k=set.id+':'+c.id+':'+c.x1+c.y1+c.x2+c.y2;if(deckImg.has(k))return Promise.resolve(deckImg.get(k));
+  const job=deckQ.then(async()=>{
+    let pn=c.page;for(const f of set.files[c.side]||[]){const d=await deckDoc(f);if(!d)return null;if(pn<=d.numPages){
+      const pg=await d.getPage(pn);const v0=pg.getViewport({scale:1});const sc=1500/v0.width;const vp=pg.getViewport({scale:sc});
+      const cv=document.createElement('canvas');cv.width=Math.ceil(vp.width);cv.height=Math.ceil(vp.height);await pg.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;
+      const W=vp.width,x=c.x1*W,y=c.y1*W,w=(c.x2-c.x1)*W,h=(c.y2-c.y1)*W;const o=document.createElement('canvas');o.width=Math.round(w);o.height=Math.round(h);
+      o.getContext('2d').drawImage(cv,x,y,w,h,0,0,w,h);const url=o.toDataURL('image/jpeg',.88);deckImg.set(k,url);return url}pn-=d.numPages}
+    return null});
+  deckQ=job.catch(()=>null);return job;
+}
+function deckItems(sub){
+  const cards=[];for(const set of setsOf(sub)){const s=stOf(set);for(const c of s.clips||[])cards.push({set,c,ch:c.ch||'',tp:c.tp||''})}
+  const amd=qRows(sub).filter(r=>r.amd);return {cards,amd};
+}
+function renderDeckLib(sets){
+  const {cards,amd}=deckItems(libSub),q=libQ.trim().toLowerCase();
+  const fc=cards.filter(x=>!q||(x.ch+' '+x.tp+' '+x.set.name).toLowerCase().includes(q)),fa=amd.filter(r=>!q||(r.ch+' '+r.tp+' '+r.name).toLowerCase().includes(q));
+  $('#libTitle').textContent='Last-day · '+libSub;$('#libMeta').textContent=cards.length+' card'+(cards.length===1?'':'s')+' · '+amd.length+' amended question'+(amd.length===1?'':'s');
+  const ra=$('#rvAll');$('#rvTopic').hidden=true;ra.hidden=!fc.length&&!fa.length;ra.textContent='⤓ Save deck as PDF';ra.onclick=()=>deckPdf(fc,fa);
+  const f=$('#libFlt');const had=document.activeElement&&document.activeElement.id==='libSearch';f.innerHTML='';
+  const si=document.createElement('input');si.type='search';si.id='libSearch';si.placeholder='Search chapter or topic';si.value=libQ;si.setAttribute('aria-label','Search cards');
+  si.addEventListener('input',()=>{libQ=si.value;renderLib()});f.append(si);if(had){si.focus();si.setSelectionRange(si.value.length,si.value.length)}
+  const body=$('#libBody');body.innerHTML='';
+  if(!cards.length&&!amd.length){body.innerHTML='<div class="lempty">Nothing here yet.<br>Pick <b>✂ Clip</b> (X) and drag a box around a journal entry, chart or formula on any page to make a card.<br>To flag a question as amended, right-click its sticker and tick <b>⚠ Affected by an amendment</b>.</div>';return}
+  const chs=new Map();const put=(ch,tp,kind,x)=>{const k=ch.toLowerCase();if(!chs.has(k))chs.set(k,{ch,tps:new Map(),amd:[]});const g=chs.get(k);if(kind==='a'){g.amd.push(x);return}const t=tp.toLowerCase();if(!g.tps.has(t))g.tps.set(t,{tp,cards:[]});g.tps.get(t).cards.push(x)};
+  fc.forEach(x=>put(x.ch,x.tp,'c',x));fa.forEach(r=>put(r.ch,r.tp,'a',r));
+  const order=[...chs.values()].sort((a,b)=>(a.ch==='')-(b.ch==='')||a.ch.localeCompare(b.ch,undefined,{numeric:true,sensitivity:'base'}));
+  for(const g of order){
+    const c=document.createElement('div');c.className='cc';c.innerHTML='<div class="cch'+(g.ch?'':' none')+'"><b></b><span class="c"></span></div>';
+    $('b',c).textContent=g.ch||'No chapter yet';let nc=0;for(const t of g.tps.values())nc+=t.cards.length;$('.c',c).textContent=nc+' card'+(nc===1?'':'s')+(g.amd.length?' · ⚠ '+g.amd.length:'');
+    for(const r of g.amd){const b=document.createElement('button');b.className='damd';b.innerHTML='<span class="amdb">⚠</span><span></span><span class="sp"></span><small></small>';$('span:nth-child(2)',b).textContent=r.name+(r.tp?' · '+r.tp:'');$('small',b).textContent=r.set.name;b.style.display='flex';
+      b.addEventListener('click',async()=>{closeLib(true);stopRv();await openSet(r.set.id);openPair(r.n)});c.append(b)}
+    for(const t of g.tps.values()){
+      if(t.tp){const h=document.createElement('div');h.className='dtp';h.textContent=t.tp;c.append(h)}
+      const grid=document.createElement('div');grid.className='deckc';
+      for(const x of t.cards){
+        const d=document.createElement('div');d.className='dcard';d.innerHTML='<div class="im" title="Open where this card comes from">…</div><div class="dm"><span></span><button class="ed" title="Change chapter or topic">✎</button><button class="rm" title="Remove card">×</button></div>';
+        $('.dm span',d).textContent=x.set.name+' · '+(x.set.type==='con'?'':x.c.side==='a'?'A ':'Q ')+'p'+x.c.page;
+        clipImg(x.set,x.c).then(u=>{const im=$('.im',d);if(u){im.innerHTML='';const i=new Image();i.src=u;i.alt='Card';im.append(i)}else im.textContent='PDF not on this device'});
+        $('.im',d).addEventListener('click',async()=>{closeLib(true);stopRv();await openSet(x.set.id);const sd=isCset()?'q':x.c.side;if(!isShown(sd))setView(PH?sd:'split');const P0=P[sd],pg=P0.pages[x.c.page-1];if(pg){if(!P0.W)layout(P0,false);P0.sc.scrollTop=Math.max(0,pg.div.offsetTop+x.c.y1*P0.W-60)}});
+        $('.rm',d).addEventListener('click',()=>{const S=x.set.id===LIB.cur?st:LS.get('pp:'+x.set.key);S.clips=(S.clips||[]).filter(z=>z.id!==x.c.id);if(S===st)save();else LS.set('pp:'+x.set.key,S);toast('Card removed');renderLib();try{renderAll()}catch(e){}});
+        $('.ed',d).addEventListener('click',()=>{if($('.dtag',d))return;const e=document.createElement('div');e.className='dtag';e.innerHTML='<input placeholder="Chapter"><input placeholder="Topic"><button class="btn">Save</button>';
+          const [i1,i2]=$$('input',e);i1.value=x.c.ch||'';i2.value=x.c.tp||'';d.append(e);i1.focus();
+          [i1,i2].forEach(i=>i.addEventListener('keydown',ev=>{ev.stopPropagation();if(ev.key==='Enter')$('button',e).click()}));
+          $('button',e).addEventListener('click',()=>{const S=x.set.id===LIB.cur?st:LS.get('pp:'+x.set.key);const z=(S.clips||[]).find(q0=>q0.id===x.c.id);if(z){z.ch=i1.value.trim();z.tp=i2.value.trim();if(S===st)save();else LS.set('pp:'+x.set.key,S)}renderLib()})});
+        grid.append(d);
+      }
+      c.append(grid);
+    }
+    body.append(c);
+  }
+}
+async function deckPdf(cards,amd){
+  if(!window.PDFLib){toast('The PDF maker could not load. Check your internet connection.');return}
+  toast('Making your Last-day deck…');
+  const {PDFDocument,StandardFonts,rgb}=PDFLib;const doc=await PDFDocument.create();const F=await doc.embedFont(StandardFonts.Helvetica),FB=await doc.embedFont(StandardFonts.HelveticaBold);
+  const clean=t=>String(t||'').replace(/₹/g,'Rs ').replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/[–—]/g,'-').replace(/[^\x20-\x7E\xA0-\xFF]/g,'');
+  const W=595,H=842,M=40;let page=null,y=0;const np=()=>{page=doc.addPage([W,H]);y=H-M};
+  const need=h=>{if(!page||y-h<M)np()};
+  const text=(t,sz,f,col)=>{need(sz+8);page.drawText(clean(t).slice(0,110),{x:M,y:y-sz,size:sz,font:f,color:col||rgb(0.1,0.12,0.16)});y-=sz+8};
+  const chs=new Map();const put=(ch,tp,k,x)=>{const kk=ch.toLowerCase();if(!chs.has(kk))chs.set(kk,{ch,tps:new Map(),amd:[]});const g=chs.get(kk);if(k==='a')g.amd.push(x);else{const t=tp.toLowerCase();if(!g.tps.has(t))g.tps.set(t,{tp,cards:[]});g.tps.get(t).cards.push(x)}};
+  cards.forEach(x=>put(x.ch,x.tp,'c',x));amd.forEach(r=>put(r.ch,r.tp,'a',r));
+  const order=[...chs.values()].sort((a,b)=>(a.ch==='')-(b.ch==='')||a.ch.localeCompare(b.ch,undefined,{numeric:true,sensitivity:'base'}));
+  np();text('Last-day deck · '+libSub,20,FB);text(cards.length+' cards · '+amd.length+' amended questions',10,F,rgb(.4,.42,.48));y-=6;
+  for(const g of order){
+    need(60);y-=8;text(g.ch||'No chapter yet',15,FB,rgb(.18,.43,.88));
+    for(const r of g.amd)text('[Amended] '+r.name+(r.tp?' - '+r.tp:'')+'  ('+r.set.name+')',10,F,rgb(.7,.45,0));
+    for(const t of g.tps.values()){
+      if(t.tp)text(t.tp,11,FB,rgb(.35,.37,.42));
+      for(const x of t.cards){const u=await clipImg(x.set,x.c);if(!u)continue;const img=await doc.embedJpg(u);
+        let w=W-2*M,h=img.height*w/img.width;if(h>H-2*M-30){h=H-2*M-30;w=img.width*h/img.height}
+        need(h+18);page.drawImage(img,{x:M,y:y-h,width:w,height:h});y-=h+4;
+        page.drawText(clean(x.set.name+' · '+(x.set.type==='con'?'':x.c.side==='a'?'Answer ':'Question ')+'page '+x.c.page),{x:M,y:y-8,size:7,font:F,color:rgb(.55,.57,.62)});y-=18}
+    }
+  }
+  const bytes=await doc.save();await saveFile('Last-day deck '+libSub+'.pdf',new Blob([bytes],{type:'application/pdf'}));
 }
 function startCRv(rows,lab){
   if(!rows.length){toast('No topics here');return}
@@ -3237,7 +3355,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='31 Oct 09:55';   // build label, so you can check both devices have the same version
+const APPV='31 Oct 10:02';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
