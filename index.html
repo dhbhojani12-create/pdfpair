@@ -504,6 +504,23 @@ select.tin{appearance:auto}
 #xfer{position:absolute;z-index:60;top:calc(10px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);background:rgba(27,30,35,.95);color:#fff;padding:10px 16px;border-radius:14px;font-size:14px;display:flex;flex-direction:column;gap:7px;min-width:240px;max-width:calc(100% - 24px);box-shadow:0 6px 18px rgba(0,0,0,.3)}
 #xfer[hidden]{display:none}#xfer .xb{height:5px;border-radius:3px;background:rgba(255,255,255,.18);overflow:hidden}#xfer .xb i{display:block;height:100%;width:0;background:#5ad66d;transition:width .2s}
 .lksend{margin-top:12px;display:flex;flex-direction:column;gap:4px;align-items:flex-start}.lksend small{color:var(--mut)}
+/* mock test */
+#mockBar{position:absolute;z-index:40;top:calc(10px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:12px;background:#1b1e23;color:#fff;padding:7px 8px 7px 16px;border-radius:24px;box-shadow:0 6px 18px rgba(0,0,0,.3);font-size:14px;white-space:nowrap}
+#mockBar[hidden]{display:none}#mockBar .mt{opacity:.8;max-width:240px;overflow:hidden;text-overflow:ellipsis}#mockBar .mc{font:700 17px var(--mono);font-variant-numeric:tabular-nums}
+#mockBar.low .mc{color:#ffb020}#mockBar.out .mc{color:#ff6b6b}#mockBar button{background:#e5484d;color:#fff;border-radius:16px;padding:6px 14px;font-weight:600}
+#app.mock #pane-a,#app.mock #div,#app.mock .seg.qonly,#app.mock #bCon,#app.mock #rvbar,#app.mock #mcqBar{display:none!important}
+#mockPanel{position:absolute;z-index:39;left:12px;top:12px;bottom:84px;width:360px;max-width:calc(100% - 24px);background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 30px rgba(0,0,0,.18);display:flex;flex-direction:column;overflow:hidden}
+#mockPanel[hidden]{display:none}.mph{padding:14px 16px;border-bottom:1px solid var(--line)}.mph b{display:block;font-size:16px}.mph small{color:var(--mut)}
+.mpl{flex:1;overflow:auto}.mpr{display:flex;align-items:center;gap:8px;padding:8px 12px 8px 16px;border-top:1px solid var(--line);font-size:13px;cursor:pointer}.mpr:first-child{border-top:0}.mpr.act{background:var(--ground-2)}
+.mpr .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mpr button{width:34px;height:30px;border-radius:8px;border:1.5px solid var(--line);font-size:15px}
+.mpr button.ok.on{background:#23784a;border-color:#23784a;color:#fff}.mpr button.ag.on{background:#b8333a;border-color:#b8333a;color:#fff}
+.mpf{display:flex;align-items:center;gap:8px;padding:12px 14px;border-top:1px solid var(--line)}.mpf .mps{flex:1;font-size:12.5px;color:var(--mut)}
+#mockDlg{position:fixed;inset:0;z-index:70;background:rgba(15,17,21,.45);display:grid;place-items:center;padding:16px}#mockDlg[hidden]{display:none}
+#mockDlg .card{background:var(--panel);border-radius:16px;padding:22px 24px;width:min(520px,100%);max-height:calc(100vh - 32px);overflow:auto;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+#mockDlg h1{font-size:20px;margin:0 0 4px}.mdl{display:flex;flex-direction:column;gap:6px;margin:14px 0}
+.mdo{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;cursor:pointer;text-align:left;width:100%}.mdo.on{border-color:#2f6fe0;background:#eef4ff}
+.mdo b{flex:1;font-size:14px}.mdo small{color:var(--mut);font-size:12px;text-align:right}
+@media (max-width:760px){#mockPanel{left:8px;right:8px;width:auto;top:auto;height:46%;bottom:8px}}
 /* MCQ practice */
 #mcqBar{position:absolute;z-index:31;left:50%;transform:translateX(-50%);bottom:calc(74px + env(safe-area-inset-bottom,0px));display:none;align-items:center;gap:6px;background:rgba(27,30,35,.94);color:#fff;padding:6px 8px;border-radius:26px;box-shadow:0 6px 18px rgba(0,0,0,.3);font-size:13px;white-space:nowrap;max-width:calc(100% - 16px)}
 #mcqBar.on{display:flex}
@@ -650,6 +667,11 @@ select.tin{appearance:auto}
     </section>
   </main>
 
+  <div id="mockBar" hidden><span class="mt"></span><span class="mc">3:00:00</span><button id="mockFin">Finish</button></div>
+  <div id="mockPanel" hidden><div class="mph"><b>Check your paper</b><small></small></div><div class="mpl"></div><div class="mpf"><span class="mps"></span><button class="btn ghost" id="mockDiscard">Discard</button><button class="btn" id="mockSave">Save result</button></div></div>
+  <div id="mockDlg" hidden><div class="card" role="dialog" aria-labelledby="mdT"><h1 id="mdT">Mock test</h1><p class="sub">Pick a paper. The answers stay locked until you finish, then you check each question.</p><div class="mdl"></div>
+    <label class="fl" for="mdTime">Time</label><select id="mdTime" class="tin"><option value="60">1 hour</option><option value="90">1½ hours</option><option value="120">2 hours</option><option value="150">2½ hours</option><option value="180" selected>3 hours</option><option value="210">3½ hours</option></select>
+    <div class="acts"><span class="priv"></span><button class="btn ghost" id="mdCancel">Cancel</button><button class="btn" id="mdGo" disabled>Start test</button></div></div></div>
   <div id="xfer" hidden><span class="xt"></span><span class="xb"><i></i></span></div>
   <div id="mcqBar" role="group" aria-label="Pick an answer"><span class="mq"></span><button class="o" data-o="a">A</button><button class="o" data-o="b">B</button><button class="o" data-o="c">C</button><button class="o" data-o="d">D</button><span class="ms"></span><button class="nx" aria-label="Next question">›</button><button id="mcqEye" title="Hide the answer until I pick an option" aria-label="Hide answers until I pick">👁</button></div>
   <div id="bar" role="toolbar" aria-label="Tools">
@@ -723,7 +745,7 @@ select.tin{appearance:auto}
       <button class="addset phlk2" id="libLink">📱 Link to laptop</button>
     </aside>
     <section class="lmain">
-      <div class="ltop"><h1 id="libTitle">Revise</h1><div class="tseg" id="libView"><button data-v="q">Questions</button><button data-v="c">Concepts</button><button data-v="m">Most asked</button></div><span class="lmeta" id="libMeta"></span><span class="sp"></span><button class="btn" id="rvAll">▶ Revise all</button><button class="btn ghost" id="rvTopic" title="Topic by topic: the concept first, then all its questions" hidden>▶ Concept first</button></div>
+      <div class="ltop"><h1 id="libTitle">Revise</h1><div class="tseg" id="libView"><button data-v="q">Questions</button><button data-v="c">Concepts</button><button data-v="m">Most asked</button></div><span class="lmeta" id="libMeta"></span><span class="sp"></span><button class="btn" id="rvAll">▶ Revise all</button><button class="btn ghost" id="mtBtn" title="Write a paper under a timer, then check it">⏱ Mock test</button><button class="btn ghost" id="rvTopic" title="Topic by topic: the concept first, then all its questions" hidden>▶ Concept first</button></div>
       <div class="flt" id="libFlt"></div>
       <div class="lbody" id="libBody"></div>
     </section>
@@ -1511,7 +1533,8 @@ function rename(row,n){
 
 /* ---------- views & tools ---------- */
 function isShown(side){if(side==='a'&&isCset())return false;if(PH&&side==='a'&&RV&&RV.kind==='q'&&$('#app').classList.contains('ans'))return true;if(side==='q'&&isCset())return true;return prefs.view==='split'||prefs.view===side}
-function setView(v){
+function setView(v,force){
+  if(MT&&!MT.check&&v!=='q'&&!force){toast('Answers are locked until you finish the test');return}
   if(PH&&v==='split')v=prefs.view==='a'?'a':'q';
   // a hidden side loses its scroll position, so remember where each side was and put it back when it shows again
   const was={q:isShown('q'),a:isShown('a')};
@@ -1974,6 +1997,87 @@ function markRv(v){
 $('#rvOk').addEventListener('click',()=>markRv('done'));
 $('#rvAg').addEventListener('click',()=>markRv('again'));
 $('#rvExit').addEventListener('click',()=>{stopRv();openLib()});
+
+
+/* ---------- mock test: write a paper on time, answers locked, then check it ---------- */
+var MT=null,mtTick=0;   // var: setView reads it before this line runs
+function mockPapers(){
+  const out=[];
+  for(const set of LIB.sets.filter(x=>['mtp','rtp','pyq'].includes(x.type))){
+    const s=set.id===LIB.cur?st:(LS.get('pp:'+set.key)||{});const k=s.stickers||{q:[],a:[]};const ns=[...new Set(k.q.map(x=>x.n))].sort((a,b)=>a-b);
+    const by=new Map();
+    for(const n of ns){const nm=(s.names||{})[n]||'';const i=nm.indexOf(' · ');const pre=i>0?nm.slice(0,i):set.name;if(!by.has(pre))by.set(pre,[]);by.get(pre).push(n)}
+    for(const [pre,list] of by){const hist=(s.mocks||[]).filter(m=>m.paper===pre);out.push({set,paper:pre,ns:list,last:hist[hist.length-1]})}
+  }
+  const o={mtp:0,pyq:1,rtp:2};return out.sort((a,b)=>o[a.set.type]-o[b.set.type]);
+}
+function openMockDlg(){
+  const ps=mockPapers(),l=$('#mockDlg .mdl');l.innerHTML='';let pick=null;
+  if(!ps.length)l.innerHTML='<div class="empty">No MTP, RTP or past paper sets with stickers yet.</div>';
+  ps.forEach(p=>{const b=document.createElement('button');b.className='mdo';
+    b.innerHTML='<b></b><small></small>';$('b',b).textContent=p.set.name+(p.paper!==p.set.name?' · '+p.paper:'');
+    $('small',b).textContent=p.ns.length+' question'+(p.ns.length===1?'':'s')+(p.last?' · last: '+p.last.ok+'/'+p.last.tot+' ✓, '+new Date(p.last.at).toLocaleDateString('en-IN',{day:'numeric',month:'short'}):'');
+    b.addEventListener('click',()=>{pick=p;$$('.mdo',l).forEach(x=>x.classList.toggle('on',x===b));$('#mdGo').disabled=false});l.append(b)});
+  $('#mdGo').disabled=true;$('#mdGo').onclick=()=>{if(pick){$('#mockDlg').hidden=true;startMock(pick,+$('#mdTime').value)}};
+  $('#mockDlg').hidden=false;
+}
+$('#mtBtn').addEventListener('click',()=>{closeLib(true);openMockDlg()});
+$('#mdCancel').addEventListener('click',()=>{$('#mockDlg').hidden=true});
+async function startMock(p,mins){
+  stopRv();conceptPref=false;hideConcept();
+  MT={setId:p.set.id,paper:p.paper,ns:p.ns,start:Date.now(),end:Date.now()+mins*60e3,mins,warn:{}};LS.set('pp:mock',MT);
+  await openSet(p.set.id);mockOn();openPair(p.ns[0]);
+  toast('Test started: '+mins/60+' hour'+(mins===60?'':'s')+'. Answers are locked until you press Finish');
+}
+function mockOn(){
+  $('#app').classList.add('mock');if(prefs.view!=='q')setView('q',true);
+  $('#mockBar').hidden=false;$('#mockBar .mt').textContent=(curSet()||{}).name+(MT.paper!==(curSet()||{}).name?' · '+MT.paper:'');
+  clearInterval(mtTick);mtTick=setInterval(mockTick,1000);mockTick();
+}
+function mockTick(){
+  if(!MT||MT.check){clearInterval(mtTick);return}
+  const left=Math.round((MT.end-Date.now())/1000),a=Math.abs(left),hh=Math.floor(a/3600),mm=Math.floor(a%3600/60),ss=a%60;
+  $('#mockBar .mc').textContent=(left<0?'+':'')+hh+':'+String(mm).padStart(2,'0')+':'+String(ss).padStart(2,'0');
+  $('#mockBar').classList.toggle('low',left<=1800&&left>0);$('#mockBar').classList.toggle('out',left<=0);
+  if(left<=1800&&!MT.warn[30]){MT.warn[30]=1;LS.set('pp:mock',MT);toast('30 minutes left')}
+  if(left<=600&&!MT.warn[10]){MT.warn[10]=1;LS.set('pp:mock',MT);toast('10 minutes left')}
+  if(left<=0&&!MT.warn[0]){MT.warn[0]=1;LS.set('pp:mock',MT);toast('Time is up. Press Finish to check your paper (the extra time is shown in red)')}
+}
+function finishMock(){
+  if(!MT)return;MT.check=true;MT.took=Math.round((Math.min(Date.now(),Date.now())-MT.start)/1000);MT.res=MT.res||{};LS.set('pp:mock',MT);clearInterval(mtTick);
+  $('#mockBar').hidden=true;$('#app').classList.remove('mock');setView(PH?'q':'split');
+  renderMockPanel();$('#mockPanel').hidden=false;openPair(MT.ns[0]);renderMockPanel();
+}
+$('#mockFin').addEventListener('click',()=>{if(!MT)return;const left=MT.end-Date.now();
+  if(left>60e3&&!MT.sure){MT.sure=1;toast('Press Finish again to end the test and see the answers');setTimeout(()=>{if(MT)MT.sure=0},4000);return}finishMock()});
+function fmtDur(sec){const h=Math.floor(sec/3600),m=Math.round(sec%3600/60);return (h?h+'h ':'')+m+'m'}
+function renderMockPanel(){
+  if(!MT)return;const l=$('#mockPanel .mpl');l.innerHTML='';
+  $('#mockPanel small').textContent=(MT.paper)+' · time taken '+fmtDur(MT.took||0)+' of '+fmtDur(MT.mins*60);
+  MT.ns.forEach(n=>{const r=document.createElement('div');r.className='mpr'+(n===activeN?' act':'');
+    r.innerHTML='<span class="nm"></span><button class="ok" title="Correct">✓</button><button class="ag" title="Wrong, revise again">↻</button>';
+    const nm=label(n);$('.nm',r).textContent=nm.indexOf(' · ')>0?nm.slice(nm.indexOf(' · ')+3):nm;
+    const v=MT.res[n];$('.ok',r).classList.toggle('on',v==='done');$('.ag',r).classList.toggle('on',v==='again');
+    r.addEventListener('click',e=>{const b=e.target.closest('button');
+      if(b){const val=b.classList.contains('ok')?'done':'again';if(MT.res[n]===val)delete MT.res[n];else MT.res[n]=val;LS.set('pp:mock',MT);
+        if(MT.res[n]){const i=MT.ns.indexOf(n);if(i<MT.ns.length-1){openPair(MT.ns[i+1])}}renderMockPanel();return}
+      openPair(n);renderMockPanel()});
+    l.append(r)});
+  const ok=Object.values(MT.res).filter(v=>v==='done').length,ag=Object.values(MT.res).filter(v=>v==='again').length;
+  $('#mockPanel .mps').textContent=ok+' ✓ · '+ag+' ↻ · '+(MT.ns.length-ok-ag)+' left';
+  const a=$('.mpr.act',l);if(a)a.scrollIntoView({block:'nearest'});
+}
+$('#mockSave').addEventListener('click',()=>{
+  if(!MT)return;if(LIB.cur!==MT.setId){toast('Open the paper again to save');return}
+  const ok=Object.values(MT.res).filter(v=>v==='done').length;
+  st.rev=st.rev||{};for(const n in MT.res)st.rev[n]=MT.res[n];
+  st.mocks=st.mocks||[];st.mocks.push({paper:MT.paper,at:Date.now(),secs:MT.took,mins:MT.mins,ok,tot:MT.ns.length,res:MT.res});save();renderAll();
+  toast('Saved: '+MT.paper+' · '+ok+'/'+MT.ns.length+' ✓ · '+fmtDur(MT.took)+'. Wrong ones are in Revise again');
+  MT=null;localStorage.removeItem('pp:mock');$('#mockPanel').hidden=true});
+$('#mockDiscard').addEventListener('click',()=>{if(!MT)return;if(!MT.sureD){MT.sureD=1;toast('Press Discard again to drop this test without saving');setTimeout(()=>{if(MT)MT.sureD=0},4000);return}MT=null;localStorage.removeItem('pp:mock');$('#mockPanel').hidden=true;toast('Test discarded')});
+// carry on after a reload
+setTimeout(async()=>{const m=LS.get('pp:mock');if(!m||!LIB.sets.find(x=>x.id===m.setId))return;MT=m;await openSet(m.setId);
+  if(m.check){setView(PH?'q':'split');$('#mockPanel').hidden=false;renderMockPanel()}else{mockOn();toast('Your mock test is still running')}},1500);
 
 /* MCQ practice: a bar with A/B/C/D shows on questions that have an answer key (st.mcq) */
 let mcqSeen=null,mcqPick=null,mcqLastN=null;   // the question whose answer is shown now, and the option picked this visit
@@ -2654,7 +2758,7 @@ function conDown(e,p){
 function hideConcept(){$('#app').classList.remove('cv');updConUI();try{syncFollowSoon()}catch(e){}}
 function conceptShown(){return $('#app').classList.contains('cv')}
 async function toggleConcept(force){
-  if(isCset())return;
+  if(isCset())return;if(MT&&!MT.check&&force!==false){toast('The concept book is locked during the test');return}
   const on=force===undefined?!conceptShown():force;
   if(!on){conceptPref=false;hideConcept();requestAnimationFrame(()=>layout(P.a));return}
   if(!hasConcepts()){toast('Add your concept book first: Library, Add a set, type Concept book');return}
@@ -3133,7 +3237,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='31 Oct 09:53';   // build label, so you can check both devices have the same version
+const APPV='31 Oct 09:55';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
