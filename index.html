@@ -97,7 +97,7 @@ body.t-topic .ov{cursor:cell}
 body.t-clip .ov{cursor:crosshair;touch-action:none}
 .clipbox{position:absolute;border:2px dashed #2f6fe0;background:rgba(47,111,224,.10);z-index:6;pointer-events:none}
 .clp{position:absolute;border:2px dashed rgba(47,111,224,.55);border-radius:4px;z-index:3;pointer-events:none;display:none}
-body.t-clip .clp{display:block}.clp .cl{position:absolute;left:-2px;top:-24px;max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11.5px;font-weight:600;background:#2f6fe0;color:#fff;padding:3px 8px;border-radius:6px;pointer-events:auto;cursor:pointer}.clp .cx{position:absolute;right:-10px;top:-10px;width:22px;height:22px;border-radius:50%;background:#2f6fe0;color:#fff;font-size:13px;line-height:22px;text-align:center;pointer-events:auto;cursor:pointer}
+body.t-clip .clp,body.t-erase .clp{display:block}body.t-erase .clp{pointer-events:auto;cursor:pointer}body.t-erase .clp .cl{display:none}.clp .cl{position:absolute;left:-2px;top:-24px;max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11.5px;font-weight:600;background:#2f6fe0;color:#fff;padding:3px 8px;border-radius:6px;pointer-events:auto;cursor:pointer}.clp .cx{position:absolute;right:-10px;top:-10px;width:22px;height:22px;border-radius:50%;background:#2f6fe0;color:#fff;font-size:13px;line-height:22px;text-align:center;pointer-events:auto;cursor:pointer}
 .stk.amd::after{content:'⚠';position:absolute;right:-9px;top:-9px;font-size:12px;line-height:1;filter:drop-shadow(0 0 1px #fff)}
 .amdb{color:#c27c00;font-size:11px;font-weight:700;margin-left:4px}
 .deckc{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;padding:12px 16px}
@@ -703,7 +703,7 @@ select.tin{appearance:auto}
     </section>
     <section class="pane" id="pane-c" data-side="c" aria-label="Concept book">
       <div class="chip"><div class="cname"><span class="tag">📖</span><span class="fn"></span><span class="pc"></span>
-        <span class="zm"><button data-z="-1" aria-label="Zoom out">−</button><button class="zp" data-z="0" title="Fit width">100%</button><button data-z="1" aria-label="Zoom in">+</button></span><button class="cxb" id="conBook" title="Open your concept book (where you left it)" hidden>📕</button><button class="cxb" id="conAlt" title="This topic is marked in more than one place. Show the next one" hidden>1/2 ›</button><button class="cxb" id="conTopics" title="Jump to a topic in the concept book" aria-label="Topics">≡</button><button class="cxb" id="conClose" title="Back to the answer (C)" aria-label="Back to the answer">×</button></div></div>
+        <span class="zm"><button data-z="-1" aria-label="Zoom out">−</button><button class="zp" data-z="0" title="Fit width">100%</button><button data-z="1" aria-label="Zoom in">+</button></span><button class="cxb" id="conBm" title="Bookmark this concept page (B)" aria-label="Bookmark this page">🔖</button><button class="cxb" id="conBook" title="Open your concept book (where you left it)" hidden>📕</button><button class="cxb" id="conAlt" title="This topic is marked in more than one place. Show the next one" hidden>1/2 ›</button><button class="cxb" id="conTopics" title="Jump to a topic in the concept book" aria-label="Topics">≡</button><button class="cxb" id="conClose" title="Back to the answer (C)" aria-label="Back to the answer">×</button></div></div>
       <div class="sc"><div class="pages"></div></div>
     </section>
     <section id="quizPane" aria-label="Quiz view" hidden>
@@ -1128,7 +1128,7 @@ function renderAnn(side){try{syncFollowSoon()}catch(e){}
     if(t.l){const l=document.createElement('span');l.className='sl';l.textContent=t.l;el.append(l)}
     el.title=imp?(()=>{const m=starTopic(st,t);return 'Important point'+(m?' in '+(m.tp||m.ch):'')+'. Right-click to change its topic, drag to move'})():t.l?(mate?'★'+t.l+' of '+label(t.n)+'. Click to see its '+(side==='q'?'working in the answer':'place in the question'):'☆'+t.l+' of '+label(t.n)+'. Click beside the matching spot on the '+(side==='q'?'answer':'question')+' side to link it'):'Star. Drag to move, or use the eraser to remove';
     pos(el,t.x,t.y);pg.ov.append(el)});
-  (st.clips||[]).filter(c=>c.side===side).forEach(c=>{const pg=p.pages[c.page-1];if(!pg)return;const el=document.createElement('div');el.className='clp';el.dataset.id=c.id;el.style.left='calc(var(--W) * '+c.x1+')';el.style.top='calc(var(--W) * '+c.y1+')';el.style.width='calc(var(--W) * '+(c.x2-c.x1)+')';el.style.height='calc(var(--W) * '+(c.y2-c.y1)+')';el.innerHTML='<span class="cl" title="Change its chapter and topic"></span><span class="cx" title="Remove this card">×</span>';el.querySelector('.cl').textContent='🏷 '+(c.tp||c.ch||'Add topic');pg.ov.append(el)});
+  (st.clips||[]).filter(c=>c.side===side).forEach(c=>{const pg=p.pages[c.page-1];if(pg)pg.ov.append(clipEl(c))});
   (st.topics||[]).filter(t=>(isCset()?'q':(t.side||'q'))===side).forEach(t=>{const pg=p.pages[t.page-1];if(!pg)return;pg.ov.append(tmkEl(t,t.id===activeTid))});
   st.bm[side].forEach(n=>{const pg=p.pages[n-1];if(!pg)return;const r=document.createElement('div');r.className='rib';const nm=bmName(side,n);r.title=(nm?'“'+nm+'”. ':'')+'Bookmarked. Click to remove';pg.ov.append(r);if(nm){const l=document.createElement('div');l.className='ribl';l.textContent=nm;pg.ov.append(l)}});
   st.stickers[side].forEach(s=>{const pg=p.pages[s.page-1];if(!pg)return;
@@ -1253,6 +1253,7 @@ function onDown(e,p){
   const pt=ev=>({x:clamp((ev.clientX-r.left)/p.W,0,1),y:clamp((ev.clientY-r.top)/p.W,0,pg.ar)});
   const tk=e.target.closest('.tmk');
   if(tk){tmkDown(e,p,pg,tk,pt);return}
+  if(prefs.tool==='erase'&&e.target.closest('.clp')){const id=e.target.closest('.clp').dataset.id;pushUndo();st.clips=(st.clips||[]).filter(c=>c.id!==id);save();renderAll();toast('Clip card removed');return}
   if(prefs.tool==='clip'){
     if(e.target.closest('.cl')){const el=e.target.closest('.clp');e.preventDefault();const b=el.getBoundingClientRect();openClipTag(el.dataset.id,b.right+12,b.top,false);return}
     if(e.target.closest('.cx')){const id=e.target.closest('.clp').dataset.id;pushUndo();st.clips=(st.clips||[]).filter(c=>c.id!==id);save();renderAll();toast('Clip card removed');return}
@@ -1262,10 +1263,7 @@ function onDown(e,p){
     const up=()=>{window.removeEventListener('pointermove',mv);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',up);box.remove();
       const x1=Math.min(a.x,b.x),x2=Math.max(a.x,b.x),y1=Math.min(a.y,b.y),y2=Math.max(a.y,b.y);
       if(x2-x1<.04||y2-y1<.02){toast('Drag a box around the part you want as a card');return}
-      let ch='',tp='';
-      if(isCset()){const tt=topicAbove(sortedTopics(),pg.n,y1+.005);if(tt){ch=tt.ch||'';tp=tt.tp||''}}
-      else{const n=ownerIn(st.stickers[p.side]||[],pg.n,y1+.01);const m=n!=null?meta(n):{};ch=m.ch||'';tp=m.tp||''}
-      const lc=prefs.lastClip;if(lc&&lc.k===key&&lc.ch){ch=lc.ch;tp=lc.tp||''}   // same set: carry on with the chapter/topic of your last card
+      const sg=suggestTag(st,key,p.side,pg.n,y1,isCset()),ch=sg.ch,tp=sg.tp;
       pushUndo();st.clips=st.clips||[];const cid=uid();st.clips.push({id:cid,side:p.side,page:pg.n,x1:+x1.toFixed(4),y1:+y1.toFixed(4),x2:+x2.toFixed(4),y2:+y2.toFixed(4),ch,tp,at:Date.now()});save();renderAll();
       const rr=pageDiv.getBoundingClientRect();openClipTag(cid,rr.left+x2*p.W+12,rr.top+y1*p.W,true)};
     window.addEventListener('pointermove',mv);window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up);return;
@@ -1431,15 +1429,15 @@ function closeTag(){
 function saveTag(){
   if(!tagCtx)return;
   if(tagCtx.kind==='clip'){
-    const c=(st.clips||[]).find(x=>x.id===tagCtx.id);if(!c){closeTag();return}
+    const S=tagCtx.S||st,c=(S.clips||[]).find(x=>x.id===tagCtx.id);if(!c){closeTag();return}
     const canon=(v,list)=>{const z=w=>w.replace(/\s+/g,' ').trim().toLowerCase();v=v.replace(/\s+/g,' ').trim();return list.find(x=>z(x)===z(v))||v};
-    if(!tagCtx.isNew)pushUndo();c.ch=canon($('#tgCh').value.trim(),allChapters());c.tp=canon($('#tgTp').value.trim(),allTopics(''));
-    if(c.ch){prefs.lastClip={k:key,ch:c.ch,tp:c.tp};savePrefs()}
-    save();const nw=tagCtx.isNew;closeTag();renderAll();toast((nw?'Card added':'Card saved')+(c.tp||c.ch?' to '+(c.tp||c.ch):'')+'. See it in Library → Last-day');return;
+    if(!tagCtx.isNew){if(S===st)pushUndo();else conSnap()}c.ch=canon($('#tgCh').value.trim(),allChapters());c.tp=canon($('#tgTp').value.trim(),allTopics(''));
+    if(c.ch){prefs.lastClip={k:S===st?key:P.c.ckey,ch:c.ch,tp:c.tp,page:c.page,y:c.y1,side:c.side};savePrefs()}
+    if(S===st)save();else{LS.set('pp:'+P.c.ckey,S);renderConPane()}const nw=tagCtx.isNew;closeTag();renderAll();toast((nw?'Card added':'Card saved')+(c.tp||c.ch?' to '+(c.tp||c.ch):'')+'. See it in Library → Last-day');return;
   }
   if(tagCtx.kind==='contopic'){
     const t=tagCtx.t;const canon=(v,list)=>{const z=w=>w.replace(/\s+/g,' ').trim().toLowerCase();v=v.replace(/\s+/g,' ').trim();return list.find(x=>z(x)===z(v))||v};
-    t.ch=canon($('#tgCh').value.trim(),allChapters());t.tp=canon($('#tgTp').value.trim(),allTopics(''));const nw=tagCtx.isNew;tagCtx.isNew=false;closeTag();P.c.curTid=t.id;conTagKeep();
+    const nw=tagCtx.isNew;if(!nw)conSnap();t.ch=canon($('#tgCh').value.trim(),allChapters());t.tp=canon($('#tgTp').value.trim(),allTopics(''));tagCtx.isNew=false;closeTag();P.c.curTid=t.id;conTagKeep();
     toast(t.tp||t.ch?(nw?'Topic marked in the concept book: ':'Saved: ')+(t.tp||t.ch):'Topic left without a name');return;
   }
   if(tagCtx.kind==='topic'){
@@ -1675,7 +1673,16 @@ $('#bSide').addEventListener('click',()=>setSide(!prefs.side));
 $('#hideSide').addEventListener('click',()=>setSide(false));
 $('#bUndo').addEventListener('click',undo);
 $('#bOpen').addEventListener('click',()=>openLib());
-function undo(){if(!undoStack.length){toast('Nothing to undo');return}st=JSON.parse(undoStack.pop());save();renderAll()}
+function undo(){if(!undoStack.length){toast('Nothing to undo');return}const u=undoStack.pop();
+  if(u.startsWith('C:')){const o=JSON.parse(u.slice(2));LS.set('pp:'+o.k,o.s);const c=P.c;   // a change made in the concept pane
+    if(c.ckey===o.k&&c.cst){const keepSt=c.cst===st;Object.keys(c.cst).forEach(k=>delete c.cst[k]);Object.assign(c.cst,o.s);const isCon=(LIB.sets.find(x=>x.key===o.k)||{}).type==='con';c.topics=(c.cst.topics||[]).filter(t=>isCon||(t.side||'q')===(c.cside||'q'));renderConPane();if(keepSt){save();renderAll()}}
+    return}
+  st=JSON.parse(u);save();renderAll()}
+function toggleConBm(n){const c=P.c,cs=c.cst;if(!cs)return;const sd=c.cside||'q';conSnap();cs.bm=cs.bm||{q:[],a:[]};cs.bm[sd]=cs.bm[sd]||[];const a=cs.bm[sd],i=a.indexOf(n);
+  if(i>=0){a.splice(i,1);if(cs.bmn)delete cs.bmn[sd+':'+n]}else{a.push(n);a.sort((x,y)=>x-y)}
+  if(cs===st){save();renderAll()}else LS.set('pp:'+c.ckey,cs);renderConPane();try{updIndex()}catch(e){}
+  toast((i>=0?'Bookmark removed: ':'Bookmarked: ')+((LIB.sets.find(x=>x.key===c.ckey)||{}).name||'concept book')+' page '+n)}
+function conSnap(){const c=P.c;if(!c.cst)return;if(c.cst===st){pushUndo();return}undoStack.push('C:'+JSON.stringify({k:c.ckey,s:c.cst}));if(undoStack.length>80)undoStack.shift()}
 
 /* number popover */
 let pop=null;
@@ -1739,7 +1746,7 @@ document.addEventListener('keydown',e=>{
     case 'ArrowLeft':e.preventDefault();stepQ(-1);break;
     case 'l':case 'L':openLib();break;
     case 'g':case 'G':toggleGrid(activePane());break;
-    case 'b':case 'B':{const ap=activePane();if(ap.pages.length)toggleBm(ap.side,curPage(ap));break}
+    case 'b':case 'B':{if(conceptShown()&&lastPane===P.c&&P.c.pages.length){toggleConBm(curPage(P.c));break}const ap=activePane();if(ap.pages.length)toggleBm(ap.side,curPage(ap));break}
     case 'Escape':if(closePop())break;if(sel.size){sel.clear();updIndex();break}{const g=['q','a'].map(s=>P[s]).find(gridOpen);if(g){toggleGrid(g,false);break}}setTool('none');break;
   }
 });
@@ -2791,19 +2798,25 @@ function applyMode(){
 function placeTopic(page,x,y,cx,cy,side){
   pushUndo();st.topics=st.topics||[];
   const t={id:uid(),page,x,y,ch:st.lastCh||'',tp:''};
-  if(!isCset()){t.side=side||'q';   // in a question set: take the chapter from whatever is just above, the last concept marker or the question
-    const at=(pg,yy)=>pg*10+yy,me=at(page,y);
-    const mk=(st.topics||[]).filter(z=>(z.side||'q')===t.side&&at(z.page,z.y)<=me+.001).sort((a,b)=>at(b.page,b.y)-at(a.page,a.y))[0];
-    const sk=[...(st.stickers[t.side]||[])].filter(z=>at(z.page,z.y)<=me+.01).sort((a,b)=>at(b.page,b.y)-at(a.page,a.y))[0];
-    if(mk&&mk.ch&&(!sk||at(mk.page,mk.y)>=at(sk.page,sk.y)||!(meta(sk.n).ch))){t.ch=mk.ch;t.tp=''}
-    else if(sk){const m=meta(sk.n);if(m.ch||m.tp){t.ch=m.ch||'';t.tp=m.tp||''}}
-    else if(st.lastCh)t.ch=st.lastCh}
+  {if(!isCset())t.side=side||'q';const sg=suggestTag(st,key,t.side||'q',page,y,isCset());
+    if(sg.ch){t.ch=sg.ch;t.tp=sg.from==='question'?sg.tp:''}else if(st.lastCh)t.ch=st.lastCh}
   st.topics.push(t);save();activeTid=t.id;renderAll();
   openTopicTag(t.id,cx+16,cy-20,true);
 }
-function openClipTag(id,x,y,isNew){
-  const c=(st.clips||[]).find(z=>z.id===id);if(!c)return;closePop();
-  tagCtx={kind:'clip',id,isNew:!!isNew};$('#tgAmdW').hidden=true;
+// the chapter/topic a new marker or card should start with: whatever is closest above it on that side
+// (a concept marker, a question sticker, another card, or the last card you saved in this set)
+function suggestTag(S,k0,side,page,y,isCon){
+  const at=(pg,yy)=>pg*10+yy,me=at(page,y)+.012;let best=null;
+  const take=(pos,ch,tp,from)=>{if(pos<=me&&(ch||tp)&&(!best||pos>=best.pos))best={pos,ch:ch||'',tp:tp||'',from}};
+  for(const t of S.topics||[])if(isCon||(t.side||'q')===side)take(at(t.page,t.y),t.ch,t.tp,'marker');
+  for(const k of ((S.stickers||{})[side]||[])){const m=(S.meta||{})[k.n]||{};take(at(k.page,k.y),m.ch,m.tp,'question')}
+  for(const c of S.clips||[])if(isCon||c.side===side)take(at(c.page,c.y1),c.ch,c.tp,'card');
+  const lc=prefs.lastClip;if(lc&&lc.k===k0&&lc.page!=null&&(isCon||lc.side===side))take(at(lc.page,lc.y),lc.ch,lc.tp,'card');
+  return best||{ch:'',tp:'',from:''};
+}
+function openClipTag(id,x,y,isNew,S){
+  S=S||st;const c=(S.clips||[]).find(z=>z.id===id);if(!c)return;closePop();
+  tagCtx={kind:'clip',id,isNew:!!isNew,S};$('#tgAmdW').hidden=true;
   $('#tgTitle').innerHTML='<span class="ti">✂</span>'+(isNew?'Card added':'Card');$('#tgNameW').hidden=true;
   $('#tgCh').value=c.ch||'';$('#tgCh').placeholder='e.g. Ind AS 1 Presentation of FS';
   $('#tgTp').value=c.tp||'';$('#tgTp').placeholder='e.g. Current assets';
@@ -2973,38 +2986,55 @@ function renderConPane(){
   ((cs.hl||{})[sd]||[]).forEach((h,i)=>{const pg=c.pages[h.page-1];if(!pg)return;const el=document.createElement('div');el.className='hl';el.dataset.i=i;hlStyle(el,h);pg.ov.append(el)});
   ((cs.stars||{})[sd]||[]).forEach((t,i)=>{const pg=c.pages[t.page-1];if(!pg)return;const el=document.createElement('div');el.className='star';el.dataset.i=i;el.textContent='★';el.title='Important point. Use the eraser to remove';pos(el,t.x,t.y);pg.ov.append(el)});
   (c.topics||[]).forEach(t=>{const pg=c.pages[t.page-1];if(pg)pg.ov.append(tmkEl(t,t.id===c.curTid))});
+  (cs.clips||[]).filter(k=>k.side===sd||!k.side).forEach(k=>{const pg=c.pages[k.page-1];if(pg)pg.ov.append(clipEl(k))});
+  ((cs.bm||{})[sd]||[]).forEach(n=>{const pg=c.pages[n-1];if(!pg)return;const r=document.createElement('div');r.className='rib';const nm=((cs.bmn||{})[sd+':'+n])||'';r.title=(nm?'“'+nm+'”. ':'')+'Bookmarked. Click to remove';pg.ov.append(r);if(nm){const l=document.createElement('div');l.className='ribl';l.textContent=nm;pg.ov.append(l)}});
 }
+function clipEl(k){const el=document.createElement('div');el.className='clp';el.dataset.id=k.id;el.style.left='calc(var(--W) * '+k.x1+')';el.style.top='calc(var(--W) * '+k.y1+')';el.style.width='calc(var(--W) * '+(k.x2-k.x1)+')';el.style.height='calc(var(--W) * '+(k.y2-k.y1)+')';
+  el.innerHTML='<span class="cl" title="Change its chapter and topic"></span><span class="cx" title="Remove this card">×</span>';el.querySelector('.cl').textContent='🏷 '+(k.tp||k.ch||'Add topic');return el}
 function conDown(e,p){
   const c=P.c,cs=c.cst;if(!cs)return;
   const pageDiv=e.target.closest('.page');if(!pageDiv)return;const pg=c.pages[pageDiv.dataset.n-1];if(!pg)return;
   const r=pageDiv.getBoundingClientRect();const pt=ev=>({x:clamp((ev.clientX-r.left)/c.W,0,1),y:clamp((ev.clientY-r.top)/c.W,0,pg.ar)});
   const sd=c.cside||'q';cs.hl[sd]=cs.hl[sd]||[];cs.stars[sd]=cs.stars[sd]||[];
   const keep=()=>{if(cs===st){save();renderAnn(sd)}else LS.set('pp:'+c.ckey,cs);renderConPane()};
-  const hl=e.target.closest('.hl'),sr=e.target.closest('.star'),tk=e.target.closest('.tmk');
+  if(e.target.closest('.rib')){e.preventDefault();toggleConBm(pg.n);return}
+  const hl=e.target.closest('.hl'),sr=e.target.closest('.star'),tk=e.target.closest('.tmk'),cl=e.target.closest('.clp');
+  if(cl&&(prefs.tool==='clip'||prefs.tool==='erase')){e.preventDefault();e.stopPropagation();const id=cl.dataset.id;
+    if(e.target.closest('.cl')&&prefs.tool==='clip'){const b=cl.getBoundingClientRect();openClipTag(id,b.right+12,b.top,false,cs);return}
+    if(e.target.closest('.cx')||prefs.tool==='erase'){conSnap();cs.clips=(cs.clips||[]).filter(z=>z.id!==id);keep();toast('Clip card removed');return}}
   if(tk){e.preventDefault();e.stopPropagation();cs.topics=cs.topics||[];const t=cs.topics.find(z=>z.id===tk.dataset.id);if(!t)return;
-    if(prefs.tool==='erase'){cs.topics=cs.topics.filter(z=>z!==t);c.topics=c.topics.filter(z=>z!==t);keep();toast('Removed topic marker');return}
+    if(prefs.tool==='erase'){conSnap();cs.topics=cs.topics.filter(z=>z!==t);c.topics=c.topics.filter(z=>z!==t);keep();toast('Removed topic marker');return}
     const b=tk.getBoundingClientRect();openConTag(t,b.right+12,b.top,false);return}
   if(prefs.tool==='topic'){const x0=e.clientX,y0=e.clientY;
     const up=ev=>{window.removeEventListener('pointerup',up);if(Math.hypot(ev.clientX-x0,ev.clientY-y0)>=8)return;const q=pt(ev);
-      cs.topics=cs.topics||[];const ts=[...c.topics].sort((a,b)=>a.page-b.page||a.y-b.y);const above=topicAbove(ts,pg.n,q.y);
-      const t={id:uid(),page:pg.n,x:q.x,y:q.y,ch:(above&&above.ch)||'',tp:''};const isCon=(LIB.sets.find(x=>x.key===c.ckey)||{}).type==='con';if(!isCon)t.side=sd;
-      cs.topics.push(t);if(c.topics!==cs.topics)c.topics.push(t);keep();openConTag(t,ev.clientX+16,ev.clientY-20,true)};
+      cs.topics=cs.topics||[];const isCon=(LIB.sets.find(x=>x.key===c.ckey)||{}).type==='con';const sg=suggestTag(cs,c.ckey,sd,pg.n,q.y,isCon);
+      const t={id:uid(),page:pg.n,x:q.x,y:q.y,ch:sg.ch,tp:sg.from==='question'?sg.tp:''};if(!isCon)t.side=sd;
+      conSnap();cs.topics.push(t);if(c.topics!==cs.topics)c.topics.push(t);keep();openConTag(t,ev.clientX+16,ev.clientY-20,true)};
     window.addEventListener('pointerup',up);return}
-  if(prefs.tool==='erase'){if(hl){const gone=cs.hl[sd].splice(+hl.dataset.i,1)[0];keep();try{if(gone)syncEraseHl(sd,gone,c.ckey)}catch(e){}}else if(sr){cs.stars[sd].splice(+sr.dataset.i,1);keep()}return}
+  if(prefs.tool==='clip'){e.preventDefault();const a=pt(e);let b=a;const box=document.createElement('div');box.className='clipbox';pg.ov.append(box);
+    const draw=()=>{box.style.left='calc(var(--W) * '+Math.min(a.x,b.x)+')';box.style.top='calc(var(--W) * '+Math.min(a.y,b.y)+')';box.style.width='calc(var(--W) * '+Math.abs(b.x-a.x)+')';box.style.height='calc(var(--W) * '+Math.abs(b.y-a.y)+')'};
+    const mv=ev=>{b=pt(ev);draw()};
+    const up=()=>{window.removeEventListener('pointermove',mv);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',up);box.remove();
+      const x1=Math.min(a.x,b.x),x2=Math.max(a.x,b.x),y1=Math.min(a.y,b.y),y2=Math.max(a.y,b.y);if(x2-x1<.04||y2-y1<.02){toast('Drag a box around the part you want as a card');return}
+      const isCon=(LIB.sets.find(x=>x.key===c.ckey)||{}).type==='con';const sg=suggestTag(cs,c.ckey,sd,pg.n,y1,isCon);
+      conSnap();cs.clips=cs.clips||[];const id=uid();cs.clips.push({id,side:sd,page:pg.n,x1:+x1.toFixed(4),y1:+y1.toFixed(4),x2:+x2.toFixed(4),y2:+y2.toFixed(4),ch:sg.ch,tp:sg.tp,at:Date.now()});keep();
+      const rr=pageDiv.getBoundingClientRect();openClipTag(id,rr.left+x2*c.W+12,rr.top+y1*c.W,true,cs)};
+    window.addEventListener('pointermove',mv);window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up);return}
+  if(prefs.tool==='erase'){if(hl||sr)conSnap();if(hl){const gone=cs.hl[sd].splice(+hl.dataset.i,1)[0];keep();try{if(gone)syncEraseHl(sd,gone,c.ckey)}catch(e){}}else if(sr){cs.stars[sd].splice(+sr.dataset.i,1);keep()}return}
   if(prefs.tool==='hl'){
     e.preventDefault();const a=pt(e),t=SIZES[prefs.size],col=prefs.color;
     const tmp=document.createElement('div');tmp.className='hl';pg.ov.append(tmp);let seg={x1:a.x,y1:a.y,x2:a.x,y2:a.y,t,c:col};hlStyle(tmp,seg);
     const mv=ev=>{const b=pt(ev);seg=Math.abs(b.x-a.x)>=Math.abs(b.y-a.y)?{x1:Math.min(a.x,b.x),x2:Math.max(a.x,b.x),y1:a.y,y2:a.y,t,c:col}:{x1:a.x,x2:a.x,y1:Math.min(a.y,b.y),y2:Math.max(a.y,b.y),t,c:col};hlStyle(tmp,seg)};
     const off=()=>{hlAbort=null;window.removeEventListener('pointermove',mv);window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',up);tmp.remove()};
     const up=()=>{off();
-      if((seg.x2-seg.x1)+(seg.y2-seg.y1)>.008){const h=Object.assign({page:pg.n},seg);cs.hl[sd].push(h);keep();try{syncSendHl(sd,h,c.ckey)}catch(e){}}};hlAbort=off;
+      if((seg.x2-seg.x1)+(seg.y2-seg.y1)>.008){const h=Object.assign({page:pg.n},seg);conSnap();cs.hl[sd].push(h);keep();try{syncSendHl(sd,h,c.ckey)}catch(e){}}};hlAbort=off;
     window.addEventListener('pointermove',mv);window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up);return;
   }
   if(prefs.tool==='star'){
     const x0=e.clientX,y0=e.clientY;
     const up=ev=>{window.removeEventListener('pointerup',up);if(Math.hypot(ev.clientX-x0,ev.clientY-y0)>=8)return;
       const q=pt(ev);const tp=topicAbove([...(c.topics||[])].sort((a,b)=>a.page-b.page||a.y-b.y),pg.n,q.y);
-      cs.stars[sd].push(tp?{page:pg.n,x:q.x,y:q.y,tid:tp.id}:{page:pg.n,x:q.x,y:q.y});keep();
+      conSnap();cs.stars[sd].push(tp?{page:pg.n,x:q.x,y:q.y,tid:tp.id}:{page:pg.n,x:q.x,y:q.y});keep();
       toast('Important point'+(tp?' in '+(tp.tp||tp.ch):'')+'. To change its topic, open the concept book itself and right-click the star')};
     window.addEventListener('pointerup',up);return;
   }
@@ -3053,6 +3083,7 @@ function updConUI(){try{syncFollowSoon()}catch(e){}const on=conceptShown();const
   $$('#rvSeg button').forEach(x=>x.classList.toggle('on',(x.dataset.c==='1')===on));updPh()}
 $('#bCon').addEventListener('click',()=>toggleConcept());
 $('#conClose').addEventListener('click',()=>toggleConcept(false));
+$('#conBm').addEventListener('click',e=>{e.stopPropagation();if(P.c.pages.length)toggleConBm(curPage(P.c))});
 $('#conAlt').addEventListener('click',e=>{e.stopPropagation();const c=P.c;if(!c.alts||!c.alts.length)return;if(c.alts.length<2&&c.altI!==-1)return;c.altI=((c.altI==null?0:c.altI)+1)%c.alts.length;openConceptSpot(c.alts[c.altI])});
 $('#conBook').addEventListener('click',async e=>{e.stopPropagation();const c=P.c,keep=c.alts;
   if(await openConceptBrowse()){c.alts=keep;c.altI=-1;if(keep&&keep.length){const ab=$('#conAlt');ab.hidden=false;ab.textContent='↩ Back'}toast('Concept book opened where you left it. ≡ jumps to a topic, ↩ goes back')}});
@@ -3576,7 +3607,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='31 Oct 12:07';   // build label, so you can check both devices have the same version
+const APPV='31 Oct 12:24';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
