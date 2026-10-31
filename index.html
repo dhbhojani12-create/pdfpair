@@ -1424,6 +1424,7 @@ function openTag(ns,x,y){
   setTimeout(()=>{(one&&!$('#tgCh').value?$('#tgCh'):$('#tgTp')).focus()},20);
 }
 function closeTag(){
+  if(tagCtx&&tagCtx.kind==='contopic'&&tagCtx.isNew){const c=P.c,t=tagCtx.t;c.cst.topics=(c.cst.topics||[]).filter(z=>z!==t);c.topics=(c.topics||[]).filter(z=>z!==t);tagCtx.isNew=false;conTagKeep()}
   if(tagCtx&&tagCtx.kind==='topic'&&tagCtx.isNew){const t=(st.topics||[]).find(x=>x.id===tagCtx.id);if(t){st.topics=st.topics.filter(x=>x!==t);undoStack.pop();save();renderAll()}}   // cancelled a new marker: remove it
   const ae=document.activeElement;if(ae&&$('#tagPop').contains(ae))ae.blur();   // so shortcut keys work straight after saving
   $('#tagPop').hidden=true;$$('#tagPop .sug').forEach(s=>s.hidden=true);tagCtx=null}
@@ -1435,6 +1436,11 @@ function saveTag(){
     if(!tagCtx.isNew)pushUndo();c.ch=canon($('#tgCh').value.trim(),allChapters());c.tp=canon($('#tgTp').value.trim(),allTopics(''));
     if(c.ch){prefs.lastClip={k:key,ch:c.ch,tp:c.tp};savePrefs()}
     save();const nw=tagCtx.isNew;closeTag();renderAll();toast((nw?'Card added':'Card saved')+(c.tp||c.ch?' to '+(c.tp||c.ch):'')+'. See it in Library → Last-day');return;
+  }
+  if(tagCtx.kind==='contopic'){
+    const t=tagCtx.t;const canon=(v,list)=>{const z=w=>w.replace(/\s+/g,' ').trim().toLowerCase();v=v.replace(/\s+/g,' ').trim();return list.find(x=>z(x)===z(v))||v};
+    t.ch=canon($('#tgCh').value.trim(),allChapters());t.tp=canon($('#tgTp').value.trim(),allTopics(''));const nw=tagCtx.isNew;tagCtx.isNew=false;closeTag();P.c.curTid=t.id;conTagKeep();
+    toast(t.tp||t.ch?(nw?'Topic marked in the concept book: ':'Saved: ')+(t.tp||t.ch):'Topic left without a name');return;
   }
   if(tagCtx.kind==='topic'){
     const t=(st.topics||[]).find(x=>x.id===tagCtx.id);if(!t){closeTag();return}
@@ -2806,6 +2812,16 @@ function openClipTag(id,x,y,isNew){
   pop.style.left=clamp(x,8,innerWidth-pop.offsetWidth-8)+'px';pop.style.top=clamp(y,8,innerHeight-pop.offsetHeight-8)+'px';
   setTimeout(()=>{(c.ch?$('#tgTp'):$('#tgCh')).focus();(c.ch?$('#tgTp'):$('#tgCh')).select()},20);
 }
+// a marker inside the concept pane (it belongs to the concept book, not the open question set)
+function openConTag(t,x,y,isNew){
+  closePop();tagCtx={kind:'contopic',t,isNew:!!isNew};$('#tgAmdW').hidden=true;
+  $('#tgTitle').innerHTML='<span class="ti">📖</span>Topic starts here';$('#tgNameW').hidden=true;
+  $('#tgCh').value=t.ch||'';$('#tgCh').placeholder='e.g. Ind AS 102 Share Based Payment';$('#tgTp').value=t.tp||'';$('#tgTp').placeholder='e.g. Modification';
+  $('#tgHint').textContent='Saved in '+((LIB.sets.find(z=>z.key===P.c.ckey)||{}).name||'the concept book')+'. Questions with this chapter and topic open it with 📖 (C).';
+  const pop=$('#tagPop');pop.hidden=false;pop.style.left=clamp(x,8,innerWidth-pop.offsetWidth-8)+'px';pop.style.top=clamp(y,8,innerHeight-pop.offsetHeight-8)+'px';
+  setTimeout(()=>{(t.ch?$('#tgTp'):$('#tgCh')).focus()},20);
+}
+function conTagKeep(){const c=P.c;if(c.cst===st){save();renderAll()}else LS.set('pp:'+c.ckey,c.cst);renderConPane()}
 function openTopicTag(id,x,y,isNew){
   const t=(st.topics||[]).find(z=>z.id===id);if(!t)return;closePop();
   tagCtx={kind:'topic',id,isNew:!!isNew};$('#tgAmdW').hidden=true;
@@ -2964,7 +2980,16 @@ function conDown(e,p){
   const r=pageDiv.getBoundingClientRect();const pt=ev=>({x:clamp((ev.clientX-r.left)/c.W,0,1),y:clamp((ev.clientY-r.top)/c.W,0,pg.ar)});
   const sd=c.cside||'q';cs.hl[sd]=cs.hl[sd]||[];cs.stars[sd]=cs.stars[sd]||[];
   const keep=()=>{if(cs===st){save();renderAnn(sd)}else LS.set('pp:'+c.ckey,cs);renderConPane()};
-  const hl=e.target.closest('.hl'),sr=e.target.closest('.star');
+  const hl=e.target.closest('.hl'),sr=e.target.closest('.star'),tk=e.target.closest('.tmk');
+  if(tk){e.preventDefault();e.stopPropagation();cs.topics=cs.topics||[];const t=cs.topics.find(z=>z.id===tk.dataset.id);if(!t)return;
+    if(prefs.tool==='erase'){cs.topics=cs.topics.filter(z=>z!==t);c.topics=c.topics.filter(z=>z!==t);keep();toast('Removed topic marker');return}
+    const b=tk.getBoundingClientRect();openConTag(t,b.right+12,b.top,false);return}
+  if(prefs.tool==='topic'){const x0=e.clientX,y0=e.clientY;
+    const up=ev=>{window.removeEventListener('pointerup',up);if(Math.hypot(ev.clientX-x0,ev.clientY-y0)>=8)return;const q=pt(ev);
+      cs.topics=cs.topics||[];const ts=[...c.topics].sort((a,b)=>a.page-b.page||a.y-b.y);const above=topicAbove(ts,pg.n,q.y);
+      const t={id:uid(),page:pg.n,x:q.x,y:q.y,ch:(above&&above.ch)||'',tp:''};const isCon=(LIB.sets.find(x=>x.key===c.ckey)||{}).type==='con';if(!isCon)t.side=sd;
+      cs.topics.push(t);if(c.topics!==cs.topics)c.topics.push(t);keep();openConTag(t,ev.clientX+16,ev.clientY-20,true)};
+    window.addEventListener('pointerup',up);return}
   if(prefs.tool==='erase'){if(hl){const gone=cs.hl[sd].splice(+hl.dataset.i,1)[0];keep();try{if(gone)syncEraseHl(sd,gone,c.ckey)}catch(e){}}else if(sr){cs.stars[sd].splice(+sr.dataset.i,1);keep()}return}
   if(prefs.tool==='hl'){
     e.preventDefault();const a=pt(e),t=SIZES[prefs.size],col=prefs.color;
@@ -3551,7 +3576,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='31 Oct 11:56';   // build label, so you can check both devices have the same version
+const APPV='31 Oct 12:07';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
