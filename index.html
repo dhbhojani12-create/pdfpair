@@ -518,6 +518,14 @@ select.tin{appearance:auto}
 #xfer{position:absolute;z-index:60;top:calc(10px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);background:rgba(27,30,35,.95);color:#fff;padding:10px 16px;border-radius:14px;font-size:14px;display:flex;flex-direction:column;gap:7px;min-width:240px;max-width:calc(100% - 24px);box-shadow:0 6px 18px rgba(0,0,0,.3)}
 #xfer[hidden]{display:none}#xfer .xb{height:5px;border-radius:3px;background:rgba(255,255,255,.18);overflow:hidden}#xfer .xb i{display:block;height:100%;width:0;background:#5ad66d;transition:width .2s}
 .lksend{margin-top:12px;display:flex;flex-direction:column;gap:4px;align-items:flex-start}.lksend small{color:var(--mut)}
+/* compact toolbar */
+#bar #bSide span{display:none}#bar .b.ico{font-size:16px;min-width:34px;justify-content:center}
+#bCol .sw,#colDot{display:block;width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.7)}
+#colPop{position:absolute;z-index:45;display:flex;gap:4px;align-items:center;background:var(--bar);padding:6px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.28)}#colPop[hidden]{display:none}
+#bMore{position:relative;font-size:18px;min-width:34px}#bMore .mdot{position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:50%;background:#30a46c}#bMore .mdot.warn{background:#f5a524}
+#morePop{position:absolute;z-index:45;display:flex;flex-direction:column;align-items:stretch;gap:2px;background:var(--bar);padding:6px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.28);min-width:210px}#morePop[hidden]{display:none}
+#morePop,#colPop{color:var(--bar-fg)}#morePop svg,#colPop svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}#morePop .b .mi{width:17px;text-align:center}#morePop .bdot{position:static;margin-left:auto}
+#morePop .b{justify-content:flex-start;gap:8px;width:100%;padding:8px 12px}#morePop .b[hidden]{display:none}#morePop .b span{display:inline!important}
 /* quiz view (MCQ booklet) */
 #quizPane{order:3;flex-grow:var(--ra);flex-basis:0;min-width:0;display:none;flex-direction:column;background:var(--ground-2);border-left:1px solid var(--line)}
 #app.quiz #quizPane{display:flex}#app.quiz #pane-a,#app.quiz #div,#app.quiz #pane-c,#app.quiz #mcqBar,#app.quiz .seg.qonly,#app.quiz #bCon{display:none!important}#app.quiz #pane-q{display:flex!important}
@@ -727,14 +735,16 @@ select.tin{appearance:auto}
     <button class="b nv" id="bNext" title="Next question (Right arrow)" aria-label="Next question"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
     <span class="sepv"></span>
     <button class="b qonly" id="bNum" title="Change next sticker number" style="padding:0 4px"><span class="nb" id="nb">1</span></button>
-    <button class="b qonly" data-t="sticker" title="Sticker (S)">Sticker</button>
-    <button class="b" data-t="topic" id="bTopic" title="Concept marker (T): click where a concept or topic starts, on any page">📖 Concept</button>
-    <button class="b" data-t="hl" title="Highlighter (H): drag across a line">Highlight</button>
-    <button class="b" data-t="clip" title="Clip card (X): drag a box around a journal entry, chart or formula for your Last-day deck">✂ Clip</button><button class="b" data-t="star" title="Star (K): click to mark a point you want to remember. Not linked to anything." aria-label="Star"><span style="color:#f5b400;font-size:16px">★</span></button>
+    <button class="b qonly ico" data-t="sticker" title="Sticker (S): click a question, then its answer">①</button>
+    <button class="b ico" data-t="topic" id="bTopic" title="Concept marker (T): click where a concept or topic starts, on any page">📖</button>
+    <button class="b ico" data-t="hl" title="Highlighter (H): drag across a line">🖍</button><button class="b" id="bCol" title="Highlighter colour and thickness"><span class="sw" id="colDot"></span></button>
+    <button class="b ico" data-t="clip" title="Clip card (X): drag a box around a journal entry, chart or formula for your Last-day deck">✂</button><button class="b" data-t="star" title="Star (K): click to mark a point you want to remember. Not linked to anything." aria-label="Star"><span style="color:#f5b400;font-size:16px">★</span></button>
+    <div id="colPop" hidden>
     <button class="b cb" data-c="0" aria-label="Yellow"><span class="sw" style="background:#ffd400"></span></button>
     <button class="b cb" data-c="1" aria-label="Green"><span class="sw" style="background:#5ad66d"></span></button>
     <button class="b cb" data-c="2" aria-label="Pink"><span class="sw" style="background:#ff6fa5"></span></button>
     <button class="b" id="bSize" title="Highlighter thickness"><span class="thick" id="thick"></span></button>
+    </div>
     <button class="b" data-t="erase" title="Eraser (E): click a sticker or highlight"><svg viewBox="0 0 24 24"><path d="M20 20H9L4 15a2 2 0 0 1 0-3l8-8a2 2 0 0 1 3 0l5 5a2 2 0 0 1 0 3l-8 8"/><path d="M8 11l6 6"/></svg></button>
     <button class="b" id="bUndo" title="Undo (Ctrl+Z)"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button>
     <span class="sepv"></span>
@@ -743,6 +753,7 @@ select.tin{appearance:auto}
     <button class="b" id="bSave" title="Save one linked PDF with stickers, highlights and bookmarks"><svg viewBox="0 0 24 24"><path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/></svg><span>Save PDF</span></button>
     <button class="b" id="bLink" title="Link your phone as a touch highlighter"><span style="font-size:15px">📱</span><span id="bLinkT">Link phone</span></button>
     <button class="b" id="bOpen" title="Library: your sets and subject-wise revision (L)"><svg viewBox="0 0 24 24"><path d="M4 5h4v14H4zM10 5h4v14h-4z"/><path d="M15.2 6.2l3.6-1 3.3 12.9-3.6 1z"/></svg><span>Library</span></button>
+  <button class="b" id="bMore" title="More: Library, Backup, Save PDF, Phone, Quiz" aria-label="More">⋯<i class="mdot" id="moreDot" hidden></i></button><div id="morePop" hidden></div>
   </div>
 
   <div id="open" hidden>
@@ -1618,7 +1629,7 @@ function updBar(){
   const half=!!(findS('q',st.next)||findS('a',st.next));nb.classList.toggle('half',half);
   $('#bNum').title=half?'Sticker '+st.next+' is waiting for its other side. Click to change the number.':'Next sticker number. Click to change.';
   $$('[data-c]').forEach(b=>b.classList.toggle('on',+b.dataset.c===prefs.color));
-  $('#thick').style.height=[3,6,9][prefs.size]+'px';updPh();
+  $('#thick').style.height=[3,6,9][prefs.size]+'px';try{updColDot()}catch(e){}updPh();
 }
 function setRatio(r){prefs.rq=clamp(r,.15,.85);$('#stage').style.setProperty('--rq',prefs.rq);$('#stage').style.setProperty('--ra',1-prefs.rq)}
 
@@ -2060,6 +2071,27 @@ $('#rvAg').addEventListener('click',()=>markRv('again'));
 $('#rvExit').addEventListener('click',()=>{stopRv();openLib()});
 
 
+
+
+/* compact toolbar: colours and less-used buttons tucked into small menus */
+(function(){
+  const pop=$('#morePop');$('#app').append(pop);$('#app').append($('#colPop'));
+  const place=(el,btn,alignRight)=>{const r=btn.getBoundingClientRect(),a=$('#app').getBoundingClientRect();el.style.bottom=(a.bottom-r.top+8)+'px';
+    if(alignRight){el.style.left='';el.style.right=Math.max(8,a.right-r.right)+'px'}else{el.style.right='';el.style.left=Math.max(8,r.left-a.left-40)+'px'}};
+  [['bOpen','📚','Library'],['bBk',null,null],['bSave',null,null],['bLink',null,null],['bQuiz',null,null],['bSwap','⇄','Swap sides']].forEach(([id,ic,lab])=>{const b=$('#'+id);if(!b)return;
+    if(ic&&!b.querySelector('span')){b.innerHTML='<span class="mi">'+ic+'</span><span>'+lab+'</span>'}
+    b.classList.remove('qonly');if(id==='bSwap')b.classList.add('qonly');pop.append(b)});
+  const closeAll=()=>{pop.hidden=true;$('#colPop').hidden=true};
+  $('#bMore').addEventListener('click',e=>{e.stopPropagation();const o=pop.hidden;closeAll();pop.hidden=!o;if(!pop.hidden)place(pop,$('#bMore'),true)});
+  pop.addEventListener('click',()=>setTimeout(()=>{pop.hidden=true},0),true);
+  $('#bCol').addEventListener('click',e=>{e.stopPropagation();const c=$('#colPop'),o=c.hidden;closeAll();c.hidden=!o;if(!c.hidden)place(c,$('#bCol'),false)});
+  $('#colPop').addEventListener('click',e=>{e.stopPropagation();setTimeout(updColDot,0);if(e.target.closest('[data-c]'))setTimeout(()=>{$('#colPop').hidden=true},150)});
+  document.addEventListener('pointerdown',e=>{if(!e.target.closest('#morePop,#bMore,#colPop,#bCol'))closeAll()});
+  setInterval(updMoreDot,1500);setTimeout(()=>{updColDot();updMoreDot()},300);
+})();
+function updColDot(){try{$('#colDot').style.background=['#ffd400','#5ad66d','#ff6fa5'][prefs.color]||'#ffd400'}catch(e){}}
+function updMoreDot(){try{const d=$('#moreDot');const linked=$('#bLink').classList.contains('on'),bk=!$('#bkDot').hidden;d.hidden=!(linked||bk);d.classList.toggle('warn',bk&&!linked);
+  $('#bMore').title='More: Library, Backup, Save PDF, Phone'+(linked?' (phone linked)':'')+(bk?' · a backup is due':'')}catch(e){}}
 
 /* ---------- quiz view for the MCQ booklet: case on the left (the real PDF), tap options on the right ---------- */
 var QZ=null;   // {key, cases:[{n,qs:[{n,stem,opts,ans,head,reason}]}]}
@@ -2603,7 +2635,7 @@ $('#bBk').addEventListener('click',e=>{e.stopPropagation();if(closePop())return;
   pop=document.createElement('div');pop.className='pop bkpop';$('#app').append(pop);pop.addEventListener('pointerdown',ev=>ev.stopPropagation());
   renderBk();
 });
-function placeBk(){if(!pop)return;const br=$('#bBk').getBoundingClientRect(),ar=$('#app').getBoundingClientRect();
+function placeBk(){if(!pop)return;const br=($('#bBk').offsetParent?$('#bBk'):$('#bMore')).getBoundingClientRect(),ar=$('#app').getBoundingClientRect();
   pop.style.left=clamp(br.left-ar.left-150,16,ar.width-pop.offsetWidth-16)+'px';pop.style.bottom=(ar.bottom-br.top+12)+'px'}
 function renderBk(){
   if(!pop||!pop.classList.contains('bkpop')){bkOpen=false;return}
@@ -2719,7 +2751,7 @@ function tmkEl(t,act){
 function applyMode(){
   const c=isCset();$('#app').classList.toggle('cset',c);$('#pane-q .tag').textContent=c?'📖':'Q';
   if(c&&prefs.tool==='sticker')setTool('topic');
-  $('#bTopic').textContent=c?'📖 Topic':'📖 Concept';
+  $('#bTopic').textContent='📖';$('#bTopic').title=c?'Topic marker (T): click where a topic starts':'Concept marker (T): click where a concept or topic starts, on any page';
   activeTid=null;updBar();updNav();
   requestAnimationFrame(()=>{layout(P.q);layout(P.a)});
 }
@@ -3467,7 +3499,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='31 Oct 10:16';   // build label, so you can check both devices have the same version
+const APPV='31 Oct 10:23';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
