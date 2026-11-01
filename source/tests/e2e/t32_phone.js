@@ -1,0 +1,10 @@
+const {open}=require('./shotlib');const ok=(c,m)=>console.log((c?"PASS ":"FAIL ")+m);
+(async()=>{for(const vp of [[390,844,"phone"],[915,412,"phoneland"]]){const {ctx,p,errs}=await open({viewport:{width:vp[0],height:vp[1]},touch:true,mobile:true});p.setDefaultTimeout(30000);const nm=vp[2];
+ const keep=await p.evaluate(()=>JSON.stringify(L.srs||{}));
+ await p.evaluate(()=>navGo("lib"));await p.waitForSelector("#vBank:not([hidden]) .brw");await p.evaluate(()=>{studyStart();BK.revealed=true;const it=BK.list[BK.rc];it.tq=(it.tq||"")+" (5 Marks)";renderBankSlides()});await p.waitForSelector(".rvrate");
+ const vis=await p.evaluate(()=>[...document.querySelectorAll(".rvrate .rr")].every(b=>{const r=b.getBoundingClientRect();return r.width>40&&r.bottom<=innerHeight+1&&r.right<=innerWidth+1}));ok(vis,nm+": all rating buttons visible and on screen");
+ await p.screenshot({path:"/tmp/e2e/shots/nf_"+nm+".png"});
+ await p.tap(".rvrate .rr.s");await p.waitForTimeout(400);ok(await p.evaluate(()=>BK.rc)===1,nm+": tapping Shaky moves on");
+ const sw=await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1);ok(sw,nm+": no sideways scroll");
+ await p.evaluate(k=>{L.srs=JSON.parse(k);DB.put("kv","srs",L.srs)},keep);
+ ok(!errs.length,nm+": no page errors "+errs.join(";"));await ctx.close()}})();

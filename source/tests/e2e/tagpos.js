@@ -1,0 +1,6 @@
+const {open}=require('./shotlib');(async()=>{const {ctx,p}=await open({viewport:{width:1536,height:860}});
+await p.evaluate(()=>openBank());await p.waitForSelector("#vBank:not([hidden]) .brw");await p.evaluate(()=>studyStart());await p.waitForSelector(".rvtag");
+for(const nm of ["tag","none"]){await p.evaluate(nm=>{const it=BK.list[BK.rc];if(nm==="none"){it._t=it.p.tags;delete it.p.tags}else if(!(it.p.tags||[]).length)it.p.tags=["Ind AS 109: Financial Instruments"];renderBankSlides()},nm);await p.waitForTimeout(400);
+console.log(nm,JSON.stringify(await p.evaluate(()=>{const g=s=>{const r=document.querySelector(s).getBoundingClientRect();return[Math.round(r.left),Math.round(r.top),Math.round(r.width),Math.round(r.height)]};const cs=getComputedStyle(document.querySelector(".rvttl"));const kids=[...document.querySelector(".rvttl").children].map(e=>{const r=e.getBoundingClientRect();return e.tagName+"."+e.className+":"+Math.round(r.left)+","+Math.round(r.top)+","+Math.round(r.width)+"x"+Math.round(r.height)+" ws="+getComputedStyle(e).whiteSpace});return{kids,top:g(".rvtop"),ttl:g(".rvttl"),tag:g(".rvtag"),wrap:cs.flexWrap,dir:cs.flexDirection}})));
+await p.screenshot({path:"/tmp/e2e/shots/tagpos_"+nm+".png",clip:{x:0,y:0,width:1536,height:130}})}
+await ctx.close()})()

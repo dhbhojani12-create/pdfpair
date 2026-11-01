@@ -1,0 +1,11 @@
+const {open}=require('./shotlib');const ok=(c,m)=>console.log((c?"PASS ":"FAIL ")+m);
+(async()=>{for(const vp of [[1400,900,"laptop"],[390,844,"phone"]]){const {ctx,p,errs}=await open({viewport:{width:vp[0],height:vp[1]},touch:vp[2]==="phone",mobile:vp[2]==="phone"});p.setDefaultTimeout(30000);const nm=vp[2];
+ const keep=await p.evaluate(()=>JSON.stringify(L.plans||{}));
+ await p.evaluate(()=>{L.plans[dayKey(0)]=[];for(let i=0;i<19;i++)planAdd(0,{kind:"q",label:"Topic "+(i+1),sub:"FR",ids:["a"+i,"b"+i],seen:i<7?["a"+i,"b"+i]:[]});navGo("today")});await p.waitForTimeout(700);
+ const s=await p.evaluate(()=>{const pl=document.querySelector("#libMain .pllist"),card=document.querySelector("#libMain .plan");return{ch:pl.clientHeight,sh:pl.scrollHeight,st:pl.scrollTop,card:Math.round(card.getBoundingClientRect().height)}});
+ ok(s.sh>s.ch&&(nm==="laptop"||s.ch<=320),nm+": plan list scrolls inside the card (shows "+s.ch+"px of "+s.sh+"px)");
+ if(nm==="laptop"){const hh=await p.evaluate(()=>{const a=document.querySelector("#libMain .plan").getBoundingClientRect(),b=document.querySelector("#libMain .tstats").getBoundingClientRect();return[Math.round(a.bottom),Math.round(b.bottom)]});ok(Math.abs(hh[0]-hh[1])<=2,"laptop: plan card ends level with the question bank card ("+hh+")")}ok(s.card<700,nm+": card does not grow with the tasks ("+s.card+"px)");ok(s.st>0,nm+": scrolled to the next task (scrollTop "+s.st+")");
+ const vis=await p.evaluate(()=>{const pl=document.querySelector("#libMain .pllist"),nx=pl.querySelector(".pli.next");const a=pl.getBoundingClientRect(),b=nx.getBoundingClientRect();return b.top>=a.top-1&&b.bottom<=a.bottom+1});ok(vis,nm+": next task is visible");
+ await p.locator("#libMain .plan").screenshot({path:"/tmp/e2e/shots/planscroll_"+nm+".png"});
+ await p.evaluate(k=>{L.plans=JSON.parse(k);savePlans()},keep);
+ ok(!errs.length,nm+": no page errors "+errs.join(";"));await ctx.close()}})();

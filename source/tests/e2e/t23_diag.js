@@ -1,0 +1,20 @@
+const {launch,ok}=require('./base');
+(async()=>{const {b,p,errs}=await launch();
+ await p.setInputFiles('#fileIn',['/tmp/e2e/pdfs/DT_Ch1.pdf']);await p.waitForSelector("#vMark:not([hidden]) canvas.pc",{timeout:60000});
+ await p.click("#autoBtn");await p.waitForSelector("#adGo");await p.evaluate(()=>{$("#adSeg").hidden=false});await p.click('#gBody [data-m="kw"]');await p.waitForTimeout(500);
+ await p.fill("#adQf","40");await p.fill("#adQt","69");await p.fill("#adKq","Question 1");await p.fill("#adKa","Solution");
+ await p.click("#adGo");await p.waitForSelector("#adRes .diag",{timeout:120000});
+ const t1=await p.textContent("#adRes");console.log("  >",t1.replace(/\s+/g," ").slice(0,400));
+ ok(/No line on pages 40–69 starts with “Question 1”/.test(t1),"says no line starts with the typed words");
+ ok(await p.locator("#adRes [data-dq]").count()>0,"offers what the PDF actually uses");
+ await p.screenshot({path:"/tmp/e2e/shots/diag1.png"});
+ const tip=await p.getAttribute("#adRes [data-dq]","data-dq");await p.click("#adRes [data-dq]");ok((await p.inputValue("#adKq"))===tip,"tapping a tip fills the field: "+tip);
+ await p.click("#adGo");await p.waitForSelector("#sbar:not([hidden])",{timeout:120000});ok(await p.evaluate(()=>S.sugg.length)>=8,"search with the tip finds questions: "+await p.evaluate(()=>S.sugg.length));
+ await p.click('#sbar [data-s=discard]');
+ // questions found but answers not
+ await p.click("#autoBtn");await p.waitForSelector("#adGo");await p.evaluate(()=>{$("#adSeg").hidden=false});await p.click('#gBody [data-m="kw"]');await p.waitForTimeout(500);
+ await p.fill("#adQf","40");await p.fill("#adQt","69");await p.fill("#adKq","Illustration 1");await p.fill("#adKa","Answer 1");
+ await p.click("#adGo");await p.waitForSelector("#adRes .diag",{timeout:120000});const t2=await p.textContent("#adRes");console.log("  >",t2.replace(/\s+/g," ").slice(0,400));
+ ok(/starts with “Answer 1”/.test(t2),"explains the answer words were not found");ok(await p.isVisible("#adDiagAdd"),"offers to add the questions anyway");
+ await p.click("#adDiagAdd");await p.waitForSelector("#sbar:not([hidden])",{timeout:120000});ok(await p.evaluate(()=>S.sugg.length)===10,"Add anyway gives the 10 questions");
+ {const e2=errs.filter(x=>!/Failed to load resource/.test(x));ok(!e2.length,"no page errors "+e2.join(";"))}await b.close()})();

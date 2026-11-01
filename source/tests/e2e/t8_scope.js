@@ -1,0 +1,14 @@
+const {launch,ok}=require('./base');const fs=require('fs');const CH=fs.readFileSync('/tmp/e2e/mix_topics.txt','utf8').trim().split("\n");
+(async()=>{const {b,p,errs}=await launch({viewport:{width:1500,height:900}});
+ await p.evaluate(CH=>{L.folders=[{id:"aud",name:"Audit",color:"#c2410c"}];L.links=[];L.topicList={aud:CH};
+  const mk=(key,i,tq,tags)=>({id:key+i,key,name:key,src:"module",sub:"aud",subName:"Audit",label:"TQ "+i,idx:i,tq,ta:"",data:{pairs:[]},p:{id:key+i,q:[{page:1,y:i/100}],a:[{page:2}],tags}});
+  BK.items=[...Array(6)].map((_,i)=>mk("Chapter 1",i,"engagement quality control reviewer SQC 1 SA 220 firm policies",[])).concat([...Array(9)].map((_,i)=>mk("Chapter 14",i,"bank branch advances NPA LFAR",[]))).concat([...Array(12)].map((_,i)=>mk("Chapter 18",i,"ESG sustainability BRSR assurance",["ESG Assurance"])));
+  BK.docs=["Chapter 1","Chapter 14","Chapter 18"].map(k=>({key:k,name:k,sub:{id:"aud"}}));saveDocData=async()=>{};
+  computeDups();BK.view="list";$("#vLib").hidden=true;$("#vBank").hidden=false;S.view="bank";BK.f.sub="aud";BK.f.paper="Chapter 1";renderBank()},CH);
+ await p.click("[data-autotag]");await p.waitForTimeout(500);
+ const n=await p.locator("#gBody .atr").count();const names=await p.$$eval("#gBody .atm > b",e=>[...new Set(e.map(x=>x.textContent))]);
+ ok(n===6&&names.join()==="Chapter 1","Suggest with paper = Chapter 1 lists only its 6 questions (got "+n+": "+names.join()+")");
+ ok((await p.textContent("#gBody")).includes("shown by your filters"),"says it is limited to the filtered questions");
+ const seg=await p.textContent('#gBody [data-amode=check]');ok(/\(0\)/.test(seg),"Re-check count follows the filter too: "+seg);
+ await p.screenshot({path:"/tmp/e2e/scope.png"});
+ console.log(errs.filter(e=>!/ERR_FAILED/.test(e)).length?"page errors: "+errs.join("; "):"no page errors");await b.close()})();

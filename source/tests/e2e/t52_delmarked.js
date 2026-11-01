@@ -1,0 +1,14 @@
+const {launch,ok}=require('./base');
+(async()=>{const {b,p,errs}=await launch();p.setDefaultTimeout(90000);
+ await p.setInputFiles('#fileIn',['/tmp/e2e/pdfs/AFM RTP N26.pdf']);await p.waitForSelector("#vMark:not([hidden]) canvas.pc");
+ await p.click("#autoBtn");await p.waitForSelector("#adGo");await p.click("#adGo");await p.waitForSelector("#sbar:not([hidden])",{timeout:120000});await p.click('#sbar [data-s=accept]');await p.waitForTimeout(600);
+ await p.evaluate(()=>{S.data.chapters=[{id:"c1",name:"Ch A",start:1},{id:"c2",name:"Ch B",start:S.data.pairs[3].q[0].page}];save()});
+ const b0=await p.evaluate(()=>({N:S.pages.length,n:S.data.pairs.length,pg:S.data.pairs[1].q[0].page}));
+ await p.click("#delPgBtn");await p.fill("#dpIn",String(b0.pg));await p.waitForTimeout(300);
+ const info=await p.textContent("#dpInfo");ok(/marked question|lose a part/.test(info),"warns about marks on the page: "+info.trim().slice(0,140));
+ await p.click("#dpGo");await p.waitForFunction(n=>S.pages&&S.pages.length===n,b0.N-1,{timeout:60000});await p.waitForTimeout(800);
+ const a=await p.evaluate(()=>({N:S.pages.length,n:S.data.pairs.length,bad:S.data.pairs.some(x=>x.q.concat(x.a).some(r=>r.page<1||r.page>S.pages.length)),ch:S.data.chapters.map(c=>c.start)}));
+ ok(!a.bad,"no box points past the end or to page 0");ok(a.n<b0.n,"questions on the deleted page were removed: "+b0.n+" → "+a.n);ok(a.ch.every(s=>s>=1&&s<=a.N),"chapters still start on real pages: "+a.ch);
+ await p.click("#tUndo");await p.waitForFunction(n=>S.pages&&S.pages.length===n,b0.N,{timeout:60000});await p.waitForTimeout(800);
+ ok(await p.evaluate(n=>S.data.pairs.length===n,b0.n),"Undo brings the questions back ("+b0.n+")");
+ const e=errs.filter(x=>!/Failed to load resource/.test(x));ok(!e.length,"no page errors "+e.join("|").slice(0,300));await b.close()})();

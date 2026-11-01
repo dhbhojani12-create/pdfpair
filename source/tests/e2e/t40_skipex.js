@@ -1,0 +1,12 @@
+const {launch,ok}=require('./base');
+(async()=>{const {b,p,errs}=await launch();p.setDefaultTimeout(60000);
+ await p.setInputFiles('#fileIn',['/tmp/e2e/pdfs/Ind_AS_7.pdf']);await p.waitForSelector("#vMark:not([hidden]) canvas.pc");
+ await p.click("#autoBtn");await p.waitForSelector("#adGo");await p.click("#adGo");await p.waitForFunction(()=>!$("#sbar").hidden||/No new|short|wrong/.test(($("#adRes")||{}).innerText||""),null,{timeout:120000});console.log((await p.evaluate(()=>($("#adRes")||{}).innerText||"")).slice(0,200));await p.click('#sbar [data-s=accept]');await p.waitForTimeout(500);
+ const bad=await p.evaluate(()=>{const ps=S.data.pairs.filter(x=>/^Illus/.test(x.label||"")).slice(0,4);ps.forEach(x=>delete x.auto);S.data.pairs=S.data.pairs.filter(x=>!x.auto);const b=ps[1];b.q[0].y+=b.q[0].h*.5;b.q[0].h*=.5;save();refreshAll();return b.id});
+ await p.click("#autoBtn");await p.waitForSelector("#adGo");await p.evaluate(()=>{$("#adSeg").hidden=false});await p.click('#gBody [data-m=learn]');
+ await p.waitForFunction(()=>/Questions start like|Skipped|should start/.test((document.querySelector("#adLearned")||{}).innerText||""),null,{timeout:30000});await p.waitForTimeout(800);
+ const txt=await p.textContent("#adLearned");console.log(txt.slice(0,300));
+ ok(/Skipped \d+ example/.test(txt)&&/Questions/.test(txt),"odd examples are skipped and the rest are learned");
+ ok(await p.evaluate(()=>adSpec&&adSpec.skipped.every(x=>!document.querySelector('#adEx input[data-ex="'+x.id+'"]').checked)),"the odd examples get unticked");
+ await p.click("#adGo");await p.waitForFunction(()=>!$("#sbar").hidden||/No new|short|wrong/.test(($("#adRes")||{}).innerText||""),null,{timeout:120000});console.log((await p.evaluate(()=>($("#adRes")||{}).innerText||"")).slice(0,200));ok(await p.evaluate(()=>S.sugg.length)>5,"Find works: "+await p.evaluate(()=>S.sugg.length)+" suggestions");
+ ok(!errs.filter(x=>!/Failed to load resource/.test(x)).length,"no page errors "+errs.join(";"));await b.close()})();

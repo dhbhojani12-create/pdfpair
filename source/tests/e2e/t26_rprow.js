@@ -1,0 +1,11 @@
+const {open}=require('./shotlib');const ok=(c,m)=>console.log((c?"PASS ":"FAIL ")+m);
+(async()=>{for(const vp of [[1400,900,"laptop"],[390,844,"phone"]]){const {ctx,p,errs}=await open({viewport:{width:vp[0],height:vp[1]},touch:vp[2]==="phone",mobile:vp[2]==="phone"});p.setDefaultTimeout(30000);const nm=vp[2];
+ await p.evaluate(()=>navGo("rep"));await p.waitForSelector(".rpg.open .rph1");
+ const rows=await p.locator(".rpg.open .rph1").count();ok(rows>=2,nm+": open group lists "+rows+" papers");
+ ok(await p.locator(".rpg.open .rph1 .rptg").count()===rows,nm+": each paper row shows its topic tags");ok(await p.locator(".rpg.open .rph1 .rpview").count()===rows,nm+": each row has View question");
+ await p.locator(".rpg.open").scrollIntoViewIfNeeded();await p.screenshot({path:"/tmp/e2e/shots/rprow_"+nm+".png"});
+ const id=await p.getAttribute(".rpg.open .rph1:nth-child(2) .rpview","data-rq");await p.click(".rpg.open .rph1:nth-child(2) .rpview");await p.waitForTimeout(700);
+ const s=await p.evaluate(()=>({study:document.body.classList.contains("study"),n:BK.list.length,id:BK.list[BK.rc]&&BK.list[BK.rc].id}));ok(s.study&&s.n===1&&s.id===id,nm+": View question opens just that question in Revise");
+ await p.evaluate(()=>studyEnd());await p.waitForTimeout(400);ok(await p.evaluate(()=>BK.view)==="rep",nm+": closing goes back to Repeats");
+ const sw=await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1);ok(sw,nm+": no sideways scroll");
+ ok(!errs.length,nm+": no page errors "+errs.join(";"));await ctx.close()}})();

@@ -1,0 +1,10 @@
+const {open}=require('./shotlib');const ok=(c,m)=>console.log((c?"PASS ":"FAIL ")+m);
+(async()=>{const {ctx,p,errs}=await open({viewport:{width:1400,height:860}});p.setDefaultTimeout(30000);
+ await p.evaluate(()=>navGo("rep"));await p.waitForSelector(".rpg");await p.mouse.click(5,400);
+ for(let i=0;i<3;i++)await p.keyboard.press("ArrowDown");await p.waitForTimeout(300);await p.screenshot({path:"shots/kb_rep.png"});
+ await p.evaluate(()=>navGo("lib"));await p.waitForSelector("#vBank:not([hidden]) .brw");await p.evaluate(()=>{BK.view="idx";renderBank()});await p.waitForTimeout(400);
+ await p.mouse.click(5,400);await p.keyboard.press("ArrowDown");await p.keyboard.press("ArrowDown");ok(await p.locator("tr.kbsel").count()===1,"idx: row selected");await p.screenshot({path:"shots/kb_idx.png"});
+ await p.evaluate(()=>{BK.view="list";renderBank()});await p.waitForTimeout(300);await p.click(".addt");await p.waitForSelector("#tpQ");await p.keyboard.press("ArrowDown");
+ ok(await p.evaluate(()=>document.activeElement.matches("#menu [data-tp]")),"menu: ↓ from topic box moves into options");await p.keyboard.press("ArrowDown");
+ ok(await p.evaluate(()=>[...document.querySelectorAll("#menu [data-tp]")].indexOf(document.activeElement)===1),"menu: ↓ again → 2nd option");
+ ok(!errs.filter(x=>!/Failed to load resource/.test(x)).length,"no errors");await ctx.close()})();

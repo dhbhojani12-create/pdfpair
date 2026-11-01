@@ -1,0 +1,20 @@
+const {open}=require('./shotlib');const ok=(c,m)=>console.log((c?"PASS ":"FAIL ")+m);
+(async()=>{const {ctx,p,errs}=await open({viewport:{width:390,height:844},touch:true,mobile:true});p.setDefaultTimeout(30000);
+ await p.evaluate(async()=>{L.plans={};await DB.put("kv","plans",{});renderLibMain()});
+ ok(await p.isVisible(".plan.empty"),"empty plan card offers Plan today");await p.screenshot({path:"/tmp/e2e/shots/p_plan_empty.png"});
+ await p.click('[data-pl=edit]');await p.waitForSelector("#plPaper");
+ await p.selectOption("#plPaper",{index:0});await p.fill("#plFrom","1");await p.fill("#plTo","5");await p.click('[data-pa=range]');await p.waitForTimeout(200);
+ await p.click('[data-pa=star]');await p.waitForTimeout(200);await p.click('[data-pa=tag]');await p.waitForTimeout(200);
+ ok(await p.evaluate(()=>planOf(dayKey(0)).length===3),"planner adds a range, important and a tagging task ("+await p.evaluate(()=>planOf(dayKey(0)).map(i=>i.label).join(" | "))+")");
+ await p.screenshot({path:"/tmp/e2e/shots/p_planner.png"});
+ await p.click('[data-po="1"]');await p.click('[data-pa=stale]');await p.waitForTimeout(200);ok(await p.evaluate(()=>planOf(dayKey(1)).length===1),"tomorrow can be planned too");
+ await p.click("#gFoot .btn.primary");await p.waitForTimeout(300);
+ ok(await p.evaluate(()=>document.querySelectorAll(".plan .pli").length===3),"home shows today's 3 items");await p.screenshot({path:"/tmp/e2e/shots/p_plan.png"});
+ await p.click('.pli.next [data-pl=start]');await p.waitForTimeout(1500);
+ ok(await p.evaluate(()=>document.body.classList.contains("study")&&BK.list.length===5),"Start opens Revise with exactly those 5 questions");
+ for(let i=0;i<5;i++){await p.evaluate(()=>{const b=document.querySelector(".rv .rvhid");if(b)b.click()});await p.waitForTimeout(500);await p.evaluate(()=>{const n=document.querySelector('.rv [data-act=next]:visible');if(n&&!n.disabled)n.click()});await p.waitForTimeout(500)}
+ ok(await p.evaluate(()=>{const i=planOf(dayKey(0))[0];return i.done&&i.seen.length===5}),"seeing all 5 answers ticks the item off");
+ await p.click(".rv .rvx");await p.waitForTimeout(800);ok(await p.evaluate(()=>S.view==="lib"&&document.querySelectorAll(".plan .pli.done").length===1),"closing Revise returns to Library with the item done");
+ await p.evaluate(()=>openBank());await p.waitForSelector("#vBank:not([hidden]) .brw");await p.click("#bkPlan");await p.waitForTimeout(200);
+ ok(await p.evaluate(()=>planOf(dayKey(0)).length===4),"Add to plan from Questions adds the filtered list");
+ if(errs.length)console.log("errors:",errs.join(" | "));await ctx.close()})();

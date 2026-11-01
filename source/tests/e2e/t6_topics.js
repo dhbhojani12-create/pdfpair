@@ -1,0 +1,23 @@
+const {launch,ok}=require('./base');
+(async()=>{const {b,p,errs}=await launch();
+ const r=await p.evaluate(async()=>{L.folders=[{id:"afm",name:"AFM",color:"#3157d0"},{id:"fr",name:"FR",color:"#0d855c"},{id:"aud",name:"Audit",color:"#c2410c"}];
+  L.topicList={all:INDAS_LIST.map(([n,nm])=>"Ind AS "+n+": "+nm).concat(["Accounting and Technology"]),afm:["Forex"]};saveTopicList=async()=>{};saveDocData=async()=>{};
+  const mk=(sub,i,tags)=>({id:sub+i,key:sub,name:sub+" paper",src:"rtp",sub,subName:sub,label:String(i),idx:i,tq:"text "+i,ta:"",data:{pairs:[]},p:{id:"p"+sub+i,q:[{page:1,y:0}],a:[],tags}});
+  BK.items=[mk("fr",1,["Ind AS 7: Statement of Cash Flows"]),mk("fr",2,["Ind AS 115: Revenue from Contracts with Customers"]),mk("afm",3,["Forex"]),mk("aud",4,[]),mk("aud",5,[])];
+  BK.docs=[];computeDups();const moved=await sortSharedTopics();
+  const res={moved,all:(L.topicList.all||[]).length,fr:savedTopics("fr").length,afm:savedTopics("afm"),aud:savedTopics("aud")};
+  BK.f.sub="aud";$("#vLib").hidden=true;$("#vBank").hidden=false;S.view="bank";renderBank();openManageTopics();
+  res.audRows=[...document.querySelectorAll("#gBody input[data-ri]")].map(i=>i.value);res.audIndCheck=!!document.querySelector(".mt-cov");
+  BK.f.sub="fr";openManageTopics();res.frIndCheck=!!document.querySelector(".mt-cov");res.frRows=document.querySelectorAll("#gBody input[data-ri]").length;
+  BK.f.sub="all";openManageTopics();res.allPicker=!!document.querySelector("#mtSub");return res});
+ console.log(JSON.stringify(r));
+ ok(r.moved===38&&r.all===0,"all 38 shared topics moved out of the shared list");
+ ok(r.fr===38,"FR now holds the 37 Ind AS topics + Accounting and Technology");
+ ok(r.afm.length===1&&r.afm[0]==="Forex","AFM keeps only its own topic");
+ ok(r.aud.length===0&&r.audRows.length===0&&!r.audIndCheck,"Audit shows no FR topics and no Ind AS check");
+ ok(r.frIndCheck,"FR still shows the Ind AS check");
+ ok(r.allPicker,"All subjects view asks which subject to add topics to");
+ // add topics from All view into Audit
+ await p.selectOption("#mtSub","aud");await p.fill("#mtAdd","SA 220: Quality Control\nSA 299: Joint Audit");await p.click("#mtAddGo");await p.waitForTimeout(200);
+ ok(await p.evaluate(()=>savedTopics("aud").length===2&&!savedTopics("afm").includes("SA 220: Quality Control")),"topics added for Audit stay in Audit");
+ console.log(errs.filter(e=>!/ERR_FAILED/.test(e)).join("\n")||"no page errors");await b.close()})();

@@ -1,0 +1,12 @@
+const {open}=require('./shotlib');const ok=(c,m)=>console.log((c?"PASS ":"FAIL ")+m);
+(async()=>{for(const vp of [[1400,800,"laptop"],[390,844,"phone"]]){const {ctx,p,errs}=await open({viewport:{width:vp[0],height:vp[1]},touch:vp[2]==="phone",mobile:vp[2]==="phone"});p.setDefaultTimeout(30000);const nm=vp[2];
+ await p.evaluate(()=>navGo("today"));await p.waitForTimeout(500);
+ ok(await p.isVisible("#navTmr .tmr"),nm+": timer in the top bar");ok(await p.locator("#libMain .tmr, #libMain [data-act=todayrev]").count()===0,nm+": timer and Revise gone from Today");
+ await p.click("#navTmr .tmrgo");await p.waitForTimeout(2200);const t1=await p.textContent("#navTmr #tmrTxt");ok(/24:5\d/.test(t1),nm+": timer runs ("+t1+")");
+ await p.evaluate(()=>navGo("lib"));await p.waitForTimeout(800);ok(await p.isVisible("#navTmr .tmr.run"),nm+": still running on Library");
+ await p.screenshot({path:"/tmp/e2e/shots/navtmr_"+nm+".png",clip:{x:0,y:0,width:vp[0],height:70}});
+ await p.click("#navTmr .tmrgo");await p.waitForTimeout(300);ok(!(await p.isVisible("#navTmr .tmr.run")),nm+": pause works");
+ await p.click("#navTmr #tmrTxt");await p.waitForSelector("#menu [data-tm]");await p.click('#menu [data-tm="45"]');ok((await p.textContent("#navTmr #tmrTxt"))==="45:00",nm+": length menu works");
+ await p.evaluate(()=>{TMR.min=25;try{localStorage.setItem("pp-tmr",25)}catch(_){}tmrReset()});
+ const sw=await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1);ok(sw,nm+": no sideways scroll");
+ ok(!errs.length,nm+": no page errors "+errs.join(";"));await ctx.close()}})();

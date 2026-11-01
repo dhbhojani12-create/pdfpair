@@ -1,0 +1,11 @@
+const {launch,ok}=require('./base');
+(async()=>{const {b,p,errs}=await launch({viewport:{width:915,height:412},touch:true,mobile:true,dpr:2});
+ await p.evaluate(()=>openBank());await p.waitForSelector("#vBank:not([hidden]) .brw",{timeout:60000});
+ ok(await p.evaluate(()=>matchMedia("(pointer:coarse)").matches),"phone emulation (touch screen)");
+ await p.evaluate(()=>studyStart());await p.waitForTimeout(1500);
+ ok(await p.evaluate(()=>document.body.classList.contains("study")&&!!document.fullscreenElement),"Revise goes full screen in one step");
+ const r=await p.evaluate(()=>{const top=document.querySelector("#bkMain .rvtop").getBoundingClientRect(),c=document.querySelector("#bkMain .rvbody").getBoundingClientRect();return{topH:Math.round(top.height),colsH:Math.round(c.height),vh:innerHeight,land:!!document.querySelector(".rv.land"),fs:document.querySelectorAll("#bkMain [data-act=fs]").length}});
+ ok(r.land&&r.topH<=70,"landscape: one slim top row ("+r.topH+"px)");ok(r.colsH>r.vh*0.75,"question/answer get "+r.colsH+" of "+r.vh+"px height");ok(r.fs===0,"no separate full-screen button");
+ await p.screenshot({path:"/tmp/e2e/study_phone.png"});
+ await p.evaluate(()=>document.exitFullscreen());await p.waitForTimeout(600);ok(await p.evaluate(()=>!document.fullscreenElement&&!document.body.classList.contains("study")),"leaving full screen closes Revise");
+ console.log(errs.filter(e=>!/ERR_FAILED/.test(e)).length?"page errors: "+errs.join("; "):"no page errors");await b.close()})();

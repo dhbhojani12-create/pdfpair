@@ -1,0 +1,11 @@
+const {open}=require('./shotlib');const ok=(c,m)=>console.log((c?"PASS ":"FAIL ")+m);
+(async()=>{for(const vp of [[1400,860,"laptop"],[390,844,"phone"]]){const {ctx,p,errs}=await open({viewport:{width:vp[0],height:vp[1]},touch:vp[2]==="phone",mobile:vp[2]==="phone"});p.setDefaultTimeout(30000);const nm=vp[2];
+ await p.evaluate(()=>navGo("rep"));await p.waitForSelector(".rpg");const g=await p.evaluate(()=>{const g=BK.groups.find(x=>x.items.length>=2);return{a:g.items[0].id,b:g.items[1].id}});
+ await p.evaluate(()=>navGo("lib"));await p.waitForSelector("#vBank:not([hidden]) .brw");await p.evaluate(()=>studyStart());
+ await p.evaluate(id=>{BK.rc=BK.list.findIndex(x=>x.id===id);BK.revealed=true;renderBankSlides()},g.a);await p.click(".rvasked");await p.waitForSelector("#smList");
+ await p.screenshot({path:"/tmp/e2e/shots/donext_"+nm+".png"});
+ await p.click('#smList [data-smgo="'+g.b+'"]');await p.waitForTimeout(500);
+ const s=await p.evaluate(g=>({cur:BK.list[BK.rc].id,prev:BK.list[BK.rc-1]&&BK.list[BK.rc-1].id,copies:BK.list.filter(x=>x.id===g.b).length,dlg:document.querySelector("#gModal").hidden}),g);
+ ok(s.cur===g.b&&s.prev===g.a&&s.copies===1&&s.dlg,nm+": Do it next opens the similar question right after the current one");
+ await p.click('.rv [data-act=prev]:visible');await p.waitForTimeout(400);ok(await p.evaluate(()=>BK.list[BK.rc].id)===g.a,nm+": ‹ goes back to the first question");
+ ok(!errs.length,nm+": no page errors "+errs.join(";"));await ctx.close()}})();

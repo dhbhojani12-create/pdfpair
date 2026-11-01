@@ -1,0 +1,21 @@
+const {launch,ok}=require('./base');
+(async()=>{const {b,p,errs}=await launch();p.setDefaultTimeout(150000);
+ await p.setInputFiles('#fileIn',['/tmp/e2e/pdfs/Ind_AS_7.pdf']);await p.waitForSelector("#vMark:not([hidden]) canvas.pc");
+ await p.click("#xrBtn");await p.waitForFunction(()=>xrDoc&&!xrDoc.running,null,{timeout:150000});await p.waitForTimeout(600);
+ await p.click('[data-xt^="Illustration"]');await p.waitForTimeout(500);
+ const r=await p.evaluate(()=>{const R=xrDoc.test;const pr=R.pairs;return{n:pr.length,withA:pr.filter(x=>x.a.length).length,ends:R.ends,starts:R.starts.length,txt:$("#xtR").textContent.slice(0,300)}});console.log(JSON.stringify(r));
+ ok(r.n>=7&&r.withA===r.n,"each Illustration paired with its Solution: "+r.n+"/"+r.withA);
+ ok(r.ends>=r.n-1,"boxes stop at *****: "+r.ends);
+ // end line excluded by default: the last box line must not be the ***** line
+ const inc=await p.evaluate(()=>{const R=xrDoc.test;const s=R.starts.find(x=>x.kind==="a");return s.box.reduce((m,b)=>Math.max(m,b.y+b.h),0)});
+ await p.click("#xtEI");await p.waitForTimeout(400);
+ const inc2=await p.evaluate(()=>{const R=xrDoc.test;const s=R.starts.find(x=>x.kind==="a");return s.box.reduce((m,b)=>Math.max(m,b.y+b.h),0)});
+ ok(inc2>inc,"'include that line' makes the box longer: "+inc+" → "+inc2);
+ await p.fill("#xtPF","20");await p.waitForTimeout(400);
+ const pf=await p.evaluate(()=>Math.min(...xrDoc.test.starts.map(s=>s.n)));ok(pf>=20,"page filter works: first start on p."+pf);
+ await p.fill("#xtPF","");await p.fill("#xtLF","90");await p.waitForTimeout(400);
+ ok((await p.evaluate(()=>xrDoc.test.starts.length))===0,"left-position filter removes lines");
+ await p.fill("#xtLF","");await p.waitForTimeout(300);
+ await p.evaluate(()=>goPage(xrDoc.test.starts[0].n));await p.waitForTimeout(1500);await p.screenshot({path:"/tmp/e2e/xrend.png"});
+ await p.click("#xtGo");await p.waitForTimeout(800);ok(await p.evaluate(()=>(S.sugg||[]).length>=7&&S.sugg.every(g=>g.a.length)),"suggestions carry the answers");
+ const e=errs.filter(x=>!/Failed to load resource/.test(x));ok(!e.length,"no page errors "+e.join("|").slice(0,300));await b.close()})();

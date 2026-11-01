@@ -1,0 +1,16 @@
+const {launch,ok}=require('./base');const fs=require('fs');const CH=fs.readFileSync('/tmp/e2e/ch_topics.txt','utf8').trim().split("\n");
+(async()=>{const {b,p,errs}=await launch({viewport:{width:1500,height:800}});
+ await p.evaluate(CH=>{L.folders=[{id:"afm",name:"AFM",color:"#3157d0"},{id:"aud",name:"Audit",color:"#c2410c"}];L.links=[];L.topicList={afm:["Business Valuation","Mergers and Acquisitions"],aud:CH};
+  BK.items=[...Array(12)].map((_,i)=>{const au=i<8;return{id:"q"+i,key:au?"Chapter 14 U1":"AFM RTP",name:au?"Chapter 14 U1":"AFM RTP",src:au?"module":"rtp",sub:au?"aud":"afm",subName:au?"Audit":"AFM",label:"TQ "+i,idx:i,tq:"bank branch audit advances",ta:"",data:{pairs:[]},p:{id:"p"+i,q:[{page:1,y:i/100}],a:[{page:2}],tags:au?[]:["Business Valuation"]}}});
+  BK.docs=[{key:"Chapter 14 U1",name:"Chapter 14 U1",sub:{id:"aud"}},{key:"AFM RTP",name:"AFM RTP",sub:{id:"afm"}}];saveDocData=async()=>{};
+  computeDups();BK.view="list";$("#vLib").hidden=true;$("#vBank").hidden=false;S.view="bank";renderBank()},CH);
+ await p.click('#bkSub [data-sub=aud]');await p.check("#bkAll");
+ const o=await p.$$eval("#bkTagPick option",o=>o.map(x=>x.value));
+ ok(o.length===CH.length+2&&!o.includes("Business Valuation"),"Audit selection lists only the 19 Audit topics ("+(o.length-2)+")");
+ ok(await p.isHidden("#bkTagIn"),"name box hidden until New topic is chosen");
+ const banks="Special Features of Audit of Banks and NBFCs";await p.selectOption("#bkTagPick",banks);await p.click("#bkTagSet");await p.waitForTimeout(300);
+ ok(await p.evaluate(n=>BK.items.filter(it=>it.sub==="aud").every(it=>it.p.tags.length===1&&it.p.tags[0]===n),banks),"Set as only topic stores the full 44-character name on all 8");
+ await p.check("#bkAll");await p.selectOption("#bkTagPick","__new");const long="Emerging Areas: SDG and ESG Assurance — sustainability reporting (BRSR)";await p.fill("#bkTagIn",long);
+ ok((await p.inputValue("#bkTagIn"))===long,"a 70-character new topic name is not cut short");
+ await p.screenshot({path:"/tmp/e2e/bulk.png",clip:{x:0,y:100,width:1500,height:250}});
+ console.log(errs.length?"page errors: "+errs.join("; "):"no page errors");await b.close()})();

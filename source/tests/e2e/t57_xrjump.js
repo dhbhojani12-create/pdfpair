@@ -1,0 +1,12 @@
+const {launch,ok}=require('./base');
+(async()=>{const {b,p,errs}=await launch();p.setDefaultTimeout(150000);
+ await p.setInputFiles('#fileIn',['/tmp/e2e/pdfs/Ind_AS_7.pdf']);await p.waitForSelector("#vMark:not([hidden]) canvas.pc");
+ await p.click("#xrBtn");await p.waitForFunction(()=>xrDoc&&!xrDoc.running,null,{timeout:150000});await p.waitForTimeout(600);
+ await p.click('[data-xt^="Illustration"]');await p.waitForTimeout(500);
+ const n=await p.$$eval("#xtR .xtchip[data-xj]",e=>e.length);ok(n>=1,"problem chips are shown: "+n);
+ const want=await p.evaluate(()=>xrDoc.test.unmet[0].n);
+ await p.click("#xtR .xtchip[data-xj]");await p.waitForTimeout(1800);
+ const r=await p.evaluate(()=>({cur:S.cur,fl:!!ov.querySelector(".xrT-fl"),det:$("#xtR .xtj")&&$("#xtR .xtj").textContent.slice(0,200)}));console.log(JSON.stringify(r));
+ ok(r.cur===want,"jumped to the page of the problem: "+r.cur+" = "+want);ok(r.fl,"the line is flashed on the page");ok(/never|No line starting/i.test(r.det||""),"reason is explained");
+ await p.screenshot({path:"/tmp/e2e/xrjump.png"});
+ const e=errs.filter(x=>!/Failed to load resource/.test(x));ok(!e.length,"no page errors "+e.join("|").slice(0,300));await b.close()})();

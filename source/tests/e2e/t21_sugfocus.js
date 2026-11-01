@@ -1,0 +1,18 @@
+const {launch,ok}=require('./base');
+(async()=>{const {b,p,errs}=await launch();
+ await p.setInputFiles('#fileIn',['/tmp/e2e/pdfs/DT_Ch1.pdf']);await p.waitForSelector("#vMark:not([hidden]) canvas.pc",{timeout:60000});
+ await p.click("#autoBtn");await p.waitForSelector("#adGo");await p.click("#adGo");await p.waitForSelector("#sbar:not([hidden])",{timeout:180000});
+ ok(await p.locator(".sug.ssel .h").count()>=8,"first suggestion shows handles straight away");
+ const sid=await p.evaluate(()=>{const s=S.sugg.find(x=>x.label==="Illus. 1");S.sgFocus=s.id;goPage(s.a[0].page);return s.id});await p.waitForTimeout(400);
+ const sel='.sug.a[data-sg="'+sid+'"][data-j="0"]';ok(await p.locator(sel+" .h").count()===8,"focused suggestion editable without tapping");
+ ok(await p.locator(sel+" [data-sdel]").count()===1,"− shown on a multi-part answer");
+ const hs=await p.locator(sel+' .h[data-h="s"]').boundingBox();const h0=await p.evaluate(id=>S.sugg.find(s=>s.id===id).a[0].h,sid);
+ await p.mouse.move(hs.x+6,hs.y+6);await p.mouse.down();await p.mouse.move(hs.x+6,hs.y-100,{steps:6});await p.mouse.up();
+ ok(await p.evaluate(id=>S.sugg.find(s=>s.id===id).a[0].h,sid)<h0-.05,"handle drag works on focused suggestion");
+ await p.screenshot({path:"/tmp/e2e/shots/sug_focus.png"});
+ await p.click(sel+" [data-sdel]");ok(await p.evaluate(id=>S.sugg.find(s=>s.id===id).a.length,sid)===1,"− removes that part");
+ await p.click('#sbar [data-s=next]');await p.waitForTimeout(300);ok(await p.locator('.sug.ssel').count()>0,"Next makes the next one editable");
+ const s2=await p.evaluate(()=>{const s=S.sugg.find(x=>x.a.length===1&&x.q.length===1);S.sgFocus=s.id;goPage(s.a[0].page);return s.id});await p.waitForTimeout(300);const n0=await p.evaluate(()=>S.sugg.length);
+ await p.click('.sug.a[data-sg="'+s2+'"] [data-sdel]');ok(await p.evaluate(id=>{const s=S.sugg.find(x=>x.id===id);return !!s&&s.a.length===0&&s.q.length===1},s2),"× on the only answer box keeps the question");ok(await p.evaluate(()=>S.sugg.length)===n0,"suggestion count unchanged");
+ await p.evaluate(id=>{const s=S.sugg.find(x=>x.id===id);goPage(s.q[0].page)},s2);await p.waitForTimeout(300);await p.click('.sug.q[data-sg="'+s2+'"] [data-sdel]');ok(await p.evaluate(()=>S.sugg.length)===n0-1,"× on the last question box removes the suggestion");
+ {const e2=errs.filter(x=>!/Failed to load resource/.test(x));ok(!e2.length,"no page errors "+e2.join(";"))}await b.close()})();

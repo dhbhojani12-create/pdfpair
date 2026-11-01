@@ -1,0 +1,12 @@
+const {open}=require('./shotlib');const ok=(c,m)=>console.log((c?"PASS ":"FAIL ")+m);
+(async()=>{for(const vp of [[1400,860,"laptop"],[390,844,"phone"]]){const nm=vp[2];const {ctx,p,errs}=await open({viewport:{width:vp[0],height:vp[1]},touch:nm!=="laptop",mobile:nm!=="laptop"});p.setDefaultTimeout(30000);
+ await p.evaluate(()=>navGo("lib"));await p.waitForSelector("#vBank:not([hidden]) .brw");await p.evaluate(()=>studyStart());await p.evaluate(()=>{BK.rc=Math.min(5,BK.list.length-1);renderBankSlides()});await p.waitForTimeout(500);
+ const it=await p.evaluate(()=>{const x=BK.list[BK.rc];return{id:x.id,label:x.label,pid:x.p.id,key:x.key}});
+ ok(await p.isVisible(".rvq2pdf"),nm+": question number is a link");if(nm==="laptop")await p.screenshot({path:"shots/q2pdf.png",clip:{x:0,y:0,width:1400,height:70}});
+ if(nm==="laptop"){await p.keyboard.press("p")}else await p.click(".rvq2pdf");
+ await p.waitForSelector("#vMark:not([hidden]) canvas.pc",{timeout:60000});await p.waitForTimeout(800);
+ const w=await p.evaluate(()=>{const f=findReg(S.selId);return{key:S.doc.key,pair:f&&f.pair.id,page:S.cur,rp:f&&f.r.page,back:$("#backLbl").textContent}});
+ ok(w.key===it.key&&w.pair===it.pid&&w.page===w.rp,nm+": opens the PDF at that question (p."+w.page+")");ok(w.back==="Back to Revise",nm+": back says "+w.back);
+ await p.click("#backBtn");await p.waitForTimeout(1200);
+ ok(await p.evaluate(id=>document.body.classList.contains("study")&&BK.list[BK.rc].id===id,it.id),nm+": Back returns to Revise on the same question");
+ ok(!errs.filter(x=>!/Failed to load resource/.test(x)).length,nm+": no page errors "+errs.join(";"));await ctx.close()}})();

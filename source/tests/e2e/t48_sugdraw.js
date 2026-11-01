@@ -1,0 +1,13 @@
+const {launch,ok}=require('./base');
+(async()=>{const {b,p,errs}=await launch();p.setDefaultTimeout(60000);
+ await p.setInputFiles('#fileIn',['/tmp/e2e/pdfs/Ind_AS_7.pdf']);await p.waitForSelector("#vMark:not([hidden]) canvas.pc");
+ await p.click("#autoBtn");await p.waitForSelector("#adGo");await p.click("#adGo");await p.waitForSelector("#sbar:not([hidden])",{timeout:120000});
+ const r=await p.evaluate(()=>{const s=S.sugg[0],id=s.id,b=s.q[0];const n0=S.sugg.length,pairs0=S.data.pairs.length;S.mode="q";S.cur=b.page;
+   const rr={x:b.x,y:b.y,w:b.w,h:Math.max(.02,b.h*.5)};const used=drawOnSuggestion(rr,false);
+   return{used,same:S.sugg[0].id===id,n:S.sugg.length===n0,pairs:S.data.pairs.length===pairs0,h:Math.abs(S.sugg[0].q[0].h-r4(rr.h))<1e-3,linked:!!S.sugg[0].num!==undefined}});
+ ok(r.used&&r.same&&r.n&&r.pairs&&r.h,"box drawn over a suggestion edits it in place, link kept "+JSON.stringify(r));
+ const r2=await p.evaluate(()=>{const s=S.sugg[0];S.sgFocus=s.id;S.mode="a";S.cur=s.q[0].page;const k=s.a.length;const used=drawOnSuggestion({x:.1,y:.9,w:.5,h:.05},true);return{used,grew:S.sugg[0].a.length===k+1}});
+ ok(r2.used&&r2.grew,"continue box adds a part to the focused suggestion "+JSON.stringify(r2));
+ const r3=await p.evaluate(()=>{S.mode="q";S.cur=S.sugg[0].q[0].page;return drawOnSuggestion({x:.02,y:.001,w:.02,h:.01},false)});
+ ok(r3===false,"a box on empty space still starts a new question");
+ const e=errs.filter(x=>!/Failed to load resource/.test(x));ok(!e.length,"no page errors "+e.join("|").slice(0,200));await b.close()})();
