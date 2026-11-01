@@ -1,0 +1,23 @@
+const {chromium}=require('playwright');
+const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);
+(async()=>{const b=await chromium.launch({args:['--no-proxy-server']});const p=await (await b.newContext({viewport:{width:1400,height:860}})).newPage();
+const errs=[];p.on('pageerror',e=>errs.push(e.message));
+await p.route('https://cdnjs.cloudflare.com/**',r=>{const u=r.request().url();const f=u.includes('qrcode')?'node_modules/qrcode-generator/qrcode.js':u.includes('jszip')?'node_modules/jszip/dist/jszip.min.js':u.includes('pdf-lib')?'node_modules/pdf-lib/dist/pdf-lib.min.js':'node_modules/pdfjs-dist/build/'+(u.endsWith('worker.min.js')?'pdf.worker.min.js':'pdf.min.js');r.fulfill({path:f,contentType:'application/javascript'})});
+await p.route('https://fonts.**',r=>r.fulfill({body:'',contentType:'text/css'}));
+const w=ms=>p.waitForTimeout(ms);
+await p.goto('http://127.0.0.1:9300/app.html');await w(1200);
+await p.evaluate(()=>{const o=document.querySelector('#open');if(o)o.hidden=true});const [fc]=await Promise.all([p.waitForEvent('filechooser'),p.evaluate(()=>document.querySelector('#libRestore').click())]);await fc.setFiles('/home/claude/demo/demo.zip');await w(6000);await p.evaluate(()=>document.querySelector('[data-b="restore"]').click());await w(6000);await p.evaluate(()=>{document.querySelector('#lib').hidden=true});
+const id=await p.evaluate(()=>__ppLib.LIB.sets.find(s=>s.name==='FR QB V4').id);await p.evaluate(id=>__ppLib.openSet(id),id);await w(2500);await p.keyboard.press('2');
+let s=await p.evaluate(()=>({hid:document.querySelector('#tpcnt').hidden,t:document.querySelector('#tpcnt').textContent}));ok(!s.hid&&s.t==='📖 7','📖 tab shows the concept book topics: '+JSON.stringify(s));
+await p.click('#tpcnt');await w(400);
+s=await p.evaluate(()=>[...document.querySelectorAll('#list .row')].map(r=>r.textContent));ok(s.length===7&&s.every(x=>x.includes('📕')),'rows with 📕 badge: '+s.slice(0,3).join(' | '));
+await p.evaluate(()=>[...document.querySelectorAll('#list .row')].find(r=>r.textContent.includes('Cancellation')).click());await w(2500);
+s=await p.evaluate(()=>({cv:document.querySelector('#app').classList.contains('cv'),fn:document.querySelector('#pane-c .fn').textContent}));ok(s.cv&&/Cancellation/.test(s.fn),'click opens it in the concept pane: '+JSON.stringify(s));
+// mark a new one in the concept pane -> appears in the tab straight away
+await p.keyboard.press('t');await w(150);
+await p.evaluate(()=>{const c=document.querySelector('#pane-c .sc'),pg=document.querySelector('#pane-c .page[data-n="10"]');c.scrollTop=pg.offsetTop});await w(1200);
+const rr=await p.evaluate(()=>{const e=document.querySelector('#pane-c .page[data-n="10"]').getBoundingClientRect();return {x:e.x,y:e.y,w:e.width}});
+await p.mouse.click(rr.x+0.1*rr.w,rr.y+0.3*rr.w);await w(500);await p.fill('#tgTp','Treatment of Accu Dep');await p.click('#tgSave');await w(600);
+s=await p.evaluate(()=>({t:document.querySelector('#tpcnt').textContent,has:[...document.querySelectorAll('#list .row')].some(r=>r.textContent.includes('Treatment of Accu Dep'))}));ok(s.has&&s.t==='📖 8','new concept-pane marker shows in the tab at once: '+JSON.stringify(s));
+await p.screenshot({path:'idx.png'});
+console.log(errs);await b.close()})();

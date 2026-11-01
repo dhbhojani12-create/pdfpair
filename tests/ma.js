@@ -1,0 +1,37 @@
+const {chromium,devices}=require('playwright');
+const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);
+(async()=>{const b=await chromium.launch({args:['--no-proxy-server']});
+for(const dev of ['laptop','phone']){
+const ctx=await b.newContext(dev==='laptop'?{viewport:{width:1300,height:820}}:{...devices['Pixel 7']});const p=await ctx.newPage();
+const errs=[];p.on('pageerror',e=>errs.push(e.message));
+await p.route('https://cdnjs.cloudflare.com/**',r=>{const u=r.request().url();const f=u.includes('qrcode')?'node_modules/qrcode-generator/qrcode.js':u.includes('jszip')?'node_modules/jszip/dist/jszip.min.js':u.includes('pdf-lib')?'node_modules/pdf-lib/dist/pdf-lib.min.js':'node_modules/pdfjs-dist/build/'+(u.endsWith('worker.min.js')?'pdf.worker.min.js':'pdf.min.js');r.fulfill({path:f,contentType:'application/javascript'})});
+await p.route('https://fonts.**',r=>r.fulfill({body:'',contentType:'text/css'}));
+const w=ms=>p.waitForTimeout(ms);
+await p.goto('http://127.0.0.1:9300/app.html');await w(1200);
+await p.evaluate(()=>{const o=document.querySelector('#open');if(o)o.hidden=true});const [fc]=await Promise.all([p.waitForEvent('filechooser'),p.evaluate(()=>document.querySelector('#libRestore').click())]);await fc.setFiles('/home/claude/demo/demo.zip');await w(6000);await p.evaluate(()=>document.querySelector('[data-b="restore"]').click());await w(6000);
+await p.evaluate(()=>__ppLib.openLib());await w(800);
+await p.evaluate(()=>document.querySelector('#libView [data-v="m"]').click());await w(800);
+let r=await p.evaluate(()=>({n:document.querySelectorAll('.ma').length,top:[...document.querySelectorAll('.ma')].slice(0,3).map(b=>b.querySelector('b').textContent+' '+b.querySelector('.bar span').textContent+' ['+b.querySelector('.br').textContent+']'),meta:document.querySelector('#libMeta').textContent,btn:document.querySelector('#rvAll').textContent,ct:document.querySelector('#rvTopic').hidden}));
+const counts=await p.evaluate(()=>[...document.querySelectorAll('.ma .bar span')].map(x=>+x.textContent));
+ok(r.n>3&&counts.every((v,i)=>i===0||v<=counts[i-1])&&r.ct,dev+' ranking shown, sorted: '+JSON.stringify(r));
+if(dev==='laptop')await p.screenshot({path:'ma1.png'});else await p.screenshot({path:'ma2.png'});
+await p.evaluate(()=>[...document.querySelectorAll('#libFlt .fc')].find(b=>b.textContent==='By chapter').click());await w(500);
+const ch=await p.evaluate(()=>[...document.querySelectorAll('.ma')].slice(0,2).map(b=>b.querySelector('b').textContent+' '+b.querySelector('.bar span').textContent));
+ok(ch.length===2,dev+' by chapter: '+JSON.stringify(ch));
+await p.evaluate(()=>[...document.querySelectorAll('#libFlt .fc')].find(b=>b.textContent==='RTP').click());await w(500);
+const br=await p.evaluate(()=>[...document.querySelectorAll('.ma .br')].every(x=>!/PYQ|MTP/.test(x.textContent)));ok(br,dev+' RTP filter counts only RTP');
+await p.evaluate(()=>{[...document.querySelectorAll('#libFlt .fc')].find(b=>b.textContent==='All exam sets').click()});await w(300);
+await p.evaluate(()=>[...document.querySelectorAll('#libFlt .fc')].find(b=>b.textContent==='By topic').click());await w(500);
+const first=await p.evaluate(()=>document.querySelector('.ma b').textContent);
+await p.evaluate(()=>document.querySelector('.ma').click());await w(3500);
+r=await p.evaluate(()=>({mode:__ppLib.RV&&__ppLib.RV.mode,tp:__ppLib.RV&&__ppLib.RV.q[0].tp,n:__ppLib.RV&&__ppLib.RV.q.length}));
+ok(r.mode==='t'&&(r.tp===first||!r.tp),dev+' tapping a topic revises it: '+first+' '+JSON.stringify(r));
+await p.evaluate(()=>document.querySelector('#rvExit').click());await w(800);
+await p.evaluate(()=>document.querySelector('#libView [data-v="m"]').click());await w(500);
+await p.evaluate(()=>document.querySelector('#rvAll').click());await w(3500);
+r=await p.evaluate(()=>({mode:__ppLib.RV.mode,tn:__ppLib.RV.tn,first:__ppLib.RV.q[0].tp}));ok(r.mode==='t'&&r.tn<=10&&r.first===first,dev+' revise top 10 in rank order: '+JSON.stringify(r));
+await p.evaluate(()=>document.querySelector('#rvExit').click());await w(500);
+await p.evaluate(()=>document.querySelector('#libView [data-v="q"]').click());await w(500);
+r=await p.evaluate(()=>({all:document.querySelector('#rvAll').textContent,ct:document.querySelector('#rvTopic').hidden}));ok(/Revise/.test(r.all)&&!r.ct,dev+' Questions tab back to normal: '+JSON.stringify(r));
+console.log(errs);await ctx.close()}
+await b.close()})();

@@ -1,0 +1,21 @@
+const {chromium}=require('playwright');
+const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);
+(async()=>{const b=await chromium.launch({args:['--no-proxy-server']});const p=await (await b.newContext({viewport:{width:1300,height:820}})).newPage();
+const errs=[];p.on('pageerror',e=>errs.push(e.message));
+await p.route('https://cdnjs.cloudflare.com/**',r=>{const u=r.request().url();const f=u.includes('qrcode')?'node_modules/qrcode-generator/qrcode.js':u.includes('jszip')?'node_modules/jszip/dist/jszip.min.js':u.includes('pdf-lib')?'node_modules/pdf-lib/dist/pdf-lib.min.js':'node_modules/pdfjs-dist/build/'+(u.endsWith('worker.min.js')?'pdf.worker.min.js':'pdf.min.js');r.fulfill({path:f,contentType:'application/javascript'})});
+await p.route('https://fonts.**',r=>r.fulfill({body:'',contentType:'text/css'}));
+const w=ms=>p.waitForTimeout(ms);
+await p.goto('http://127.0.0.1:9300/app.html');await w(1200);
+await p.evaluate(()=>{const o=document.querySelector('#open');if(o)o.hidden=true});const [fc]=await Promise.all([p.waitForEvent('filechooser'),p.evaluate(()=>document.querySelector('#libRestore').click())]);await fc.setFiles('/home/claude/demo/demo.zip');await w(6000);await p.evaluate(()=>document.querySelector('[data-b="restore"]').click());await w(6000);await p.evaluate(()=>{document.querySelector('#lib').hidden=true});
+// bookmark page 6 of the concept book (as you already have)
+const cid=await p.evaluate(()=>__ppLib.LIB.sets.find(s=>s.name==='FR Concept Note').id);await p.evaluate(id=>__ppLib.openSet(id),cid);await w(2500);
+await p.evaluate(()=>{const st=__ppTest.getSt();st.bm.q=[6];st.bmn={'q:6':'Cancellation chart'};__ppTest.save()});
+const id=await p.evaluate(()=>__ppLib.LIB.sets.find(s=>s.name==='FR QB V4').id);await p.evaluate(id=>__ppLib.openSet(id),id);await w(2500);await p.keyboard.press('2');await w(400);
+await p.click('#bmcnt');await w(400);
+let s=await p.evaluate(()=>({tab:document.querySelector('#bmcnt').textContent,rows:[...document.querySelectorAll('#list .row')].map(r=>r.textContent)}));
+ok(s.rows.some(r=>/Cancellation chart/.test(r)),'Q/A bookmarks tab lists the concept book bookmark: '+JSON.stringify(s));
+await p.screenshot({path:'cbm.png'});
+await p.evaluate(()=>[...document.querySelectorAll('#list .row')].find(r=>/Cancellation chart/.test(r.textContent)).click());await w(2500);
+s=await p.evaluate(()=>({cv:document.querySelector('#app').classList.contains('cv'),pc:document.querySelector('#pane-c .pc').textContent,fn:document.querySelector('#pane-c .fn').textContent}));
+ok(s.cv&&/^6 /.test(s.pc),'opens the concept book at that page beside the Q: '+JSON.stringify(s));
+console.log(errs);await b.close()})();

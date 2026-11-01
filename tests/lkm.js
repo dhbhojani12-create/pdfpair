@@ -1,0 +1,37 @@
+const {chromium,devices}=require('playwright');
+const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);
+(async()=>{const b=await chromium.launch({args:['--no-proxy-server']});
+const route=async page=>{await page.route('https://cdnjs.cloudflare.com/**',r=>{const u=r.request().url();const f=u.includes('qrcode')?'node_modules/qrcode-generator/qrcode.js':u.includes('jszip')?'node_modules/jszip/dist/jszip.min.js':u.includes('pdf-lib')?'node_modules/pdf-lib/dist/pdf-lib.min.js':'node_modules/pdfjs-dist/build/'+(u.endsWith('worker.min.js')?'pdf.worker.min.js':'pdf.min.js');r.fulfill({path:f,contentType:'application/javascript'})});await page.route('https://fonts.**',r=>r.fulfill({body:'',contentType:'text/css'}))};
+const prep=async ctx=>ctx.addInitScript(()=>{if(!sessionStorage.getItem('i')){sessionStorage.setItem('i',1);localStorage.setItem('pp:prefs',JSON.stringify({syncUrl:'http://127.0.0.1:9300'}))}});
+const ZIP='/home/claude/out/PDF Pair - FR MCQ Case Scenarios (safe).zip';
+const L=await b.newContext({viewport:{width:1300,height:800}});await prep(L);const lp=await L.newPage();await route(lp);
+const M=await b.newContext({...devices['Pixel 7']});await prep(M);const mp=await M.newPage();await route(mp);
+const errs=[];lp.on('pageerror',e=>errs.push('L '+e.message));mp.on('pageerror',e=>errs.push('M '+e.message));
+const restore=async(p,tap)=>{const [fc]=await Promise.all([p.waitForEvent('filechooser'),tap?p.tap('#oRestore'):p.click('#oRestore')]);await fc.setFiles(ZIP);await p.waitForTimeout(3500);await p.evaluate(()=>document.querySelector('[data-b="restore"]').click());await p.waitForTimeout(4000);await p.evaluate(()=>{document.querySelector('#lib').hidden=true})};
+await lp.goto('http://127.0.0.1:9300/app.html');await lp.waitForTimeout(1000);await restore(lp);
+const id=await lp.evaluate(()=>__ppLib.LIB.sets.find(s=>s.type==='mcq').id);await lp.evaluate(id=>__ppLib.openSet(id),id);await lp.waitForTimeout(3000);
+await mp.goto('http://127.0.0.1:9300/app.html');await mp.waitForTimeout(1200);await restore(mp,true);
+await lp.click('#bLink');await lp.waitForTimeout(1200);const code=await lp.evaluate(()=>document.querySelector('.lkcode').textContent);await lp.evaluate(()=>document.querySelector('#lkClose').click());
+await mp.evaluate(()=>{document.querySelector('#libLink').click()});await mp.fill('#lkCode',code);await mp.tap('#lkGo');await mp.waitForTimeout(2500);
+await lp.evaluate(()=>[...document.querySelectorAll('.row')].find(r=>r.textContent.includes('Case 1 · Q4')).click());await mp.waitForTimeout(3000);
+let s=await mp.evaluate(()=>({bar:getComputedStyle(document.querySelector('#mcqBar')).display,v:document.querySelector('#app').className.match(/v-\w+/)[0]}));
+ok(s.bar==='flex'&&s.v==='v-q','linked phone shows A-D on the question: '+JSON.stringify(s));await mp.screenshot({path:'lm1.png'});
+const keyOpt=await lp.evaluate(()=>{const k=Object.keys(localStorage).find(k=>k.startsWith('pp:FR MCQ'));return JSON.parse(localStorage.getItem(k)).mcq[5]});
+const wrong=keyOpt==='a'?'b':'a';
+await mp.tap('#mcqBar [data-o="'+wrong+'"]');await mp.waitForTimeout(3500);
+s=await lp.evaluate(()=>{const k=Object.keys(localStorage).find(k=>k.startsWith('pp:FR MCQ'));const p=JSON.parse(localStorage.getItem(k));return {m:p.mans&&p.mans[5],rev:p.rev&&p.rev[5],cover:document.querySelector('#app').classList.contains('mcqhide'),ms:document.querySelector('#mcqBar .ms').textContent}});
+ok(s.m&&s.m.c===wrong&&s.rev==='again'&&!s.cover,'laptop saved the phone tap and unblurred: '+JSON.stringify(s));
+s=await mp.evaluate(()=>({v:document.querySelector('#app').className.match(/v-\w+/)[0],ms:document.querySelector('#mcqBar .ms').textContent,nx:getComputedStyle(document.querySelector('#mcqBar .nx')).display}));
+s.top=await mp.evaluate(()=>{const e=document.querySelector('#pane-a .stk[data-n="5"]');const r=e&&e.getBoundingClientRect();return r?Math.round(r.top):null});ok(s.v==='v-a'&&s.top>0&&s.top<500&&s.ms.includes('Case 1')&&s.nx!=='none','phone on answer with result and ›: '+JSON.stringify(s));await mp.screenshot({path:'lm2.png'});
+await mp.waitForTimeout(3000);s=await mp.evaluate(()=>document.querySelector('#app').className.match(/v-\w+/)[0]);ok(s==='v-a','phone stays on answer: '+s);
+await mp.tap('#mcqBar .nx');await mp.waitForTimeout(3500);
+s=await lp.evaluate(()=>document.querySelector('#mcqBar .mq').textContent);const s2=await mp.evaluate(()=>({v:document.querySelector('#app').className.match(/v-\w+/)[0],done:document.querySelector('#mcqBar').classList.contains('done')}));
+ok(s==='Case 1 · Q5'&&s2.v==='v-q'&&!s2.done,'› moves both to next question: '+s+' '+JSON.stringify(s2));
+// laptop picks with keyboard -> phone shows
+const k6=await lp.evaluate(()=>{const k=Object.keys(localStorage).find(k=>k.startsWith('pp:FR MCQ'));return JSON.parse(localStorage.getItem(k)).mcq[6]});
+await lp.keyboard.press(k6.toUpperCase());await mp.waitForTimeout(3500);
+s=await lp.evaluate(()=>document.querySelector('#mcqBar .ms').textContent);ok(s.includes('Right'),'laptop key pick: '+s);
+s=await mp.evaluate(()=>({v:document.querySelector('#app').className.match(/v-\w+/)[0],ms:document.querySelector('#mcqBar .ms').textContent}));ok(s.v==='v-a'&&s.ms.includes('Right'),'phone shows laptop pick: '+JSON.stringify(s));
+await mp.screenshot({path:'lm3.png'});
+// highlighter on still allows tapping
+console.log(errs);await b.close()})();

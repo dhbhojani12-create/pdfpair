@@ -1,0 +1,30 @@
+const {chromium}=require('playwright');
+const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);
+(async()=>{const b=await chromium.launch({args:['--no-proxy-server']});const p=await (await b.newContext({viewport:{width:1300,height:820}})).newPage();
+const errs=[];p.on('pageerror',e=>errs.push(e.message));
+await p.route('https://cdnjs.cloudflare.com/**',r=>{const u=r.request().url();const f=u.includes('qrcode')?'node_modules/qrcode-generator/qrcode.js':u.includes('jszip')?'node_modules/jszip/dist/jszip.min.js':u.includes('pdf-lib')?'node_modules/pdf-lib/dist/pdf-lib.min.js':'node_modules/pdfjs-dist/build/'+(u.endsWith('worker.min.js')?'pdf.worker.min.js':'pdf.min.js');r.fulfill({path:f,contentType:'application/javascript'})});
+await p.route('https://fonts.**',r=>r.fulfill({body:'',contentType:'text/css'}));
+const w=ms=>p.waitForTimeout(ms);
+await p.goto('http://127.0.0.1:9300/app.html');await w(1200);
+await p.evaluate(()=>{const o=document.querySelector('#open');if(o)o.hidden=true});const [fc]=await Promise.all([p.waitForEvent('filechooser'),p.evaluate(()=>document.querySelector('#libRestore').click())]);await fc.setFiles('/home/claude/demo/demo.zip');await w(6000);await p.evaluate(()=>document.querySelector('[data-b="restore"]').click());await w(6000);await p.evaluate(()=>{document.querySelector('#lib').hidden=true});
+const id=await p.evaluate(()=>__ppLib.LIB.sets.find(s=>s.name==='FR QB V4').id);await p.evaluate(id=>__ppLib.openSet(id),id);await w(2500);await p.keyboard.press('2');
+await p.evaluate(()=>[...document.querySelectorAll('.row')].find(r=>r.dataset.n==='4').click());await w(1500);
+await p.click('#bCon');await w(3000);
+await p.keyboard.press('t');await w(200);
+const r=await p.evaluate(()=>{const c=document.querySelector('#pane-c .sc'),pg=document.querySelector('#pane-c .page[data-n="10"]');c.scrollTop=pg.offsetTop;return 1});await w(1200);
+const rr=await p.evaluate(()=>{const e=document.querySelector('#pane-c .page[data-n="10"]').getBoundingClientRect();return {x:e.x,y:e.y,w:e.width}});
+await p.mouse.click(rr.x+0.1*rr.w,rr.y+0.3*rr.w);await w(600);
+let s=await p.evaluate(()=>({open:!document.querySelector('#tagPop').hidden,ch:document.querySelector('#tgCh').value}));
+ok(s.open&&s.ch==='Ind AS 102 Share Based Payment','marker in the concept pane opens the topic box: '+JSON.stringify(s));
+await p.fill('#tgTp','Group Settled Test');await p.click('#tgSave');await w(600);
+s=await p.evaluate(()=>{const set=__ppLib.LIB.sets.find(s=>s.name==='FR Concept Note');const t=JSON.parse(localStorage.getItem('pp:'+set.key)).topics;return {n:t.length,last:t.find(x=>x.tp==='Group Settled Test'),drawn:document.querySelectorAll('#pane-c .tmk').length,qb:__ppTest.getSt().topics.length}});
+ok(s.n===8&&s.last&&s.last.page===10&&!s.last.side&&s.qb===0,'saved into the concept book (not the QB): '+JSON.stringify({n:s.n,qb:s.qb,drawn:s.drawn}));
+// rename by clicking it
+await p.evaluate(()=>{const e=[...document.querySelectorAll('#pane-c .tmk')].find(x=>x.textContent.includes('Group Settled Test'));e.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,button:0,clientX:e.getBoundingClientRect().x+5,clientY:e.getBoundingClientRect().y+5}))});await w(400);
+s=await p.evaluate(()=>document.querySelector('#tgTp').value);ok(s==='Group Settled Test','clicking the marker opens it to rename');await p.click('#tgCancel');await w(300);
+s=await p.evaluate(()=>{const set=__ppLib.LIB.sets.find(s=>s.name==='FR Concept Note');return JSON.parse(localStorage.getItem('pp:'+set.key)).topics.length});ok(s===8,'cancel on rename keeps it: '+s);
+// cancel a new one
+await p.mouse.click(rr.x+0.1*rr.w,rr.y+0.6*rr.w);await w(500);await p.click('#tgCancel');await w(400);
+s=await p.evaluate(()=>{const set=__ppLib.LIB.sets.find(s=>s.name==='FR Concept Note');return JSON.parse(localStorage.getItem('pp:'+set.key)).topics.length});ok(s===8,'cancel on a new one removes it: '+s);
+await p.screenshot({path:'cmk.png'});
+console.log(errs);await b.close()})();
