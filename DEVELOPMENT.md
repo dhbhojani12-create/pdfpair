@@ -1,6 +1,6 @@
 # PDF Pair: handoff for a new session
 
-PDF Pair is a CA Final study app built by Dhaval (dhbhojani12-create). It links question PDFs and answer PDFs with numbered stickers. It also does highlighting, stars, concept books, revision, MCQ practice and mock tests. A phone can be linked to the laptop as a touch highlighter.
+PDF Pair is a CA Final study app built by its GitHub owner (dhbhojani12-create). It links question PDFs and answer PDFs with numbered stickers. It also does highlighting, stars, concept books, revision, MCQ practice and mock tests. A phone can be linked to the laptop as a touch highlighter.
 
 - **Live app (phone + laptop):** https://dhbhojani12-create.github.io/pdfpair/ (installable PWA)
 - **Also published as a Claude artifact:** https://claude.ai/artifact/AFDDw8f8DxyFd4iDykbHXW
