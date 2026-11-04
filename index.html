@@ -2144,19 +2144,20 @@ $('#rvExit').addEventListener('click',()=>{stopRv();openLib()});
 /* ✨ Auto-mark: find questions and answers, review, then place stickers */
 var AM=null;
 const amPh=t=>typeof amFake==='function'?amFake(t):null;
-async function amLines(side,pi){
+async function amLines(side,pi,bold){
   const pg=P[side].pages[pi];if(!pg)return null;
   const vp=pg.pdf.getViewport({scale:1}),W=vp.width,H=vp.height;let tc;
   try{tc=await pg.pdf.getTextContent()}catch(e){return {W,H,lines:[]}}
+  const fb=new Map();if(bold){try{await pg.pdf.getOperatorList();for(const id of new Set(tc.items.map(it=>it.fontName))){try{if(pg.pdf.commonObjs.has(id)){const o=pg.pdf.commonObjs.get(id);fb.set(id,!!o.bold||/bold|black|heavy|semibold/i.test(o.name||''))}}catch(e){}}}catch(e){}}
   const its=[];
   for(const it of tc.items){if(!it.str||!it.str.trim())continue;const tr=it.transform;const [x,y]=vp.convertToViewportPoint(tr[4],tr[5]);
-    const sz=Math.hypot(tr[2],tr[3])||it.height||10;its.push({x,y,sz,w:it.width||0,s:it.str})}
+    const sz=Math.hypot(tr[2],tr[3])||it.height||10;its.push({x,y,sz,w:it.width||0,s:it.str,b:fb.get(it.fontName)})}
   its.sort((a,b)=>a.y-b.y||a.x-b.x);
   const L=[];
   for(const it of its){const l=L[L.length-1];if(l&&Math.abs(l.y-it.y)<Math.max(2,l.sz*.45))l.its.push(it);else L.push({y:it.y,sz:it.sz,its:[it]})}
   const lines=L.map(l=>{l.its.sort((a,b)=>a.x-b.x);let t='',end=-1e9;
     for(const it of l.its){if(t&&it.x-end>it.sz*.2&&!/\s$/.test(t)&&!/^\s/.test(it.s))t+=' ';t+=it.s;end=it.x+it.w}
-    const f=l.its[0];return {x:f.x,y:l.y-f.sz*.35,sz:f.sz,t:t.replace(/\s+/g,' ').trim()}}).filter(l=>l.t);
+    const f=l.its[0];return {x:f.x,y:l.y-f.sz*.35,sz:f.sz,b:!!f.b,t:t.replace(/\s+/g,' ').trim()}}).filter(l=>l.t);
   return {W,H,lines};
 }
 function amShort(ch){if(!ch)return '';const m=ch.match(/^Ind AS \d+/i);return m?m[0]:ch}
@@ -2213,7 +2214,7 @@ function amIcai(Q,A){
 const GEM_URL='https://generativelanguage.googleapis.com/v1beta/';
 function gemKey(){return (LS.get('gem:key')||'').trim()}
 async function gemModels(key){
-  const r=await fetch(GEM_URL+'models?pageSize=1000&key='+encodeURIComponent(key));const j=await r.json().catch(()=>({}));
+  const r=await fetch(GEM_URL+'models?pageSize=1000',{headers:{'x-goog-api-key':key}});const j=await r.json().catch(()=>({}));
   if(!r.ok)throw new Error((j.error&&j.error.message)||('Google said '+r.status));
   return (j.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent')&&/gemini|gemma/i.test(m.name)&&!/embed|tts|image|live|aqa|audio|vision/i.test(m.name))
     .map(m=>({id:m.name,label:(m.displayName||m.name.replace('models/',''))}))
@@ -2228,32 +2229,55 @@ async function gemRefresh(){const k=$('#amKey').value.trim();if(!k){amMsg('Paste
   LS.set('gem:key',k);amMsg('Getting the models this key can use…');
   try{const l=await gemModels(k);LS.set('gem:models',l);gemFill(l);amMsg(l.length+' models available. Pick one, then press Find ▶')}catch(e){amMsg('Could not get the models: '+e.message,true)}
 }
-async function gemCall(model,key,prompt){
-  const ac=new AbortController(),to=setTimeout(()=>ac.abort(),120e3);let r;
-  try{r=await fetch(GEM_URL+model+':generateContent?key='+encodeURIComponent(key),{method:'POST',headers:{'Content-Type':'application/json'},signal:ac.signal,
-    body:JSON.stringify({contents:[{role:'user',parts:[{text:prompt}]}],generationConfig:{responseMimeType:'application/json',temperature:0}})})}
-  catch(e){clearTimeout(to);throw {why:e.name==='AbortError'?'no reply in 2 minutes':'network problem ('+e.message+')'}}
-  clearTimeout(to);const j=await r.json().catch(()=>({}));
-  if(!r.ok){const m=(j.error&&j.error.message)||'';throw {why:r.status===429?'busy or daily limit reached (429)':r.status>=500?'Google server busy ('+r.status+')':r.status===403||r.status===400&&/key/i.test(m)?'key problem: '+m:('error '+r.status+(m?': '+m.slice(0,140):''))}}
-  const c=(j.candidates||[])[0];const txt=c&&c.content&&(c.content.parts||[]).map(p=>p.text||'').join('');
-  if(!txt)throw {why:'empty reply'+(c&&c.finishReason?' ('+c.finishReason+')':'')};
-  try{const s=txt.replace(/^```(?:json)?\s*|\s*```$/g,'');return JSON.parse(s)}catch(e){throw {why:'reply was not readable'}}
+/* Gemini engine, modelled on PaperPair's AI Find: big parts, bold + indent hints, pacing for the free limit, waits and retries on "busy" */
+async function gemCall(model,key,body){
+  const ac=new AbortController(),to=setTimeout(()=>ac.abort(),240e3);let r;
+  try{r=await fetch(GEM_URL+model+':generateContent',{method:'POST',headers:{'x-goog-api-key':key,'Content-Type':'application/json'},signal:ac.signal,body:JSON.stringify(body)})}
+  catch(e){clearTimeout(to);throw {code:'net',why:e.name==='AbortError'?'no reply in 4 minutes':'could not reach Google ('+e.message+')'}}
+  clearTimeout(to);const j=await r.json().catch(()=>null);
+  if(!r.ok){const m=(j&&j.error&&j.error.message)||('HTTP '+r.status),det=(j&&j.error&&j.error.details)||[],ri=det.find(d=>/RetryInfo/.test(d['@type']||'')),raw=m+' '+JSON.stringify(det);
+    const daily=/per ?day|PerDay|daily/i.test(raw),busy=r.status>=500||/high demand|overloaded|unavailable|try again later/i.test(raw);
+    throw {code:r.status,raw,daily,busy,retry:ri?parseFloat(ri.retryDelay)||0:0,
+      why:r.status===429?(daily?'the free daily limit for this model is used up':'Google says too many requests'):busy?'Google is busy ('+r.status+')':(r.status===400&&/api key/i.test(m))?'Google rejected the key':'error '+r.status+': '+m.slice(0,140)}}
+  const c=j&&j.candidates&&j.candidates[0],txt=c&&c.content&&(c.content.parts||[]).map(p=>p.text||'').join('');
+  let items=null;try{items=JSON.parse((txt||'{}').replace(/^```(?:json)?\s*|\s*```$/g,'')).items||[]}catch(e){}
+  return {items,cut:!!(c&&c.finishReason==='MAX_TOKENS')};
 }
-function gemPrompt(batch,chs,two){
-  const body=batch.map(pg=>pg.lines.map((l,i)=>'['+(two?pg.side.toUpperCase()+' ':'')+'p'+pg.p+' L'+i+'] '+l.t.slice(0,160)).join('\n')).join('\n');
-  return 'You are helping a CA student mark a study book. Below are the text lines of some pages, each tagged [p<page> L<line>]'+(two?' with Q for the question file or A for the answer file':'')+'.\n'+
-  'Find where every question starts (illustrations, examples set as questions, practice questions, test-your-knowledge questions, RTP or past exam questions, case scenarios) and where its answer or solution starts.\n'+
-  'Return JSON only: {"items":[{"t":"q" or "a",'+(two?'"f":"Q" or "A",':'')+'"p":page number,"l":line number,"label":"short id like Illustration 5, Q 3, TYK 2","ch":"chapter"}]}.\n'+
-  'Give an answer the SAME label as its question. Use only the first line of each question and of each answer. Skip headings, theory, examples that are not questions, and the contents page.\n'+
-  'For "ch" pick the best match from this list, or "" if none fits: '+JSON.stringify(chs)+'\n\n'+body;
+const AM_SYS=`You read pages of a study PDF used for the Indian CA exams (ICAI study material, past papers, MTPs, RTPs, coaching notes).
+Each input line is: ID [b] [xNN] text   — ID is page.line (with Q or A in front when there is a separate question file and answer file), [b] means bold, xNN is the left indent in % of page width.
+Find every question and every answer/solution and return them in reading order.
+For each item give:
+- kind: "q" for a question, "a" for an answer or solution.
+- start: ID of its first line (the line with its number or heading, e.g. "Question 3B", "Illustration 10", "5.", "Q.2", "Solution", "Answer 3B", "Ans. 5").
+- label: the number that links a question to its answer, written short: "3B", "10", "2(a)", "5". For an answer, give the label of the question it answers; for an unnumbered "Solution" right after a question, use that question's label.
+- group: the question series, e.g. "Illustration", "Test Your Knowledge", "Practical Question", "Question", "MCQ", "Case Scenario".
+- ch: the chapter it belongs to, copied exactly from the chapter list given, or "" if none fits.
+Rules: sub-parts (a), (b), (i), (ii) stay inside their question or answer, unless each part has its own separate answer elsewhere. Lists, table rows, steps and workings inside a question or answer are not new items. Ignore contents pages, learning outcomes, headings that are not questions, and repeated headers/footers. If the first lines continue an item that started on earlier pages, do not report them.`;
+const AM_SCHEMA={type:'OBJECT',properties:{items:{type:'ARRAY',items:{type:'OBJECT',properties:{kind:{type:'STRING',enum:['q','a']},start:{type:'STRING'},label:{type:'STRING'},group:{type:'STRING'},ch:{type:'STRING'}},required:['kind','start','label']}}},required:['items']};
+const AM_KEEP=/^\s*(q(uestion)?s?\b|q\.\s*\d|ques|ans(wer)?s?\b|sol(ution)?s?\b|illus|test your|practical|example|case\s*(study|scenario)|mcq|working|note\b)/i;
+function gemChunks(pages,two){
+  // drop running headers/footers that repeat on 3+ pages
+  const key=t=>t.toLowerCase().replace(/[\d.\-–—:|()]+/g,' ').replace(/\s+/g,' ').trim(),cand=(l,pg)=>(l.y<pg.H*.12||l.y>pg.H*.9)&&l.t.length>=8&&!AM_KEEP.test(l.t)&&key(l.t).length>=6;
+  const cnt=new Map();for(const pg of pages){const seen=new Set();for(const l of pg.lines)if(cand(l,pg)){const k=key(l.t);if(!seen.has(k)){seen.add(k);cnt.set(k,(cnt.get(k)||0)+1)}}}
+  const seq=new Map(),chunks=[];let cur=[],len=0;
+  for(const pg of pages){pg.lines.forEach((l,i)=>{if(cand(l,pg)&&(cnt.get(key(l.t))||0)>=3)return;if(l.y<pg.H*.045||l.y>pg.H*.965)return;
+      const id=(two?pg.side.toUpperCase():'')+pg.p+'.'+(i+1);seq.set(id,Object.assign({},l,{p:pg.p,W:pg.W,side:pg.side}));
+      const row=id+(l.b?' [b]':'')+' [x'+Math.round(l.x/pg.W*100)+'] '+l.t.slice(0,120);cur.push(row);len+=row.length+1});
+    if(len>(amPh('chunk')||160000)){chunks.push(cur);cur=[];len=0}}
+  if(cur.length)chunks.push(cur);return {seq,chunks};
 }
+const amNorm=s=>String(s||'').toUpperCase().replace(/\b(QUESTIONS?|QUES|ILLUSTRATIONS?|ILLUS|ANSWERS?|ANS|SOLUTIONS?|SOL|PQ|TYK|NO|TO|OF|FOR)\b\.?/g,'').replace(/[\s.:#]+/g,'').replace(/^Q(?=\d)/,'').replace(/^A(?=\d)/,'');
+function amGroup(g){g=String(g||'').split('·')[0].trim();return /illus/i.test(g)?'Illus':/test your/i.test(g)?'TYK':/practi/i.test(g)?'PQ':/mcq|multiple/i.test(g)?'MCQ':/case/i.test(g)?'Case':/example/i.test(g)?'Example':(!g||/question/i.test(g))?'Q':g.slice(0,16)}
 function gemMatch(found,two){
-  const nk=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').replace(/\b(solutions?|answers?|ans|questions?|ques|qn|q|to|of|for|no)\b/g,' ').replace(/\s+/g,' ').trim();
-  const ord=x=>(x.side==='a'&&two?1e7:0)+x.l.p*1e4+x.l.y;
-  const qs=found.filter(x=>x.t==='q').sort((a,b)=>ord(a)-ord(b)),as=found.filter(x=>x.t==='a').sort((a,b)=>ord(a)-ord(b)),used=new Set(),items=[];
-  for(const q of qs){const k=nk(q.label);let a=as.find(a=>!used.has(a)&&nk(a.label)===k&&(two||ord(a)>ord(q)));if(!a)a=as.find(a=>!used.has(a)&&nk(a.label)===k);if(a)used.add(a);
-    items.push({base:q.label||'Q',ch:q.ch,q:q.l,a:a?a.l:null,by:q.by})}
-  return items;
+  const ord=x=>((x.side||x.l.side)==='a'&&two?1e7:0)+x.l.p*1e4+x.l.y;
+  const it=found.slice().sort((a,b)=>ord(a)-ord(b));it.forEach(x=>{x.key=amNorm(x.label)});
+  const qs=it.filter(x=>x.t==='q'),pairs=new Map();
+  for(const an of it.filter(x=>x.t==='a')){let q=null;
+    for(let k=qs.length-1;k>=0;k--){const c=qs[k];if((two||ord(c)<ord(an))&&!pairs.has(c)&&c.key===an.key){q=c;break}}
+    if(!q)q=qs.find(c=>!pairs.has(c)&&c.key===an.key)||null;
+    if(!q){const k=it.indexOf(an),pv=k>0?it[k-1]:null;if(pv&&pv.t==='q'&&!pairs.has(pv))q=pv}
+    if(q)pairs.set(q,an)}
+  return qs.map(q=>{const an=pairs.get(q),lb=String(q.label||'').trim().slice(0,30);return {base:/^[\d(]/.test(lb)||!lb?amGroup(q.group)+' '+(lb||'?'):lb,ch:q.ch,q:q.l,a:an?an.l:null,by:q.by}});
 }
 /* the run */
 function amMsg(m,err){const p=$('#amProg');p.hidden=false;const s=$('.amps',p);s.textContent=m;s.classList.toggle('err',!!err)}
@@ -2277,7 +2301,7 @@ $('#amRef').addEventListener('click',gemRefresh);
 $('#amCancel').addEventListener('click',()=>{if(AM&&AM.running){AM.stop=true;return}$('#amDlg').hidden=true;AM=null});
 $('#amGo').addEventListener('click',()=>{if(AM&&AM.running)return;if(AM&&AM.paused)amGemRun();else amStart()});
 async function amRead(side,from,to,lab){const out=[];
-  for(let i=from;i<=to;i++){if(AM.stop)return null;const L=await amLines(side,i-1);if(L)out.push(Object.assign({side,p:i},L));
+  for(let i=from;i<=to;i++){if(AM.stop)return null;const L=await amLines(side,i-1,AM.mode==='gem');if(L)out.push(Object.assign({side,p:i},L));
     if(i%8===0||i===to){amBar((i-from+1)/(to-from+1)*(AM.mode==='gem'?.25:1));amMsg('Reading '+lab+' page '+i+' of '+to+'…');await new Promise(r=>setTimeout(r,0))}}
   return out}
 async function amStart(){
@@ -2301,40 +2325,55 @@ async function amStart(){
       if(!items.length){amMsg('No ICAI-style questions found on these pages'+(blank?' ('+blank+' pages have no text, maybe scanned)':'')+'. Try Gemini AI for this layout.',true);amIdle();return}
       amReview(items);
     }else{
-      const pages=[...Q,...(A||[])].filter(p=>p.lines.length);const batches=[];let cur=[],size=0;
-      for(const pg of pages){const c=pg.lines.reduce((s,l)=>s+Math.min(160,l.t.length)+12,0);if(cur.length&&(size+c>45000||cur.length>=30)){batches.push(cur);cur=[];size=0}cur.push(pg);size+=c}
-      if(cur.length)batches.push(cur);
-      Object.assign(AM,{batches,bi:0,found:[],chs});amGemRun();
+      const {seq,chunks}=gemChunks([...Q,...(A||[])].filter(p=>p.lines.length),AM.two);
+      if(!chunks.length){amMsg('These pages have no text to send (maybe scanned).',true);AM=null;amIdle();return}
+      Object.assign(AM,{seq,chunks,bi:0,found:[],chs,hist:[]});amGemRun();
     }
   }catch(e){console.error(e);AM.running=false;amMsg('Something went wrong: '+(e.message||e),true);amIdle()}
 }
 function amIdle(){$('#amGo').textContent='Find ▶';$('#amCancel').textContent='Cancel'}
 function amStopped(){AM=null;amIdle();amMsg('Stopped. Nothing was changed.')}
+async function amWait(sec,msg){const f=amPh('wait');if(f!=null){await new Promise(r=>setTimeout(r,f));return !AM.stop}
+  for(let t=Math.ceil(sec);t>0;t--){if(AM.stop)return false;amMsg(msg.replace('{s}',t));await new Promise(r=>setTimeout(r,1000))}return !AM.stop}
+async function amPace(est,what){const H=AM.hist;if(amPh('wait')!=null)return true;
+  for(;;){const now=Date.now();while(H.length&&now-H[0].t>61000)H.shift();const tok=H.reduce((x,h)=>x+h.tok,0);
+    if(H.length<4&&tok+est<=200000)return true;if(AM.stop)return false;
+    amMsg('Pacing for Google’s free limit: '+Math.ceil((61000-(now-H[0].t))/1000)+'s, then '+what);await new Promise(r=>setTimeout(r,1000))}}
 async function amGemRun(){
   const model=$('#amModel').value,key=gemKey();if(!model){amMsg('Pick a model first',true);return}
-  AM.running=true;AM.stop=false;AM.paused=null;$('#amGo').textContent='Working…';$('#amCancel').textContent='Stop';
-  const B=AM.batches,lab=m=>m.replace('models/','');
-  while(AM.bi<B.length){
-    if(AM.stop){AM.running=false;AM.paused={model,why:'stopped by you'};amPause();return}
-    const b=B[AM.bi],p0=b[0],p1=b[b.length-1];
-    amMsg('Reading pages '+p0.p+'–'+p1.p+(AM.two?' ('+(p0.side==='a'?'answers':'questions')+')':'')+' with '+lab(model)+'…  (part '+(AM.bi+1)+' of '+B.length+')');
-    amBar(.25+.75*AM.bi/B.length);
-    let res;
-    try{res=amPh(gemPrompt(b,AM.chs,AM.two))||await gemCall(model,key,gemPrompt(b,AM.chs,AM.two))}
-    catch(e){AM.running=false;AM.paused={model,why:e.why||String(e)};amPause();return}
-    const byPL={};b.forEach(pg=>{byPL[(AM.two?pg.side:'q')+pg.p]=pg});
-    for(const it of (res&&res.items)||[]){const sd=AM.two&&String(it.f||'').toUpperCase()==='A'?'a':'q';const pg=byPL[sd+it.p];const l=pg&&pg.lines[+it.l];if(!l||(it.t!=='q'&&it.t!=='a'))continue;
-      const ch=AM.chs.find(c=>c.toLowerCase()===String(it.ch||'').toLowerCase())||'';
-      AM.found.push({t:it.t,label:String(it.label||'').slice(0,40),ch,by:lab(model),side:sd,l:Object.assign({},l,{p:pg.p,W:pg.W,side:sd})})}
+  AM.running=true;AM.stop=false;AM.paused=null;AM.hist=AM.hist||[];$('#amGo').textContent='Working…';$('#amCancel').textContent='Stop';
+  const lab=m=>m.replace('models/','');
+  const stopNow=why=>{AM.running=false;AM.paused={model,why};amPause()};
+  while(AM.bi<AM.chunks.length){
+    if(AM.stop)return stopNow('stopped by you');
+    const ch=AM.chunks[AM.bi],what='part '+(AM.bi+1)+' of '+AM.chunks.length+' (pages '+ch[0].split('.')[0]+'–'+ch[ch.length-1].split('.')[0]+')';
+    const text=(AM.prevTail?'For context, the previous pages ended with '+AM.prevTail+'.\n':'')+'Chapter list for "ch": '+JSON.stringify(AM.chs)+'\nLines:\n'+ch.join('\n');
+    const est=Math.ceil((text.length+AM_SYS.length)/3.2);
+    const body={systemInstruction:{parts:[{text:AM_SYS}]},contents:[{role:'user',parts:[{text}]}],generationConfig:{temperature:0,maxOutputTokens:32768,responseMimeType:'application/json',responseSchema:AM_SCHEMA}};
+    let res=null,busyTry=0,rlTry=0;
+    for(;;){
+      if(!(await amPace(est,what)))return stopNow('stopped by you');
+      amMsg(lab(model)+' is reading '+what+'…');amBar(.25+.75*AM.bi/AM.chunks.length);AM.hist.push({t:Date.now(),tok:est});
+      try{res=amPh(text);if(!res)res=await gemCall(model,key,body);break}
+      catch(e){
+        if(e.busy&&busyTry<2){busyTry++;if(!(await amWait(20,'Google is busy, trying '+lab(model)+' again in {s}s…')))return stopNow('stopped by you');continue}
+        if(e.code===429&&!e.daily&&rlTry<4){rlTry++;if(!(await amWait(Math.min(65,Math.max(8,e.retry||20)),'Google asked to slow down: waiting {s}s, then '+what)))return stopNow('stopped by you');continue}
+        if(e.code===400&&/max_?output/i.test(e.raw||'')&&body.generationConfig.maxOutputTokens){delete body.generationConfig.maxOutputTokens;continue}
+        return stopNow((e.why||String(e))+(e.daily?' (it resets tomorrow)':''))}}
+    if((res.items===null||res.cut)&&ch.length>40){const h=Math.ceil(ch.length/2);AM.chunks.splice(AM.bi,1,ch.slice(0,h),ch.slice(h));continue}
+    for(const it of res.items||[]){const l=AM.seq.get(String(it.start||'').trim());if(!l||(it.kind!=='q'&&it.kind!=='a'))continue;
+      let c=AM.chs.find(x=>x.toLowerCase()===String(it.ch||'').toLowerCase().trim())||'';
+      if(!c){const m=String((it.ch||'')+' '+(it.group||'')).match(/Ind\s*AS\s*(\d+)/i);if(m)c=AM.chs.find(x=>new RegExp('^Ind AS '+m[1]+'\\b','i').test(x))||''}
+      AM.found.push({t:it.kind,label:String(it.label||'').slice(0,30),group:it.group||'',ch:c,by:lab(model),side:l.side,l})}
+    const lt=(res.items||[]).at(-1);if(lt)AM.prevTail=(lt.kind==='q'?'question ':'the answer to question ')+lt.label+(lt.group?' ('+lt.group+')':'');
     AM.bi++;
-    if(AM.bi<B.length)await new Promise(r=>setTimeout(r,amPh('wait')??4500));
   }
   AM.running=false;amBar(1);const items=gemMatch(AM.found,AM.two);
   if(!items.length){amMsg('Gemini found no questions on these pages.',true);AM=null;amIdle();return}
   amReview(items);
 }
-function amPause(){const p=AM.paused,b=AM.batches[AM.bi];
-  amMsg('⏸ Paused at page '+(b?b[0].p:'?')+': '+p.model.replace('models/','')+' — '+p.why+'. Pick another model and press Resume ▶ (it carries on from this page).',true);
+function amPause(){const p=AM.paused,ch=AM.chunks[AM.bi];
+  amMsg('⏸ Paused at page '+(ch?ch[0].split('.')[0].replace(/^[QA]/,''):'?')+': '+p.model.replace('models/','')+' — '+p.why+'. Pick another model and press Resume ▶ (it carries on from this page).',true);
   $('#amGo').textContent='Resume ▶';$('#amCancel').textContent='Cancel';
 }
 /* review */
@@ -3914,7 +3953,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='04 Nov 22:57';   // build label, so you can check both devices have the same version
+const APPV='04 Nov 23:14';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)

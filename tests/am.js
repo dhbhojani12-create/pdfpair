@@ -7,12 +7,12 @@ await p.route('https://fonts.**',r=>r.fulfill({body:'',contentType:'text/css'}))
 let gcalls=[];
 await p.route('https://generativelanguage.googleapis.com/**',async r=>{const u=r.request().url();
   if(u.includes('/models?'))return r.fulfill({contentType:'application/json',body:JSON.stringify({models:[{name:'models/gemini-2.5-flash',displayName:'Gemini 2.5 Flash',supportedGenerationMethods:['generateContent']},{name:'models/gemini-2.0-flash',displayName:'Gemini 2.0 Flash',supportedGenerationMethods:['generateContent']},{name:'models/text-embedding-004',supportedGenerationMethods:['embedContent']}]})});
-  const model=u.match(/models\/([^:]+):/)[1];const body=JSON.parse(r.request().postData());const txt=body.contents[0].parts[0].text;gcalls.push(model);
-  if(model==='gemini-2.5-flash'&&gcalls.length>=2)return r.fulfill({status:429,contentType:'application/json',body:JSON.stringify({error:{message:'Resource exhausted'}})});
-  // fake: every "Illustration N" line is q, the next "Solution" line is a
-  const items=[];let last=null;for(const ln of txt.split('\n')){const m=ln.match(/^\[p(\d+) L(\d+)\] (.*)$/);if(!m)continue;
-    const il=m[3].match(/^Illustration (\d+)/);if(il){last='Illustration '+il[1];items.push({t:'q',p:+m[1],l:+m[2],label:last,ch:'Ind AS 2 Inventory'})}
-    else if(/^Solution/.test(m[3])&&last){items.push({t:'a',p:+m[1],l:+m[2],label:last,ch:''});last=null}}
+  const model=u.match(/models\/([^:]+):/)[1];const body=JSON.parse(r.request().postData());const txt=body.contents[0].parts[0].text;gcalls.push(model+(body.systemInstruction?'+sys':'')+(r.request().headers()['x-goog-api-key']?'+hdr':''));
+  if(model==='gemini-2.5-flash'&&gcalls.length===1)return r.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:{message:'The model is overloaded. Please try again later.'}})});
+  if(model==='gemini-2.5-flash'&&gcalls.length>=3)return r.fulfill({status:429,contentType:'application/json',body:JSON.stringify({error:{message:'Quota exceeded for metric: generate_content_free_tier_requests, limit: 20 PerDay'}})});
+  const items=[];let last=null;for(const ln of txt.split('\n')){const m=ln.match(/^(\d+\.\d+)( \[b\])? \[x\d+\] (.*)$/);if(!m)continue;
+    const il=m[3].match(/^Illustration (\d+)/);if(il){last=il[1];items.push({kind:'q',start:m[1],label:last,group:'Illustration',ch:'Ind AS 2 Inventory',bold:!!m[2]})}
+    else if(/^Solution/.test(m[3])&&last){items.push({kind:'a',start:m[1],label:'Solution to Illustration '+last,group:'Illustration'});last=null}}
   r.fulfill({contentType:'application/json',body:JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify({items})}]}}]})})});
 const w=ms=>p.waitForTimeout(ms);
 await p.goto('http://127.0.0.1:9300/app.html');await w(1200);
@@ -45,14 +45,14 @@ s=await p.evaluate(()=>__ppTest.allNums().length);ok(s===n0,'one Ctrl+Z removes 
 await p.click('#bMore');await w(200);await p.click('#bAuto');await w(300);
 await p.check('input[name=amM][value=gem]');await p.fill('#amKey','TESTKEY');await p.click('#amRef');await w(500);
 s=await p.evaluate(()=>[...document.querySelectorAll('#amModel option')].map(o=>o.value));ok(s.length===2&&s[0]==='models/gemini-2.5-flash','models listed, embeddings dropped: '+s);
-await p.evaluate(()=>{window.amFake=t=>t==='wait'?10:null});
+await p.evaluate(()=>{window.amFake=t=>t==='wait'?10:t==='chunk'?20000:null});
 await p.click('#amGo');for(let i=0;i<40&&!(await p.evaluate(()=>/Resume/.test(document.querySelector('#amGo').textContent)));i++)await w(300);
-s=await p.evaluate(()=>document.querySelector('#amProg .amps').textContent);ok(/Paused/.test(s)&&/gemini-2.5-flash/.test(s)&&/429/.test(s),'pauses with model + reason: '+s);
+s=await p.evaluate(()=>document.querySelector('#amProg .amps').textContent);ok(/Paused/.test(s)&&/gemini-2.5-flash/.test(s)&&/daily/.test(s),'busy retried, daily limit pauses with model + reason: '+s);
 await p.screenshot({path:'am3.png'});
 await p.selectOption('#amModel','models/gemini-2.0-flash');await p.click('#amGo');
 for(let i=0;i<60&&!(await p.isVisible('#amRev'));i++)await w(300);
 s=await p.evaluate(()=>[...document.querySelectorAll('#amList .amrow')].map(r=>r.querySelector('.nm').textContent+' | '+r.querySelector('.ln').textContent));
-console.log(s.join('\n'),gcalls);{const h=await p.evaluate(()=>document.querySelector('#amRev .mph small').textContent);ok(s.length>=2&&/gemini-2.0-flash/.test(h)&&/gemini-2.5-flash/.test(h),'resumed with other model: '+h);}
+console.log(gcalls);{const h=await p.evaluate(()=>document.querySelector('#amRev .mph small').textContent);ok(s.length>=2&&/gemini-2.0-flash/.test(h)&&/gemini-2.5-flash/.test(h),'resumed with other model: '+h);}
 ok(!(await p.evaluate(()=>localStorage.getItem('pp:prefs')||'')).includes('TESTKEY'),'key not in prefs/backup');
 await p.screenshot({path:'am4.png'});
 {const m=await p.evaluate(()=>{const L=(p,y)=>({p,y});const f=[{t:'q',label:'Q 3',l:L(3,100)},{t:'q',label:'Q. 4',l:L(3,300)},{t:'a',label:'Answer 3',l:L(19,100)},{t:'a',label:'Ans 4',l:L(20,100)},{t:'q',label:'Illustration 2',l:L(5,10)},{t:'a',label:'Solution to Illustration 2',l:L(5,50)}];return __ppAm.gemMatch(f,false).map(i=>i.base+'>'+(i.a&&i.a.p))});ok(m.join()==='Q 3>19,Q. 4>20,Illustration 2>5','labels match across Q/Answer wording: '+m);}
