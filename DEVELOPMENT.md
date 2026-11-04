@@ -51,18 +51,8 @@ User PDFs and backups are never committed.
 - Test only what changed, unless they ask for a full check. Then publish and tell them the new version label (`APPV`).
 - The user said "I don't want any problem further": prefer optional changes, and never risk their data.
 
-## ✨ Auto-mark (built 4 Nov 2026)
+## ✨ Auto-mark: removed (4 Nov 2026)
 
-Laptop only: ⋯ More → ✨ Auto-mark, on the open set. Code: search `/* ✨ Auto-mark` in the source. Test: `tests/am.js` (needs `/home/claude/demo/amtest.zip`, a 67-page extract of FR Module 2; Gemini is mocked with Playwright routes).
+Built on 4 Nov (ICAI finder + Gemini) and removed the same day at Darshan's request ("it is useless"). Don't bring it back unless he asks. The app now deletes the Gemini key it had saved (`gem:key`). The code is in git history (commits bb8fcae…b8e4d76) if ever needed.
 
-- **ICAI format (no AI):** reads pdf.js text (`amLines`: lines with x, y, font size), then `amIcai`:
-  - "Illustration N" (left 25% of the page) → next "Solution".
-  - "Questions" / "Answers" headings (size ≥ 12.5): numbered 1. 2. 3. matched by number; misprinted repeats fixed. Practice Questions when the page header has "PQ N" (or the next page does), else Test Your Knowledge.
-  - Fallback: "Question N" / "Answer N", or numbered lines in separate question and answer files.
-  - Chapter from the running header ("INDIAN ACCOUNTING STANDARD N", or a "UNIT-4: IND AS 36" title) matched to the user's own chapter names; other chapters by a distinctive word (Analysis, Ethics, Tech). Unmatched → left blank for the user.
-  - Checked against the Python parser on all of Module 2: 228 items, same chapters, all answers found.
-- **Gemini AI** (engine copied from PaperPair's AI Find, 4 Nov): key in `localStorage['gem:key']` (not a `pp:` key, so never in backups), sent as the `x-goog-api-key` header. Model list from ListModels (↻). Pages go as `ID [b] [xNN] text` lines (ID = page.line, Q/A prefix for separate files; bold from pdf.js fonts; running headers that repeat on 3+ pages dropped) in big parts (~160k chars, so a whole module is a few requests), with PaperPair's system prompt and a JSON `responseSchema` `{items:[{kind,start,label,group,ch}]}`. Paced to 4 requests / 200k tokens a minute. "Busy" (5xx, high demand): waits 20 s and retries twice; 429 per-minute: waits Google's retry delay (8–65 s), up to 4 times; cut-off reply: splits the part. Only then (or on the daily limit) it **pauses**; model choice stays manual and Resume ▶ continues from the same part. Answers pair with the nearest earlier unpaired question of the same label (`amNorm`), else an unnumbered "Solution" pairs with the question just before it.
-- **Review:** list in the side panel; tick/untick, chapter per row or "Set chapter for ticked", click a row to see both spots (purple rings). Rows that already have a sticker nearby are unticked ("already has sticker N").
-- **Apply:** adds stickers numbered after the highest existing one, with names ("Ind AS 2 · Illus 5") and chapter tags. One Ctrl+Z undoes the whole batch.
-
-Note: the module zips given on 1 Nov missed indented illustrations (about 150 across Modules 1–5) because the old parser required x < 90. Fixed in `marking/modules2to5_parse.py`; running Auto-mark on those sets adds the missing ones and skips the existing ones.
+Note: the module zips given on 1 Nov missed indented illustrations (about 150 across Modules 1–5) because the old parser required x < 90. Fixed in `marking/modules2to5_parse.py`.
