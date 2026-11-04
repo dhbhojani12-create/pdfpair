@@ -26,7 +26,11 @@ await p.click('#amGo');
 for(let i=0;i<60&&!(await p.isVisible('#amRev'));i++)await w(500);
 let s=await p.evaluate(()=>[...document.querySelectorAll('#amList .amrow')].map(r=>r.querySelector('.nm').textContent+' | '+r.querySelector('.ln').textContent+' | '+r.querySelector('select').value));
 console.log(s.join('\n'));ok(s.length>=18,'ICAI found '+s.length+' (python: 20)');
-await p.click('#amList .amrow:nth-child(10) .nm');await w(1500);await p.screenshot({path:'am2.png'});
+await p.evaluate(()=>{document.querySelector('#bA')&&0});await p.keyboard.press('Escape');
+await p.evaluate(()=>{const b=[...document.querySelectorAll('button')].find(x=>x.textContent.trim()==='A'&&x.offsetParent);b&&b.click()});await w(600);
+await p.click('#amList .amrow:nth-child(10) .nm');await w(1500);
+{const v=await p.evaluate(()=>{const pg=document.querySelector('#pane-q .page[data-n="22"]')||document.querySelectorAll('.page')[21];const sc=pg.closest('[class*=sc],.sc')||pg.parentElement.parentElement;const r=pg.getBoundingClientRect();return {vis:getComputedStyle(document.querySelector('#pane-q')).display,top:Math.round(r.top),bot:Math.round(r.bottom)}});ok(v.vis!=='none'&&v.top<700&&v.bot>0,'from answer-only view, click shows the question page: '+JSON.stringify(v));}
+await p.screenshot({path:'am2.png'});
 ok(await p.evaluate(()=>document.querySelectorAll('.amRing').length===2),'preview rings on both sides');
 const n0=await p.evaluate(()=>__ppTest.allNums().length);
 await p.click('#amApply');await w(800);
