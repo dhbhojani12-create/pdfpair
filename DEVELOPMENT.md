@@ -51,18 +51,18 @@ User PDFs and backups are never committed.
 - Test only what changed, unless they ask for a full check. Then publish and tell them the new version label (`APPV`).
 - The user said "I don't want any problem further": prefer optional changes, and never risk their data.
 
-## Next feature (planned, not built): ✨ Auto-mark
+## ✨ Auto-mark (built 4 Nov 2026)
 
-Agreed with Darshan on 1 Nov 2026. Show him a mockup first.
+Laptop only: ⋯ More → ✨ Auto-mark, on the open set. Code: search `/* ✨ Auto-mark` in the source. Test: `tests/am.js` (needs `/home/claude/demo/amtest.zip`, a 67-page extract of FR Module 2; Gemini is mocked with Playwright routes).
 
-1. **Built-in auto-mark for ICAI PDFs (no AI):** port `marking/*.py` to JS inside the app, using pdf.js text with positions. It should handle these patterns:
-   - "Illustration N" → "Solution".
-   - "Questions" / "Answers" sections: Test Your Knowledge and Practice Questions.
-   - RTP and past-paper Q/A numbering.
-   - Tag each sticker with the user's own chapter names.
-2. **Optional Gemini for other formats** (coaching notes, scanned books):
-   - The user pastes a free Google AI Studio API key, stored only on the device.
-   - Send page text with line positions to Gemini (or page images for scanned PDFs), in batches, respecting free-tier limits.
-   - Ask for JSON: question start, answer start and chapter.
-3. **Review screen before stickers are placed:** a list plus a preview. The user ticks or fixes each item, then applies.
-4. **Tell the user** that on Google's free tier, the data sent can be used to improve Google's products.
+- **ICAI format (no AI):** reads pdf.js text (`amLines`: lines with x, y, font size), then `amIcai`:
+  - "Illustration N" (left 25% of the page) → next "Solution".
+  - "Questions" / "Answers" headings (size ≥ 12.5): numbered 1. 2. 3. matched by number; misprinted repeats fixed. Practice Questions when the page header has "PQ N" (or the next page does), else Test Your Knowledge.
+  - Fallback: "Question N" / "Answer N", or numbered lines in separate question and answer files.
+  - Chapter from the running header ("INDIAN ACCOUNTING STANDARD N", or a "UNIT-4: IND AS 36" title) matched to the user's own chapter names; other chapters by a distinctive word (Analysis, Ethics, Tech). Unmatched → left blank for the user.
+  - Checked against the Python parser on all of Module 2: 228 items, same chapters, all answers found.
+- **Gemini AI:** key in `localStorage['gem:key']` (not a `pp:` key, so never in backups). Model list from ListModels (↻). Pages are sent as numbered text lines in batches (≤ 30 pages / 45k chars, 4.5 s apart); JSON reply `{items:[{t,p,l,label,ch}]}`; answers matched to questions by label. **Manual model choice only:** on 429 / 5xx / timeout it pauses with the model and reason; the user picks another model and presses Resume ▶, which continues from the same batch. Scanned pages (no text) are skipped.
+- **Review:** list in the side panel; tick/untick, chapter per row or "Set chapter for ticked", click a row to see both spots (purple rings). Rows that already have a sticker nearby are unticked ("already has sticker N").
+- **Apply:** adds stickers numbered after the highest existing one, with names ("Ind AS 2 · Illus 5") and chapter tags. One Ctrl+Z undoes the whole batch.
+
+Note: the module zips given on 1 Nov missed indented illustrations (about 150 across Modules 1–5) because the old parser required x < 90. Fixed in `marking/modules2to5_parse.py`; running Auto-mark on those sets adds the missing ones and skips the existing ones.

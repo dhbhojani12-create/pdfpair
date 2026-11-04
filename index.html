@@ -564,6 +564,19 @@ select.tin{appearance:auto}
 .mdo{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;cursor:pointer;text-align:left;width:100%}.mdo.on{border-color:#2f6fe0;background:#eef4ff}
 .mdo b{flex:1;font-size:14px}.mdo small{color:var(--mut);font-size:12px;text-align:right}
 @media (max-width:760px){#mockPanel{left:8px;right:8px;width:auto;top:auto;height:46%;bottom:8px}}
+#amDlg{position:fixed;inset:0;z-index:70;background:rgba(15,17,21,.45);display:grid;place-items:center;padding:16px}#amDlg[hidden]{display:none}
+#amDlg .card{background:var(--panel);border-radius:16px;padding:22px 24px;width:min(540px,100%);max-height:calc(100vh - 32px);overflow:auto;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+#amDlg h1{font-size:20px;margin:0 0 4px}#amDlg .sub{margin-bottom:14px}
+.amo{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;cursor:pointer;margin-bottom:8px;font-size:13.5px}.amo small{color:var(--mut)}.amo:has(input:checked){border-color:#2f6fe0;background:#eef4ff}
+.amo input{margin-top:3px}.amr{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;font-size:13.5px}.amr select{flex:1}.amr .sm{width:76px}.amr label{display:flex;gap:6px;align-items:center}
+#amGem .tin{margin-bottom:12px}#amGem .amr .tin{margin-bottom:0}.amw{font-size:12px;color:#8a5a00;background:#fff6dd;border-radius:8px;padding:8px 10px;margin:0 0 12px}
+.ambar{height:8px;border-radius:5px;background:var(--line);overflow:hidden}.ambar i{display:block;height:100%;width:0;background:#7b5cff;transition:width .2s}.amps{font-size:12.5px;color:var(--mut);margin:6px 0 0}.amps.err{color:#b8333a}
+#amRev{position:absolute;z-index:6;inset:0;background:var(--panel);display:flex;flex-direction:column;overflow:hidden}#app.amv #side{position:relative}#amRev[hidden]{display:none}
+.amtl{display:flex;gap:8px;align-items:center;padding:8px 12px 8px 16px;border-bottom:1px solid var(--line);font-size:13px}.amtl label{display:flex;gap:6px;align-items:center;white-space:nowrap}.amtl select{flex:1;font-size:12.5px;padding:5px 7px}
+.amrow{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;padding:8px 12px 8px 16px;border-top:1px solid var(--line);font-size:13px;cursor:pointer}.amrow:first-child{border-top:0}.amrow.act{background:var(--ground-2)}.amrow.off{opacity:.55}
+.amrow input[type=checkbox]{grid-row:span 2;margin-top:2px}.amrow .nm{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.amrow .ln{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--mut)}.amrow .ln select{flex:1;min-width:0;font-size:12px;padding:3px 5px}.amrow .wn{color:#b06a00}
+.amRing{position:absolute;width:36px;height:36px;margin:-18px 0 0 -18px;border:3px solid #7b5cff;border-radius:50%;z-index:4;pointer-events:none;box-shadow:0 0 0 4px rgba(123,92,255,.25);animation:amP 1s ease-in-out infinite alternate}
+@keyframes amP{from{transform:scale(.85)}to{transform:scale(1.1)}}
 /* MCQ practice */
 #mcqBar{position:absolute;z-index:31;left:50%;transform:translateX(-50%);bottom:calc(74px + env(safe-area-inset-bottom,0px));display:none;align-items:center;gap:6px;background:rgba(27,30,35,.94);color:#fff;padding:6px 8px;border-radius:26px;box-shadow:0 6px 18px rgba(0,0,0,.3);font-size:13px;white-space:nowrap;max-width:calc(100% - 16px)}
 #mcqBar.on{display:flex}
@@ -715,6 +728,18 @@ select.tin{appearance:auto}
   </main>
 
   <div id="mockBar" hidden><span class="mt"></span><span class="mc">3:00:00</span><button id="mockFin">Finish</button></div>
+  <div id="amDlg" hidden><div class="card" role="dialog" aria-labelledby="amT"><h1 id="amT">✨ Auto-mark</h1><p class="sub">Finds the questions and their answers in this set and suggests stickers. You check the list before anything is placed.</p>
+    <label class="amo"><input type="radio" name="amM" value="icai" checked><span><b>ICAI format</b> <small>· free, works offline</small><br><small>Illustration → Solution, Test Your Knowledge and Practice Questions, numbered Question / Answer</small></span></label>
+    <label class="amo"><input type="radio" name="amM" value="gem"><span><b>Gemini AI</b> <small>· for other layouts</small><br><small>Coaching notes and other books. Needs a free Google AI Studio key.</small></span></label>
+    <div id="amGem" hidden>
+      <label class="fl" for="amKey">API key (saved only on this device, never in backups)</label><input id="amKey" class="tin" type="password" autocomplete="off" spellcheck="false" placeholder="Paste your key from aistudio.google.com">
+      <label class="fl" for="amModel">Model</label><div class="amr"><select id="amModel" class="tin"><option value="">Paste the key, then press ↻</option></select><button class="btn ghost" id="amRef" title="Get the list of models this key can use">↻</button></div>
+      <p class="amw">⚠ On Google's free tier, what you send may be used to improve Google's products. Only the text of the pages is sent; scanned pages with no text are skipped.</p>
+    </div>
+    <label class="fl">Pages</label><div class="amr"><label><input type="radio" name="amR" value="all" checked> All</label><label><input type="radio" name="amR" value="rg"> From <input id="amFrom" type="number" min="1" class="tin sm"> to <input id="amTo" type="number" min="1" class="tin sm"></label><small id="amRh" class="priv"></small></div>
+    <div id="amProg" hidden><div class="ambar"><i></i></div><p class="amps"></p></div>
+    <div class="acts"><button class="btn ghost" id="amCancel">Cancel</button><button class="btn" id="amGo">Find ▶</button></div></div></div>
+  <div id="amRev" hidden><div class="mph"><b>✨ Auto-mark: check the list</b><small></small></div><div class="amtl"><label><input type="checkbox" id="amAll" checked> All</label><select id="amBulk" class="tin"></select></div><div class="mpl" id="amList"></div><div class="mpf"><span class="mps"></span><button class="btn ghost" id="amDiscard">Cancel</button><button class="btn" id="amApply">Apply</button></div></div>
   <div id="mockPanel" hidden><div class="mph"><b>Check your paper</b><small></small></div><div class="mpl"></div><div class="mpf"><span class="mps"></span><button class="btn ghost" id="mockDiscard">Discard</button><button class="btn" id="mockSave">Save result</button></div></div>
   <div id="mockDlg" hidden><div class="card" role="dialog" aria-labelledby="mdT"><h1 id="mdT">Mock test</h1><p class="sub">Pick a paper. The answers stay locked until you finish, then you check each question.</p><div class="mdl"></div>
     <label class="fl" for="mdTime">Time</label><select id="mdTime" class="tin"><option value="60">1 hour</option><option value="90">1½ hours</option><option value="120">2 hours</option><option value="150">2½ hours</option><option value="180" selected>3 hours</option><option value="210">3½ hours</option></select>
@@ -751,6 +776,7 @@ select.tin{appearance:auto}
     <button class="b" id="bUndo" title="Undo (Ctrl+Z)"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button>
     <span class="sepv"></span>
     <button class="b" id="bBk" title="Backup and restore"><svg viewBox="0 0 24 24"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 9.5z"/><path d="M12 11v5M9.5 13.5 12 11l2.5 2.5"/></svg><span>Backup</span><i class="bdot" id="bkDot" hidden></i></button>
+    <button class="b" id="bAuto" title="Find questions and answers and suggest stickers"><span class="mi">✨</span><span>Auto-mark</span></button>
     <button class="b" id="bQuiz" title="Quiz view: case text on the left, tap the options on the right" hidden>📝<span>Quiz</span></button>
     <button class="b" id="bSave" title="Save one linked PDF with stickers, highlights and bookmarks"><svg viewBox="0 0 24 24"><path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/></svg><span>Save PDF</span></button>
     <button class="b" id="bLink" title="Link your phone as a touch highlighter"><span style="font-size:15px">📱</span><span id="bLinkT">Link phone</span></button>
@@ -2115,12 +2141,259 @@ $('#rvExit').addEventListener('click',()=>{stopRv();openLib()});
 
 
 
+/* ✨ Auto-mark: find questions and answers, review, then place stickers */
+var AM=null;
+const amPh=t=>typeof amFake==='function'?amFake(t):null;
+async function amLines(side,pi){
+  const pg=P[side].pages[pi];if(!pg)return null;
+  const vp=pg.pdf.getViewport({scale:1}),W=vp.width,H=vp.height;let tc;
+  try{tc=await pg.pdf.getTextContent()}catch(e){return {W,H,lines:[]}}
+  const its=[];
+  for(const it of tc.items){if(!it.str||!it.str.trim())continue;const tr=it.transform;const [x,y]=vp.convertToViewportPoint(tr[4],tr[5]);
+    const sz=Math.hypot(tr[2],tr[3])||it.height||10;its.push({x,y,sz,w:it.width||0,s:it.str})}
+  its.sort((a,b)=>a.y-b.y||a.x-b.x);
+  const L=[];
+  for(const it of its){const l=L[L.length-1];if(l&&Math.abs(l.y-it.y)<Math.max(2,l.sz*.45))l.its.push(it);else L.push({y:it.y,sz:it.sz,its:[it]})}
+  const lines=L.map(l=>{l.its.sort((a,b)=>a.x-b.x);let t='',end=-1e9;
+    for(const it of l.its){if(t&&it.x-end>it.sz*.2&&!/\s$/.test(t)&&!/^\s/.test(it.s))t+=' ';t+=it.s;end=it.x+it.w}
+    const f=l.its[0];return {x:f.x,y:l.y-f.sz*.35,sz:f.sz,t:t.replace(/\s+/g,' ').trim()}}).filter(l=>l.t);
+  return {W,H,lines};
+}
+function amShort(ch){if(!ch)return '';const m=ch.match(/^Ind AS \d+/i);return m?m[0]:ch}
+function amName(it){const s=amShort(it.ch);return (s?s+' · ':'')+it.base}
+function amChapters(){return allChapters().slice().sort((a,b)=>{const na=+(a.match(/^Ind AS (\d+)/i)||[])[1]||1e4,nb=+(b.match(/^Ind AS (\d+)/i)||[])[1]||1e4;return na-nb||a.localeCompare(b)})}
+/* chapter from a page's running header, matched to the user's own chapter names */
+function amHeadCh(pgL,chs){
+  let top=pgL.lines.filter(l=>l.y<pgL.H*.075).map(l=>l.t).join('  ');let out=null;
+  const ct=pgL.lines.find(l=>l.y<pgL.H*.2&&/^(?:CHAPTER\s+\d+\s*)?UNIT[\s\-–]*\d+\s*:\s*(?:IND\s*AS|INDIAN ACCOUNTING STANDARD)\s*\d+/i.test(l.t));if(ct)top=ct.t+'  '+top;
+  const m=top.match(/(?:INDIAN ACCOUNTING STANDARD|IND\s*AS)\s*[:\-]?\s*(\d+)/i);
+  if(m){const ds=m[1];let best=null;
+    for(let k=1;k<=ds.length;k++){const n=ds.slice(0,k);const c=chs.find(c=>new RegExp('^Ind AS '+n+'(\\b|\\s)','i').test(c));if(c)best=c}
+    out=best||{none:'Ind AS '+ds}}
+  else if(top.trim()&&!/^\s*FINANCIAL REPORTING\b/i.test(top)){const T=top.toLowerCase();
+    const stop=new Set(['financial','accounting','statements','statement','standard','reporting','indian','and','the','of']);
+    for(const c of chs){if(/^Ind AS/i.test(c))continue;const ws=c.toLowerCase().split(/[^a-z]+/).filter(w=>w.length>=4&&!stop.has(w));if(ws.length&&ws.some(w=>new RegExp('\\b'+w).test(T))){out=c;break}}}
+  return {ch:out,pq:/\bPQ\s*\d+/.test(top)};
+}
+function amSeq(L){const out=[];let want=1,prev=null;
+  for(let l of L){const v0=parseInt(l.t,10);if(out.length&&v0===want-1&&v0===prev)l=Object.assign({},l,{t:want+'.'});prev=v0;
+    if(parseInt(l.t,10)===want){out.push(l);want++}}return out}
+function amIcai(Q,A){
+  // Q, A: arrays of lines {p,x,y,sz,t,W,side,ch,pq}; A is null when answers are in the same file
+  const items=[],ALL=Q,rel=l=>l.x/l.W;
+  const isnum=l=>rel(l)<.135&&/^\d+\.(\s|$)/.test(l.t);
+  const illus=[];ALL.forEach((l,k)=>{if(rel(l)<.25&&/^Illustration\s+\d+(?!\d)(?!\s*\))(?!\s+(?:above|below|of|in|and|is|shows|given)\b)/.test(l.t)&&l.t.length<160)illus.push(k)});
+  illus.forEach((k,n)=>{const l=ALL[k];if(l.pq)return;const num=l.t.match(/^Illustration\s+(\d+)/)[1];const end=n+1<illus.length?illus[n+1]:Math.min(ALL.length,k+4000);
+    let sol=null;for(let j=k+1;j<end;j++){const s=ALL[j];if(rel(s)<.25&&/^Solution\b/.test(s.t)&&s.t.length<60){sol=s;break}}
+    items.push({base:'Illus '+num,ch:l.ch,q:l,a:sol})});
+  const hd=t=>t.replace(/[:.]\s*$/,'');
+  const heads=[],BIG=[];ALL.forEach((l,k)=>{const t=hd(l.t);if(l.sz>=12.5&&/^(Questions?|Answers?)$/.test(t))heads.push(k);if((l.sz>=15.5&&rel(l)<.2&&/^[A-Za-z]/.test(t))||(l.sz>=12.5&&/^Questions?$/.test(t)))BIG.push(k)});
+  heads.forEach((k,n)=>{const qh=ALL[k];if(!/^Question/.test(hd(qh.t)))return;
+    const ak=heads.slice(n+1).find(h=>/^Answer/.test(hd(ALL[h].t)));if(ak==null)return;
+    const nq=BIG.find(h=>h>ak&&!/^Answer/.test(hd(ALL[h].t)))??ALL.length;
+    const kind=qh.pq?'PQ':'TYK',ch=qh.ch;
+    let qs=amSeq(ALL.slice(k+1,ak).filter(isnum)),as=amSeq(ALL.slice(ak+1,nq).filter(isnum));
+    if(hd(qh.t)==='Question'){qs=[Object.assign({},qh,{t:'1.'})];as=[Object.assign({},ALL[ak],{t:'1.'})]}
+    const am={};as.forEach(l=>{am[parseInt(l.t,10)]=l});
+    qs.forEach(q=>{const v=parseInt(q.t,10);items.push({base:kind+' '+v,ch,q,a:am[v]||null})})});
+  if(!items.length){
+    // numbered "Question N" / "Answer N" (RTP, past papers, many books)
+    const qre=/^(?:Question|Q\.?)\s*(?:No\.?\s*)?(\d+)\b/i,are=/^(?:Answer|Ans\.?|Solution)\s*(?:to\s*)?(?:(?:Question|Q\.?)\s*)?(?:No\.?\s*)?(\d+)\b/i;
+    const src=A||ALL;const qs=ALL.filter(l=>rel(l)<.3&&qre.test(l.t)),as=src.filter(l=>rel(l)<.3&&are.test(l.t)),used=new Set();
+    qs.forEach(q=>{const v=q.t.match(qre)[1];const a=as.find(a=>!used.has(a)&&a.t.match(are)[1]===v&&(A||a.p>q.p||(a.p===q.p&&a.y>q.y)));if(a)used.add(a);items.push({base:'Q '+v,ch:q.ch,q,a:a||null})});
+    if(!items.length&&A){
+      // separate question and answer files, numbered 1. 2. 3. at the left
+      const qn=amSeq(ALL.filter(isnum)),an=amSeq(A.filter(isnum));const m={};an.forEach(l=>{m[parseInt(l.t,10)]=l});
+      qn.forEach(q=>{const v=parseInt(q.t,10);items.push({base:'Q '+v,ch:q.ch,q,a:m[v]||null})});
+    }
+  }
+  return items;
+}
+/* Gemini */
+const GEM_URL='https://generativelanguage.googleapis.com/v1beta/';
+function gemKey(){return (LS.get('gem:key')||'').trim()}
+async function gemModels(key){
+  const r=await fetch(GEM_URL+'models?pageSize=1000&key='+encodeURIComponent(key));const j=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error((j.error&&j.error.message)||('Google said '+r.status));
+  return (j.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent')&&/gemini|gemma/i.test(m.name)&&!/embed|tts|image|live|aqa|audio|vision/i.test(m.name))
+    .map(m=>({id:m.name,label:(m.displayName||m.name.replace('models/',''))}))
+    .sort((a,b)=>{const s=x=>(/flash-lite/i.test(x.id)?1:/flash/i.test(x.id)?0:/pro/i.test(x.id)?2:3);return s(a)-s(b)||b.id.localeCompare(a.id)});
+}
+function gemFill(list,keep){const s=$('#amModel');s.innerHTML='';
+  if(!list.length){s.innerHTML='<option value="">No models found for this key</option>';return}
+  list.forEach(m=>{const o=document.createElement('option');o.value=m.id;o.textContent=m.label+'  ('+m.id.replace('models/','')+')';s.append(o)});
+  const want=keep||LS.get('gem:model');if(want&&list.some(m=>m.id===want))s.value=want;
+}
+async function gemRefresh(){const k=$('#amKey').value.trim();if(!k){amMsg('Paste your API key first',true);return}
+  LS.set('gem:key',k);amMsg('Getting the models this key can use…');
+  try{const l=await gemModels(k);LS.set('gem:models',l);gemFill(l);amMsg(l.length+' models available. Pick one, then press Find ▶')}catch(e){amMsg('Could not get the models: '+e.message,true)}
+}
+async function gemCall(model,key,prompt){
+  const ac=new AbortController(),to=setTimeout(()=>ac.abort(),120e3);let r;
+  try{r=await fetch(GEM_URL+model+':generateContent?key='+encodeURIComponent(key),{method:'POST',headers:{'Content-Type':'application/json'},signal:ac.signal,
+    body:JSON.stringify({contents:[{role:'user',parts:[{text:prompt}]}],generationConfig:{responseMimeType:'application/json',temperature:0}})})}
+  catch(e){clearTimeout(to);throw {why:e.name==='AbortError'?'no reply in 2 minutes':'network problem ('+e.message+')'}}
+  clearTimeout(to);const j=await r.json().catch(()=>({}));
+  if(!r.ok){const m=(j.error&&j.error.message)||'';throw {why:r.status===429?'busy or daily limit reached (429)':r.status>=500?'Google server busy ('+r.status+')':r.status===403||r.status===400&&/key/i.test(m)?'key problem: '+m:('error '+r.status+(m?': '+m.slice(0,140):''))}}
+  const c=(j.candidates||[])[0];const txt=c&&c.content&&(c.content.parts||[]).map(p=>p.text||'').join('');
+  if(!txt)throw {why:'empty reply'+(c&&c.finishReason?' ('+c.finishReason+')':'')};
+  try{const s=txt.replace(/^```(?:json)?\s*|\s*```$/g,'');return JSON.parse(s)}catch(e){throw {why:'reply was not readable'}}
+}
+function gemPrompt(batch,chs,two){
+  const body=batch.map(pg=>pg.lines.map((l,i)=>'['+(two?pg.side.toUpperCase()+' ':'')+'p'+pg.p+' L'+i+'] '+l.t.slice(0,160)).join('\n')).join('\n');
+  return 'You are helping a CA student mark a study book. Below are the text lines of some pages, each tagged [p<page> L<line>]'+(two?' with Q for the question file or A for the answer file':'')+'.\n'+
+  'Find where every question starts (illustrations, examples set as questions, practice questions, test-your-knowledge questions, RTP or past exam questions, case scenarios) and where its answer or solution starts.\n'+
+  'Return JSON only: {"items":[{"t":"q" or "a",'+(two?'"f":"Q" or "A",':'')+'"p":page number,"l":line number,"label":"short id like Illustration 5, Q 3, TYK 2","ch":"chapter"}]}.\n'+
+  'Give an answer the SAME label as its question. Use only the first line of each question and of each answer. Skip headings, theory, examples that are not questions, and the contents page.\n'+
+  'For "ch" pick the best match from this list, or "" if none fits: '+JSON.stringify(chs)+'\n\n'+body;
+}
+function gemMatch(found,two){
+  const nk=s=>String(s||'').toLowerCase().replace(/\b(solution|answer|ans|to|of)\b/g,' ').replace(/[^a-z0-9]+/g,' ').trim();
+  const ord=x=>(x.side==='a'&&two?1e7:0)+x.l.p*1e4+x.l.y;
+  const qs=found.filter(x=>x.t==='q').sort((a,b)=>ord(a)-ord(b)),as=found.filter(x=>x.t==='a').sort((a,b)=>ord(a)-ord(b)),used=new Set(),items=[];
+  for(const q of qs){const k=nk(q.label);let a=as.find(a=>!used.has(a)&&nk(a.label)===k&&(two||ord(a)>ord(q)));if(!a)a=as.find(a=>!used.has(a)&&nk(a.label)===k);if(a)used.add(a);
+    items.push({base:q.label||'Q',ch:q.ch,q:q.l,a:a?a.l:null,by:q.by})}
+  return items;
+}
+/* the run */
+function amMsg(m,err){const p=$('#amProg');p.hidden=false;const s=$('.amps',p);s.textContent=m;s.classList.toggle('err',!!err)}
+function amBar(f){$('#amProg .ambar i').style.width=Math.round(f*100)+'%'}
+function amTwo(){const c=curSet();return !!(c&&!c.same&&P.a.pages.length)}
+function openAuto(){
+  if(!curSet()||!P.q.pages.length){toast('Open a question set first');return}
+  if(isCset()){toast('Auto-mark is for question sets, not concept books');return}
+  if(AM&&AM.reviewing){amShow(true);return}
+  const n=P.q.pages.length;$('#amFrom').placeholder='1';$('#amTo').placeholder=n;$('#amRh').textContent=n+' pages'+(amTwo()?' in the questions (answers file read in full)':'');
+  $('#amKey').value=gemKey();const ml=LS.get('gem:models')||[];if(ml.length)gemFill(ml);
+  if(!(AM&&AM.paused)){$('#amProg').hidden=true;$('#amGo').textContent='Find ▶'}
+  amMode();$('#amDlg').hidden=false;
+}
+function amMode(){const g=$('input[name=amM]:checked').value==='gem';$('#amGem').hidden=!g}
+$$('input[name=amM]').forEach(r=>r.addEventListener('change',()=>{if(AM&&AM.paused&&!AM.running){AM=null;$('#amGo').textContent='Find ▶';$('#amProg').hidden=true}amMode()}));
+$('#amFrom').addEventListener('input',()=>{$('input[name=amR][value=rg]').checked=true});$('#amTo').addEventListener('input',()=>{$('input[name=amR][value=rg]').checked=true});
+$('#amKey').addEventListener('change',()=>{LS.set('gem:key',$('#amKey').value.trim())});
+$('#amModel').addEventListener('change',()=>{LS.set('gem:model',$('#amModel').value)});
+$('#amRef').addEventListener('click',gemRefresh);
+$('#amCancel').addEventListener('click',()=>{if(AM&&AM.running){AM.stop=true;return}$('#amDlg').hidden=true;AM=null});
+$('#amGo').addEventListener('click',()=>{if(AM&&AM.running)return;if(AM&&AM.paused)amGemRun();else amStart()});
+async function amRead(side,from,to,lab){const out=[];
+  for(let i=from;i<=to;i++){if(AM.stop)return null;const L=await amLines(side,i-1);if(L)out.push(Object.assign({side,p:i},L));
+    if(i%8===0||i===to){amBar((i-from+1)/(to-from+1)*(AM.mode==='gem'?.25:1));amMsg('Reading '+lab+' page '+i+' of '+to+'…');await new Promise(r=>setTimeout(r,0))}}
+  return out}
+async function amStart(){
+  const mode=$('input[name=amM]:checked').value,n=P.q.pages.length;
+  let from=1,to=n;if($('input[name=amR]:checked').value==='rg'){from=Math.max(1,parseInt($('#amFrom').value,10)||1);to=Math.min(n,parseInt($('#amTo').value,10)||n)}
+  if(from>to){amMsg('“From” page is after “to” page',true);return}
+  if(mode==='gem'){const k=$('#amKey').value.trim();if(!k){amMsg('Paste your Gemini API key first',true);return}LS.set('gem:key',k);if(!$('#amModel').value){amMsg('Press ↻ to load the models, then pick one',true);return}}
+  AM={mode,running:true,stop:false,from,to,two:amTwo()};$('#amGo').textContent='Working…';$('#amCancel').textContent='Stop';
+  try{
+    const chs=amChapters();
+    const Q=await amRead('q',from,to,AM.two?'question':'');if(!Q){amStopped();return}
+    const A=AM.two?await amRead('a',1,P.a.pages.length,'answer'):null;if(AM.two&&!A){amStopped();return}
+    const blank=Q.filter(p=>!p.lines.length).length;AM.blank=blank;
+    if(mode==='icai'){
+      const flat=(pages,useHead)=>{const out=[];let cur={ch:'',pq:false};
+        const hs=useHead?pages.map(pg=>amHeadCh(pg,chs)):[];
+        for(const [i,pg] of pages.entries()){if(useHead){const h=hs[i];if(h.ch)cur.ch=typeof h.ch==='string'?h.ch:'';cur.pq=h.pq||!!(hs[i+1]&&hs[i+1].pq)}
+          for(const l of pg.lines)if(l.y>=pg.H*.065&&l.y<=pg.H*.93)out.push(Object.assign({},l,{p:pg.p,W:pg.W,side:pg.side,ch:cur.ch,pq:cur.pq}))}return out};
+      const items=amIcai(flat(Q,true),A?flat(A,false):null);
+      AM.running=false;amBar(1);
+      if(!items.length){amMsg('No ICAI-style questions found on these pages'+(blank?' ('+blank+' pages have no text, maybe scanned)':'')+'. Try Gemini AI for this layout.',true);amIdle();return}
+      amReview(items);
+    }else{
+      const pages=[...Q,...(A||[])].filter(p=>p.lines.length);const batches=[];let cur=[],size=0;
+      for(const pg of pages){const c=pg.lines.reduce((s,l)=>s+Math.min(160,l.t.length)+12,0);if(cur.length&&(size+c>45000||cur.length>=30)){batches.push(cur);cur=[];size=0}cur.push(pg);size+=c}
+      if(cur.length)batches.push(cur);
+      Object.assign(AM,{batches,bi:0,found:[],chs});amGemRun();
+    }
+  }catch(e){console.error(e);AM.running=false;amMsg('Something went wrong: '+(e.message||e),true);amIdle()}
+}
+function amIdle(){$('#amGo').textContent='Find ▶';$('#amCancel').textContent='Cancel'}
+function amStopped(){AM=null;amIdle();amMsg('Stopped. Nothing was changed.')}
+async function amGemRun(){
+  const model=$('#amModel').value,key=gemKey();if(!model){amMsg('Pick a model first',true);return}
+  AM.running=true;AM.stop=false;AM.paused=null;$('#amGo').textContent='Working…';$('#amCancel').textContent='Stop';
+  const B=AM.batches,lab=m=>m.replace('models/','');
+  while(AM.bi<B.length){
+    if(AM.stop){AM.running=false;AM.paused={model,why:'stopped by you'};amPause();return}
+    const b=B[AM.bi],p0=b[0],p1=b[b.length-1];
+    amMsg('Reading pages '+p0.p+'–'+p1.p+(AM.two?' ('+(p0.side==='a'?'answers':'questions')+')':'')+' with '+lab(model)+'…  (part '+(AM.bi+1)+' of '+B.length+')');
+    amBar(.25+.75*AM.bi/B.length);
+    let res;
+    try{res=amPh(gemPrompt(b,AM.chs,AM.two))||await gemCall(model,key,gemPrompt(b,AM.chs,AM.two))}
+    catch(e){AM.running=false;AM.paused={model,why:e.why||String(e)};amPause();return}
+    const byPL={};b.forEach(pg=>{byPL[(AM.two?pg.side:'q')+pg.p]=pg});
+    for(const it of (res&&res.items)||[]){const sd=AM.two&&String(it.f||'').toUpperCase()==='A'?'a':'q';const pg=byPL[sd+it.p];const l=pg&&pg.lines[+it.l];if(!l||(it.t!=='q'&&it.t!=='a'))continue;
+      const ch=AM.chs.find(c=>c.toLowerCase()===String(it.ch||'').toLowerCase())||'';
+      AM.found.push({t:it.t,label:String(it.label||'').slice(0,40),ch,by:lab(model),side:sd,l:Object.assign({},l,{p:pg.p,W:pg.W,side:sd})})}
+    AM.bi++;
+    if(AM.bi<B.length)await new Promise(r=>setTimeout(r,amPh('wait')??4500));
+  }
+  AM.running=false;amBar(1);const items=gemMatch(AM.found,AM.two);
+  if(!items.length){amMsg('Gemini found no questions on these pages.',true);AM=null;amIdle();return}
+  amReview(items);
+}
+function amPause(){const p=AM.paused,b=AM.batches[AM.bi];
+  amMsg('⏸ Paused at page '+(b?b[0].p:'?')+': '+p.model.replace('models/','')+' — '+p.why+'. Pick another model and press Resume ▶ (it carries on from this page).',true);
+  $('#amGo').textContent='Resume ▶';$('#amCancel').textContent='Cancel';
+}
+/* review */
+function amNear(side,l){const W=l.W,x=Math.max(13,l.x-17)/W,y=l.y/W;return {page:l.p,x:+x.toFixed(4),y:+y.toFixed(4)}}
+function amReview(items){
+  const two=AM.two;
+  AM.items=items.map((it,i)=>{const q=amNear('q',it.q),a=it.a?amNear(two?'a':'a',it.a):null;
+    const dup=st.stickers.q.find(s=>s.page===q.page&&Math.abs(s.y-q.y)<.03);
+    return {i,base:it.base,ch:it.ch||'',q,a,by:it.by||'',dup:dup?dup.n:0,on:!dup}});
+  AM.reviewing=true;$('#amDlg').hidden=true;amIdle();
+  const chs=amChapters(),bk=$('#amBulk');bk.innerHTML='<option value="">Set chapter for ticked…</option>';chs.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;bk.append(o)});
+  AM.chs=chs;amList();amShow(true);
+}
+function amList(){
+  const L=$('#amList');L.innerHTML='';const opts='<option value="">— chapter —</option>'+AM.chs.map(c=>'<option>'+esc(c)+'</option>').join('');
+  AM.items.forEach(it=>{const r=document.createElement('div');r.className='amrow'+(it.on?'':' off');r.dataset.i=it.i;
+    r.innerHTML='<input type="checkbox"><div class="nm"></div><div class="ln"><span class="pg"></span><select class="tin"></select></div>';
+    $('input',r).checked=it.on;$('.nm',r).textContent=amName(it);
+    $('.pg',r).textContent='p'+it.q.page+(it.a?' → p'+it.a.page:'');
+    const w=[];if(!it.a)w.push('⚠ no answer found');if(it.dup)w.push('already has sticker '+it.dup);if(it.by)w.push('found by '+it.by);
+    if(w.length){const s=document.createElement('span');s.className=it.a&&!it.dup?'':'wn';s.textContent=w.join(' · ');$('.ln',r).append(s)}
+    const sel=$('select',r);sel.innerHTML=opts;sel.value=it.ch;
+    sel.addEventListener('click',e=>e.stopPropagation());
+    sel.addEventListener('change',()=>{it.ch=sel.value;$('.nm',r).textContent=amName(it)});
+    $('input',r).addEventListener('click',e=>{e.stopPropagation();it.on=e.target.checked;r.classList.toggle('off',!it.on);amFoot()});
+    r.addEventListener('click',()=>amPreview(it,r));L.append(r)});
+  amFoot();
+}
+function amFoot(){const n=AM.items.filter(x=>x.on).length,na=AM.items.filter(x=>x.on&&!x.a).length;
+  $('#amRev .mph small').textContent=AM.items.length+' found'+(AM.blank?' · '+AM.blank+' pages had no text':'')+'. Click a row to see it. Untick what is wrong.';
+  $('#amRev .mps').textContent=n+' ticked'+(na?' · '+na+' no answer':'');$('#amRev .mps').title=na?'Rows without an answer get a sticker on the question side only':'';
+  $('#amApply').textContent='Apply '+n;$('#amApply').disabled=!n;$('#amAll').checked=n===AM.items.length;
+}
+function amShow(on){if(on){$('#side').append($('#amRev'));AM.sideWas=prefs.side;if(!prefs.side)setSide(true)}else if(AM&&AM.sideWas===false)setSide(false);$('#app').classList.toggle('amv',on);$('#amRev').hidden=!on}
+function amRings(){$$('.amRing').forEach(e=>e.remove())}
+function amPreview(it,row){
+  $$('#amList .amrow').forEach(x=>x.classList.toggle('act',x===row));amRings();
+  if(it.a&&prefs.view!=='split')setView('split');
+  const ring=(side,s)=>{const pg=P[side].pages[s.page-1];if(!pg)return;const d=document.createElement('div');d.className='amRing';pos(d,s.x,s.y);pg.ov.append(d)};
+  ring('q',it.q);scrollToSticker('q',it.q);if(it.a){ring('a',it.a);scrollToSticker('a',it.a)}
+}
+$('#amAll').addEventListener('change',e=>{AM.items.forEach(x=>x.on=e.target.checked);amList()});
+$('#amBulk').addEventListener('change',e=>{const v=e.target.value;if(!v)return;AM.items.forEach(x=>{if(x.on)x.ch=v});e.target.value='';amList();toast('Chapter set for the ticked rows')});
+$('#amDiscard').addEventListener('click',()=>{amRings();amShow(false);AM=null;toast('Auto-mark cancelled. Nothing was changed')});
+$('#amApply').addEventListener('click',()=>{
+  const sel=AM.items.filter(x=>x.on);if(!sel.length)return;
+  pushUndo();let n=maxN()+1;const first=n;
+  for(const it of sel){st.stickers.q.push(Object.assign({n},it.q));if(it.a)st.stickers.a.push(Object.assign({n},it.a));st.names[n]=amName(it);if(it.ch)setMeta(n,{ch:it.ch});n++}
+  st.next=n;save();amRings();amShow(false);AM=null;renderAll();
+  toast('Placed '+sel.length+' stickers ('+first+'–'+(n-1)+'). Ctrl+Z undoes all of them');
+});
+$('#bAuto').addEventListener('click',openAuto);window.__ppAm={amLines,amIcai,amHeadCh};
+
 /* compact toolbar: colours and less-used buttons tucked into small menus */
 (function(){
   const pop=$('#morePop');$('#app').append(pop);$('#app').append($('#colPop'));
   const place=(el,btn,alignRight)=>{const r=btn.getBoundingClientRect(),a=$('#app').getBoundingClientRect();el.style.bottom=(a.bottom-r.top+8)+'px';
     if(alignRight){el.style.left='';el.style.right=Math.max(8,a.right-r.right)+'px'}else{el.style.right='';el.style.left=Math.max(8,r.left-a.left-40)+'px'}};
-  [['bOpen','📚','Library'],['bBk',null,null],['bSave',null,null],['bLink',null,null],['bQuiz',null,null],['bSwap','⇄','Swap sides']].forEach(([id,ic,lab])=>{const b=$('#'+id);if(!b)return;
+  [['bOpen','📚','Library'],['bBk',null,null],['bSave',null,null],['bLink',null,null],['bQuiz',null,null],['bAuto','✨','Auto-mark'],['bSwap','⇄','Swap sides']].forEach(([id,ic,lab])=>{const b=$('#'+id);if(!b)return;
     if(ic&&!b.querySelector('span')){b.innerHTML='<span class="mi">'+ic+'</span><span>'+lab+'</span>'}
     b.classList.remove('qonly');if(id==='bSwap')b.classList.add('qonly');pop.append(b)});
   const closeAll=()=>{pop.hidden=true;$('#colPop').hidden=true};
@@ -3636,7 +3909,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='01 Nov 11:47';   // build label, so you can check both devices have the same version
+const APPV='04 Nov 22:42';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)

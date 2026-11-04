@@ -25,12 +25,12 @@ def parse(f):
         if t:ALL.append(dict(p=i+1,x=l['bbox'][0],y=l['bbox'][1],yc=(l['bbox'][1]+l['bbox'][3])/2,t=t,b='Bold' in l['spans'][0]['font'],sz=l['spans'][0]['size']))
   isnum=lambda l:l['x']<80 and re.match(r'^(\d+)\.(\s|$)',l['t'])
   items=[];probs=[]
-  illus=[k for k,l in enumerate(ALL) if l['b'] and re.match(r'^Illustration\s+\d+(?!\d)(?!\s*\))',l['t']) and l['x']<90]
+  illus=[k for k,l in enumerate(ALL) if l['b'] and re.match(r'^Illustration\s+\d+(?!\d)(?!\s*\))',l['t']) and l['x']<W*.25]
   for n,k in enumerate(illus):
     l=ALL[k]
     if l['p']>=PQSTART[f]:continue
     num=re.match(r'^Illustration\s+(\d+)',l['t']).group(1);end=illus[n+1] if n+1<len(illus) else len(ALL)
-    sol=next((j for j in range(k+1,end) if (ALL[j]['b'] or ALL[j]['t'].strip()=='Solution') and re.match(r'^Solution\b',ALL[j]['t']) and ALL[j]['x']<90),None)
+    sol=next((j for j in range(k+1,end) if (ALL[j]['b'] or ALL[j]['t'].strip()=='Solution') and re.match(r'^Solution\b',ALL[j]['t']) and ALL[j]['x']<W*.25),None)
     items.append(dict(kind='Illus',num=num,ch=chap(l['p']),q=l,a=ALL[sol] if sol else None))
     if sol is None:probs.append(('no solution',num,chap(l['p']),l['p']))
   heads=[k for k,l in enumerate(ALL) if l['b'] and l['t'] in('Questions','Answers','Question','Answer') and l['sz']>=12.5]
