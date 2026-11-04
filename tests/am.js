@@ -52,8 +52,9 @@ await p.screenshot({path:'am3.png'});
 await p.selectOption('#amModel','models/gemini-2.0-flash');await p.click('#amGo');
 for(let i=0;i<60&&!(await p.isVisible('#amRev'));i++)await w(300);
 s=await p.evaluate(()=>[...document.querySelectorAll('#amList .amrow')].map(r=>r.querySelector('.nm').textContent+' | '+r.querySelector('.ln').textContent));
-console.log(s.join('\n'),gcalls);ok(s.length>=2&&s.some(x=>/found by gemini-2.0-flash/.test(x))&&s.some(x=>/found by gemini-2.5-flash/.test(x)),'resumed with other model');
+console.log(s.join('\n'),gcalls);{const h=await p.evaluate(()=>document.querySelector('#amRev .mph small').textContent);ok(s.length>=2&&/gemini-2.0-flash/.test(h)&&/gemini-2.5-flash/.test(h),'resumed with other model: '+h);}
 ok(!(await p.evaluate(()=>localStorage.getItem('pp:prefs')||'')).includes('TESTKEY'),'key not in prefs/backup');
 await p.screenshot({path:'am4.png'});
+{const m=await p.evaluate(()=>{const L=(p,y)=>({p,y});const f=[{t:'q',label:'Q 3',l:L(3,100)},{t:'q',label:'Q. 4',l:L(3,300)},{t:'a',label:'Answer 3',l:L(19,100)},{t:'a',label:'Ans 4',l:L(20,100)},{t:'q',label:'Illustration 2',l:L(5,10)},{t:'a',label:'Solution to Illustration 2',l:L(5,50)}];return __ppAm.gemMatch(f,false).map(i=>i.base+'>'+(i.a&&i.a.p))});ok(m.join()==='Q 3>19,Q. 4>20,Illustration 2>5','labels match across Q/Answer wording: '+m);}
 await p.click('#amDiscard');
 console.log('errors',errs);await b.close()})();

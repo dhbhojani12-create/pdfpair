@@ -566,7 +566,7 @@ select.tin{appearance:auto}
 #amRev{position:absolute;z-index:6;inset:0;background:var(--panel);display:flex;flex-direction:column;overflow:hidden}#app.amv #side{position:relative}#amRev[hidden]{display:none}
 .amtl{display:flex;gap:8px;align-items:center;padding:8px 12px 8px 16px;border-bottom:1px solid var(--line);font-size:13px}.amtl label{display:flex;gap:6px;align-items:center;white-space:nowrap}.amtl select{flex:1;font-size:12.5px;padding:5px 7px}
 .amrow{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;padding:8px 12px 8px 16px;border-top:1px solid var(--line);font-size:13px;cursor:pointer}.amrow:first-child{border-top:0}.amrow.act{background:var(--ground-2)}.amrow.off{opacity:.55}
-.amrow input[type=checkbox]{grid-row:span 2;margin-top:2px}.amrow .nm{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.amrow .ln{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--mut)}.amrow .ln select{flex:1;min-width:0;font-size:12px;padding:3px 5px}.amrow .wn{color:#b06a00}
+.amrow input[type=checkbox]{grid-row:span 2;margin-top:2px}.amrow .nm{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.amrow .ln{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--mut)}.amrow .ln select{flex:1;min-width:0;font-size:12px;padding:3px 5px}.amrow .wn{color:#b06a00;grid-column:2;font-size:12px}.amrow .pg{white-space:nowrap}
 .amRing{position:absolute;width:36px;height:36px;margin:-18px 0 0 -18px;border:3px solid #7b5cff;border-radius:50%;z-index:4;pointer-events:none;box-shadow:0 0 0 4px rgba(123,92,255,.25);animation:amP 1s ease-in-out infinite alternate}
 @keyframes amP{from{transform:scale(.85)}to{transform:scale(1.1)}}
 /* MCQ practice */
@@ -2240,7 +2240,7 @@ function gemPrompt(batch,chs,two){
   'For "ch" pick the best match from this list, or "" if none fits: '+JSON.stringify(chs)+'\n\n'+body;
 }
 function gemMatch(found,two){
-  const nk=s=>String(s||'').toLowerCase().replace(/\b(solution|answer|ans|to|of)\b/g,' ').replace(/[^a-z0-9]+/g,' ').trim();
+  const nk=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').replace(/\b(solutions?|answers?|ans|questions?|ques|qn|q|to|of|for|no)\b/g,' ').replace(/\s+/g,' ').trim();
   const ord=x=>(x.side==='a'&&two?1e7:0)+x.l.p*1e4+x.l.y;
   const qs=found.filter(x=>x.t==='q').sort((a,b)=>ord(a)-ord(b)),as=found.filter(x=>x.t==='a').sort((a,b)=>ord(a)-ord(b)),used=new Set(),items=[];
   for(const q of qs){const k=nk(q.label);let a=as.find(a=>!used.has(a)&&nk(a.label)===k&&(two||ord(a)>ord(q)));if(!a)a=as.find(a=>!used.has(a)&&nk(a.label)===k);if(a)used.add(a);
@@ -2343,11 +2343,11 @@ function amReview(items){
 function amList(){
   const L=$('#amList');L.innerHTML='';const opts='<option value="">— chapter —</option>'+AM.chs.map(c=>'<option>'+esc(c)+'</option>').join('');
   AM.items.forEach(it=>{const r=document.createElement('div');r.className='amrow'+(it.on?'':' off');r.dataset.i=it.i;
-    r.innerHTML='<input type="checkbox"><div class="nm"></div><div class="ln"><span class="pg"></span><select class="tin"></select></div>';
+    r.innerHTML='<input type="checkbox"><div class="nm"></div><div class="ln"><span class="pg"></span><select class="tin"></select></div>';r.title=it.by?'Found by '+it.by:'';
     $('input',r).checked=it.on;$('.nm',r).textContent=amName(it);
     $('.pg',r).textContent='p'+it.q.page+(it.a?' → p'+it.a.page:'');
-    const w=[];if(!it.a)w.push('⚠ no answer found');if(it.dup)w.push('already has sticker '+it.dup);if(it.by)w.push('found by '+it.by);
-    if(w.length){const s=document.createElement('span');s.className=it.a&&!it.dup?'':'wn';s.textContent=w.join(' · ');$('.ln',r).append(s)}
+    const w=[];if(!it.a)w.push('⚠ no answer found');if(it.dup)w.push('already has sticker '+it.dup);
+    if(w.length){const s=document.createElement('div');s.className='wn';s.textContent=w.join(' · ');r.append(s)}
     const sel=$('select',r);sel.innerHTML=opts;sel.value=it.ch;
     sel.addEventListener('click',e=>e.stopPropagation());
     sel.addEventListener('change',()=>{it.ch=sel.value;$('.nm',r).textContent=amName(it)});
@@ -2356,7 +2356,7 @@ function amList(){
   amFoot();
 }
 function amFoot(){const n=AM.items.filter(x=>x.on).length,na=AM.items.filter(x=>x.on&&!x.a).length;
-  $('#amRev .mph small').textContent=AM.items.length+' found'+(AM.blank?' · '+AM.blank+' pages had no text':'')+'. Click a row to see it. Untick what is wrong.';
+  const bys=[...new Set(AM.items.map(x=>x.by).filter(Boolean))];$('#amRev .mph small').textContent=AM.items.length+' found'+(bys.length?' by '+bys.join(', '):'')+(AM.blank?' · '+AM.blank+' pages had no text':'')+'. Click a row to see it. Untick what is wrong.';
   $('#amRev .mps').textContent=n+' ticked'+(na?' · '+na+' no answer':'');$('#amRev .mps').title=na?'Rows without an answer get a sticker on the question side only':'';
   $('#amApply').textContent='Apply '+n;$('#amApply').disabled=!n;$('#amAll').checked=n===AM.items.length;
 }
@@ -2383,7 +2383,7 @@ $('#amApply').addEventListener('click',()=>{
   st.next=n;save();amRings();amShow(false);AM=null;renderAll();
   toast('Placed '+sel.length+' stickers ('+first+'–'+(n-1)+'). Ctrl+Z undoes all of them');
 });
-$('#bAuto').addEventListener('click',openAuto);window.__ppAm={amLines,amIcai,amHeadCh};
+$('#bAuto').addEventListener('click',openAuto);window.__ppAm={amLines,amIcai,amHeadCh,gemMatch};
 
 /* compact toolbar: colours and less-used buttons tucked into small menus */
 (function(){
