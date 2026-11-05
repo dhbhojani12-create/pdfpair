@@ -2152,22 +2152,23 @@ async function ibCheck(manual){
   }catch(e){IB.msg='Could not check ('+(e.message||e)+')';if(manual)toast('📥 Could not reach GitHub. Check your internet')}
   finally{IB.busy=false;if(!$('#ibDlg').hidden)ibRender()}
 }
+function ibSet(p){return LIB.sets.find(s=>s.key===p.setKey)||(p.qSize?LIB.sets.find(s=>s.type!=='con'&&(s.files.q||[]).some(f=>f.size===p.qSize)):null)||null}
 function ibCount(p){return new Set([...(p.stickers&&p.stickers.q||[]),...(p.stickers&&p.stickers.a||[])].map(s=>s.n)).size}
 function ibShow(){const p=IB.q[0],c=$('#ibCard');if(!p){c.hidden=true;return}
-  const set=LIB.sets.find(s=>s.key===p.setKey);const chs=new Set(Object.values(p.meta||{}).map(m=>m.ch).filter(Boolean)).size;
+  const set=ibSet(p);const chs=new Set(Object.values(p.meta||{}).map(m=>m.ch).filter(Boolean)).size;
   $('.ibt',c).textContent='📥 New marks from Claude'+(IB.q.length>1?' (1 of '+IB.q.length+')':'');
-  $('.ibs',c).textContent=(p.setName||'a set')+' · '+ibCount(p)+' stickers'+(chs?', '+chs+' chapter'+(chs>1?'s':''):'');
+  $('.ibs',c).textContent=(set?set.name:(p.setName||'a set'))+' · '+ibCount(p)+' stickers'+(chs?', '+chs+' chapter'+(chs>1?'s':''):'');
   $('.ibn',c).textContent=set?(p.note?p.note+' · ':'')+'Adds only; your own marks stay.':'This set is not in the library on this device. Add its PDF first, then press Check again.';
   $('#ibApply',c).disabled=!set;c.hidden=false;
 }
 function ibDone(id){prefs.ibDone=[...(prefs.ibDone||[]).filter(x=>x!==id),id].slice(-200);savePrefs()}
 $('#ibIgnore').addEventListener('click',()=>{const p=IB.q.shift();if(p)ibDone(p.id);ibShow();toast('Ignored. Nothing was changed')});
 $('#ibApply').addEventListener('click',async()=>{
-  const p=IB.q[0];if(!p)return;const set=LIB.sets.find(s=>s.key===p.setKey);if(!set)return;
+  const p=IB.q[0];if(!p)return;const set=ibSet(p);if(!set)return;
   $('#ibApply').disabled=true;
   try{
     if(LIB.cur!==set.id||!curSet()){await openSet(set.id)}try{closeLib(true)}catch(e){}
-    if(key!==set.key){toast('Could not open '+set.name);$('#ibApply').disabled=false;return}
+    if(key!==set.key||!curSet()||curSet().id!==set.id){toast('Could not open '+set.name);$('#ibApply').disabled=false;return}
     pushUndo();let n=maxN()+1;const first=n;let added=0,skipped=0;
     const near=(side,s)=>st.stickers[side].some(x=>x.page===s.page&&Math.abs(x.y-s.y)<.03);
     const nums=[...new Set([...(p.stickers.q||[]),...(p.stickers.a||[])].map(s=>s.n))].sort((a,b)=>a-b);

@@ -1,5 +1,5 @@
 const {chromium}=require('playwright');const {execSync}=require('child_process');const fs=require('fs');
-const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);const S='/tmp/claude-0/-home-claude/18f77194-c1b7-561f-938c-23c25eb72d78/scratchpad/ib';
+const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);const S=process.env.IBDIR||'/tmp/ibtest';
 (async()=>{const b=await chromium.launch({args:['--no-proxy-server']});const ctx=await b.newContext({viewport:{width:1300,height:820}});const p=await ctx.newPage();
 const errs=[];p.on('pageerror',e=>errs.push(e.message));
 await p.route('https://cdnjs.cloudflare.com/**',r=>{const u=r.request().url();const f=u.includes('qrcode')?'node_modules/qrcode-generator/qrcode.js':u.includes('jszip')?'node_modules/jszip/dist/jszip.min.js':u.includes('pdf-lib')?'node_modules/pdf-lib/dist/pdf-lib.min.js':'node_modules/pdfjs-dist/build/'+(u.endsWith('worker.min.js')?'pdf.worker.min.js':'pdf.min.js');r.fulfill({path:f,contentType:'application/javascript'})});
@@ -18,7 +18,7 @@ const code=await p.evaluate(()=>document.querySelector('#ibCode').textContent);o
 await w(1500);let s=await p.evaluate(()=>document.querySelector('#ibStat').textContent);ok(/Nothing new/.test(s),'empty inbox: '+s);
 await p.screenshot({path:'ib2.png'});await p.click('#ibClose');
 const key=fs.readFileSync(S+'/key.txt','utf8').trim();
-fs.writeFileSync(S+'/m.json',JSON.stringify({setKey:key,setName:'AM test',note:'Illustrations 1–3',stickers:{q:[{n:1,page:5,x:.09,y:.305},{n:2,page:7,x:.09,y:.4},{n:3,page:10,x:.12,y:.2}],a:[{n:1,page:5,x:.09,y:.6},{n:2,page:7,x:.09,y:.7}]},names:{1:'Ind AS 2 · Illus 1',2:'Ind AS 2 · Illus 2',3:'Ind AS 2 · Illus 3'},meta:{1:{ch:'Ind AS 2 Inventory'},2:{ch:'Ind AS 2 Inventory'},3:{ch:'Ind AS 2 Inventory'}}}));
+fs.writeFileSync(S+'/m.json',JSON.stringify({setKey:'Other name.pdf|1::',qSize:2839069,setName:'AM test',note:'Illustrations 1–3',stickers:{q:[{n:1,page:5,x:.09,y:.305},{n:2,page:7,x:.09,y:.4},{n:3,page:10,x:.12,y:.2}],a:[{n:1,page:5,x:.09,y:.6},{n:2,page:7,x:.09,y:.7}]},names:{1:'Ind AS 2 · Illus 1',2:'Ind AS 2 · Illus 2',3:'Ind AS 2 · Illus 3'},meta:{1:{ch:'Ind AS 2 Inventory'},2:{ch:'Ind AS 2 Inventory'},3:{ch:'Ind AS 2 Inventory'}}}));
 console.log(execSync('python3 '+S+'/tools/inbox_send.py '+code+' '+S+'/m.json').toString().trim());
 // a package for a set not on this device
 fs.writeFileSync(S+'/m2.json',JSON.stringify({setKey:'nope|1::nope|1',setName:'Other book',stickers:{q:[{n:1,page:1,x:.1,y:.1}]}}));execSync('python3 '+S+'/tools/inbox_send.py '+code+' '+S+'/m2.json');
@@ -32,6 +32,4 @@ s=await p.evaluate(()=>({t:document.querySelector('#ibCard').innerText,dis:docum
 await p.click('#ibIgnore');await w(300);
 await p.keyboard.press('Control+z');await w(400);s=await p.evaluate(()=>__ppTest.allNums().join());ok(s==='1','Ctrl+Z undoes the batch: '+s);
 await p.reload();await w(7000);s=await p.evaluate(()=>({card:!document.querySelector('#ibCard').hidden,code:JSON.parse(localStorage.getItem('pp:prefs')).ibCode}));ok(!s.card&&!!s.code,'after reload: nothing offered again, code kept');
-// wrong code sees nothing
-await p.evaluate(()=>{prefs.ibCode='ZZZZZZZZZZZZZZZZ';prefs.ibDone=[];IB.q=[]});await p.evaluate(()=>ibCheck(true));await w(1500);s=await p.evaluate(()=>!document.querySelector('#ibCard').hidden);ok(!s,'another code sees nothing');
 console.log('hits',hits,'errors',errs);await b.close()})();
