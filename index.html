@@ -2897,6 +2897,11 @@ function sig(str){let h=5381;for(let i=0;i<str.length;i++)h=((h<<5)+h+str.charCo
 const when=t=>{if(!t)return 'never';const d=new Date(t),now=new Date();const tm=d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
   return d.toDateString()===now.toDateString()?'today '+tm:d.toLocaleDateString([], {day:'numeric',month:'short'})+' '+tm};
 const stamp=()=>new Date().toISOString().slice(0,16).replace('T',' ').replace(':','.');
+const DFS=window.ppDesktop&&window.ppDesktop.fs;   // desktop app: the backup folder is written through the app, so it never needs re-allowing
+function deskDir(info){const F=DFS;const rd=async n=>{const b=await F.read(n);return b?new File([b],n):null};
+  return {name:info.name,desk:true,queryPermission:async()=>'granted',requestPermission:async()=>'granted',
+    getFileHandle:async(n,o)=>{if(!(o&&o.create)){const f=await rd(n);if(!f)throw new Error('NotFound');return {getFile:async()=>f}}
+      return {getFile:async()=>(await rd(n))||new File([''],n),createWritable:async()=>{const parts=[];return {write:async d=>{parts.push(d)},close:async()=>{await F.write(n,new Uint8Array(await new Blob(parts).arrayBuffer()))}}}}}}}
 async function wf(dir,name,data){const fh=await dir.getFileHandle(name,{create:true});const w=await fh.createWritable();await w.write(data);await w.close()}
 async function rf(dir,name){try{return await (await dir.getFileHandle(name)).getFile()}catch(e){return null}}
 async function perm(ask){
@@ -2949,7 +2954,7 @@ function renderBk(){
       if(!AB.dir)h+='<p class="stt">Turn on <b>auto backup</b>: pick a folder, ideally inside your Google Drive folder, and your marks are saved there every 3 hours while PDF Pair is open.</p><div class="row2"><button class="btn" data-b="pick">Choose folder…</button></div>';
       else if(AB.state==='on')h+='<p class="stt"><b>Auto backup is on</b>, every 3 hours to “'+AB.dir.name.replace(/[<&]/g,'')+'”.<br>Last: '+when(AB.last&&AB.last.at)+(AB.last&&AB.last.where==='folder'?' · Next: '+when(AB.last.at+EVERY):'')+'</p>';
       else if(AB.state==='warn')h+='<p class="stt"><b>Check your backup folder.</b> The last auto backup had far fewer questions, so it was saved as a separate “check” file and the earlier backup was kept.</p><div class="row2"><button class="btn" data-b="now">Back up now anyway</button></div>';
-      else h+='<p class="stt"><b>Auto backup is paused.</b> The browser needs your permission for the folder again, usually after it restarts.</p><div class="row2"><button class="btn" data-b="allow">Allow folder</button></div>';
+      else h+='<p class="stt"><b>Auto backup is paused.</b> '+(DFS?'Pick your backup folder once more. After that it will not ask again.':'The browser needs your permission for the folder again, usually after it restarts.')+'</p><div class="row2"><button class="btn" data-b="allow">'+(DFS?'Pick folder…':'Allow folder')+'</button></div>';
     }else h+='<p class="stt">Auto backup to a folder works in the offline copy, opened in Chrome or Edge on a computer. Here, use <b>Back up now</b> from time to time.<br>Last backup: '+when(AB.last&&AB.last.at)+'</p>';
     h+='<div class="lst">';
     h+='<button class="it" data-b="now">Back up now<small>'+(AB.dir&&AB.state!=='paused'?'Marks only, into your backup folder':'Marks only, a small .json file')+'</small></button>';
@@ -2964,9 +2969,10 @@ function renderBk(){
 }
 async function bkAction(a){
   try{
-    if(a==='pick'){const d=await window.showDirectoryPicker({mode:'readwrite',id:'pdfpair-backup'});AB.dir=d;await idbPut('dir',d);AB.state='on';if(await autoRun(true))toast('Auto backup is on. Saved to “'+d.name+'”');}
+    if(DFS&&(a==='pick'||a==='allow')){const info=await DFS.pick();if(!info)return;AB.dir=deskDir(info);await idbPut('dir',null);AB.state='on';if(await autoRun(true))toast('Auto backup is on. Saved to “'+info.name+'”. It will not ask again')}
+    else if(a==='pick'){const d=await window.showDirectoryPicker({mode:'readwrite',id:'pdfpair-backup'});AB.dir=d;await idbPut('dir',d);AB.state='on';if(await autoRun(true))toast('Auto backup is on. Saved to “'+d.name+'”');}
     else if(a==='allow'){if(await perm(true)){AB.state='on';await autoRun(false);toast('Auto backup is running again')}else toast('The folder was not allowed, so auto backup stays paused')}
-    else if(a==='off'){AB.dir=null;AB.state='off';await idbPut('dir',null);toast('Auto backup is off')}
+    else if(a==='off'){AB.dir=null;AB.state='off';await idbPut('dir',null);if(DFS)await DFS.clear();toast('Auto backup is off')}
     else if(a==='now'){
       if(AB.dir&&await perm(false)){const w=AB.last;if(AB.state==='warn'&&w)w.n=0;await autoRun(true);toast('Backed up to “'+AB.dir.name+'”')}
       else{const snap=snapshot();await saveFile('PDF Pair backup '+stamp().slice(0,10)+'.json',new Blob([JSON.stringify(snap)],{type:'application/json'}));
@@ -3025,9 +3031,10 @@ async function doRestore(c){
 // timers: every minute check if 3 hours have passed; also back up when the tab is hidden if the last one is over an hour old
 setInterval(()=>{if(due())autoRun(false)},60e3);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&AB.dir&&AB.state==='on'&&(!AB.last||Date.now()-AB.last.at>3600e3))autoRun(false)});
-(async()=>{if(canFolder){const d=await idbGet('dir');if(d){AB.dir=d;AB.state=(await perm(false))?'on':'paused';if(AB.state==='on'&&due())await autoRun(false)}}updBk()})();
+(async()=>{if(DFS){const info=await DFS.dir();if(info){AB.dir=deskDir(info);AB.state='on';if(due())await autoRun(false);updBk();return}const old=await idbGet('dir');if(old){AB.dir={name:old.name,desk:true,queryPermission:async()=>'prompt',requestPermission:async()=>'prompt'};AB.state='paused'}updBk();return}
+  if(canFolder){const d=await idbGet('dir');if(d){AB.dir=d;AB.state=(await perm(false))?'on':'paused';if(AB.state==='on'&&due())await autoRun(false)}}updBk()})();
 
-window.__ppTest={due,autoRun,AB,allNums,save,renderAll,getSt:()=>st,sharedDoc:()=>!!P.q.docs[0]&&P.q.docs[0]===P.a.docs[0],openDocs:()=>DOCS.size};
+window.__ppTest={due,autoRun,AB,bkAction,allNums,save,renderAll,getSt:()=>st,sharedDoc:()=>!!P.q.docs[0]&&P.q.docs[0]===P.a.docs[0],openDocs:()=>DOCS.size};
 // make a set from a question/answer pair that has no set yet (old saved pair, or an old backup)
 async function adoptPair(q,a){
   const norm=x=>!x?[]:Array.isArray(x)?x:[x];const qs=norm(q),as=norm(a);
@@ -3895,7 +3902,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='05 Nov 11:46';   // build label, so you can check both devices have the same version
+const APPV='05 Nov 11:53';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)

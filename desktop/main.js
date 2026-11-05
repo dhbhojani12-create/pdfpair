@@ -1,5 +1,5 @@
 // PDF Pair desktop: the same web app (from GitHub Pages) plus a built-in browser whose downloads go straight into the library
-const {app,BrowserWindow,WebContentsView,ipcMain,session,net,shell,Menu}=require('electron');
+const {app,BrowserWindow,WebContentsView,ipcMain,session,net,shell,Menu,dialog}=require('electron');
 const path=require('path'),fs=require('fs'),os=require('os');
 const APP_URL=process.env.PP_URL||'https://dhbhojani12-create.github.io/pdfpair/';
 if(process.env.PP_TEST){app.commandLine.appendSwitch('ignore-certificate-errors');if(process.env.HTTPS_PROXY){app.commandLine.appendSwitch('proxy-server',process.env.HTTPS_PROXY.replace(/^https?:\/\//,'').replace(/\/$/,''));app.commandLine.appendSwitch('proxy-bypass-list','127.0.0.1;localhost')}}
@@ -139,6 +139,19 @@ ipcMain.handle('pp-fetch',async(e,url)=>{
   const data=Buffer.from(await r.arrayBuffer());const name=decodeURIComponent(new URL(url).pathname.split('/').pop()||'file.pdf');
   return {name,size:data.length,url,data};
 });
+
+
+// ---- backup folder for the app (plain files through Node, so Windows never has to re-allow it)
+const CFG=()=>path.join(app.getPath('userData'),'desktop.json');
+const cfg=()=>{try{return JSON.parse(fs.readFileSync(CFG(),'utf8'))}catch(e){return {}}};
+const setCfg=o=>{try{fs.writeFileSync(CFG(),JSON.stringify(Object.assign(cfg(),o)))}catch(e){}};
+const safeName=n=>{n=String(n||'');if(!n||/[\\/:*?"<>|]/.test(n)||n.startsWith('.'))throw new Error('bad name');return n};
+ipcMain.handle('fs-pick',async()=>{const r=await dialog.showOpenDialog(win,{title:'Pick the backup folder',properties:['openDirectory','createDirectory']});
+  if(r.canceled||!r.filePaths[0])return null;setCfg({backupDir:r.filePaths[0]});return {path:r.filePaths[0],name:path.basename(r.filePaths[0])}});
+ipcMain.handle('fs-dir',()=>{const d=cfg().backupDir;return d&&fs.existsSync(d)?{path:d,name:path.basename(d)}:null});
+ipcMain.handle('fs-clear',()=>{setCfg({backupDir:null});return true});
+ipcMain.handle('fs-write',(e,name,data)=>{const d=cfg().backupDir;if(!d)throw new Error('no folder');fs.writeFileSync(path.join(d,safeName(name)),typeof data==='string'?data:Buffer.from(data));return true});
+ipcMain.handle('fs-read',(e,name)=>{const d=cfg().backupDir;if(!d)return null;const p=path.join(d,safeName(name));if(!fs.existsSync(p))return null;return fs.readFileSync(p)});
 
 app.whenReady().then(()=>{createMain()});
 app.on('window-all-closed',()=>app.quit());

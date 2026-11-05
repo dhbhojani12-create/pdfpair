@@ -1,0 +1,14 @@
+const {_electron}=require('playwright');const w=ms=>new Promise(r=>setTimeout(r,ms));const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);const fs=require('fs');
+const D='/tmp/claude-0/-home-claude/18f77194-c1b7-561f-938c-23c25eb72d78/scratchpad/bkdir';
+const launch=()=>_electron.launch({executablePath:'/tmp/claude-0/-home-claude/18f77194-c1b7-561f-938c-23c25eb72d78/scratchpad/el/electron',args:['/home/claude/pdfpair-desktop/app','--no-sandbox'],env:Object.assign({},process.env,{PP_URL:'http://127.0.0.1:9300/app.html',PP_TEST:'1'})});
+(async()=>{let app=await launch();let p=await app.firstWindow();const errs=[];p.on('pageerror',e=>errs.push(e.message));await w(3000);
+await p.evaluate(()=>{const o=document.querySelector('#open');if(o)o.hidden=true});
+await app.evaluate(({dialog},D)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[D]})},D);
+await p.evaluate(()=>__ppTest.bkAction('pick'));await w(1500);
+ok(fs.existsSync(D+'/PDF Pair auto backup.json'),'backup written to the folder');
+let st=await p.evaluate(()=>__ppTest.AB.state+'|'+__ppTest.AB.dir.name);ok(st.startsWith('on|'),'state: '+st);
+await app.close();
+app=await launch();p=await app.firstWindow();await w(3500);
+st=await p.evaluate(()=>__ppTest.AB.state+'|'+(__ppTest.AB.dir&&__ppTest.AB.dir.name));ok(st.startsWith('on|bkdir'),'after restart, still on with no prompt: '+st);
+await p.evaluate(()=>__ppTest.bkAction('now'));await w(1000);ok(fs.existsSync(D+'/PDF Pair auto backup (previous).json'),'second backup keeps previous copy');
+console.log('errors',errs);await app.close()})().catch(e=>{console.error(e);process.exit(1)});
