@@ -64,6 +64,8 @@ How Claude delivers marks straight into the app, instead of restore files.
 
 `desktop/` is an Electron app (main.js, preload.js, browser.html, bpreload.js). It loads the live site (GitHub Pages, so web updates reach it; the service worker gives offline) and adds a **built-in browser** window (🌐 Browser in ⋯ More, 🌐 Open ICAI site on the shelf). In that browser, PDFs are forced to download (Content-Disposition: attachment), saved to temp, then sent to the app (`window.ppDesktop.onFile`): ICAI shelf files are filed automatically, other PDFs show a card asking name / subject / type. Shelf **⤓ Get** and **⤓ Get all** download directly in the desktop app (`ppDesktop.fetchPdf`, no CORS limits). Its library is separate from Chrome's (Backup → Restore once).
 
+- **Browser bar:** ← → ⟳, address, ☆ bookmark (name + folder; folders per subject, ＋ Folder, rename/delete in the folder menu; saved in the browser window's localStorage `bm`), 🔍 Google search box. Menus hide the page view while open (`br-cover`) because the page view is drawn on top. Electron has no `prompt()`, so the small input box `ask()` is used.
+- The 📚 ICAI tab is hidden in the library (5 Nov, Darshan: not wanted); shelf matching still files ICAI downloads from the browser.
 - **Package (no installer):** unzip the Electron win32-x64 release (v33.2.0 from GitHub), rename `electron.exe` to `PDF Pair.exe`, delete `resources/default_app.asar`, copy `desktop/*` into `resources/app/`, zip the folder. Not code-signed, so SmartScreen shows "More info → Run anyway" once. Only `desktop/` changes need a new zip.
 - **Test:** `tests/desktop.js` (Linux Electron under `xvfb-run`; env `PP_URL` points at the local mock, `PP_TEST=1` uses the agent proxy and ignores its certificate).
 

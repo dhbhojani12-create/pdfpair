@@ -1,0 +1,20 @@
+const {_electron}=require('playwright');
+const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);
+(async()=>{
+const app=await _electron.launch({executablePath:'/tmp/claude-0/-home-claude/18f77194-c1b7-561f-938c-23c25eb72d78/scratchpad/el/electron',args:['/home/claude/pdfpair-desktop/app','--no-sandbox'],env:Object.assign({},process.env,{PP_URL:'http://127.0.0.1:9300/app.html',PP_TEST:'1'})});
+const w=ms=>new Promise(r=>setTimeout(r,ms));
+const p=await app.firstWindow();await w(4000);
+ok(await p.evaluate(()=>!document.querySelector('#libView button[data-v="i"]')),'ICAI shelf tab removed');
+await p.evaluate(()=>window.ppDesktop.openBrowser('https://boslive.icai.org/'));await w(5000);
+const bw=app.windows().find(x=>x!==p&&/browser\.html/.test(x.url()));
+let s=await bw.evaluate(()=>[...document.querySelectorAll('.fb')].map(b=>b.textContent));ok(s.join()==='📁 Audit ▾,📁 FR ▾','folders: '+s);
+await bw.click('#star');await w(300);await bw.fill('#dn','BOS home');await bw.fill('#ds','DT');await bw.click('#dok');await w(300);
+s=await bw.evaluate(()=>({f:[...document.querySelectorAll('.fb')].map(b=>b.textContent),star:document.querySelector('#star').textContent,bm:JSON.parse(localStorage.getItem('bm')).folders.find(f=>f.name==='DT')}));
+ok(s.f.includes('📁 DT ▾')&&s.star==='★'&&s.bm.items[0].t==='BOS home','bookmarked into new folder DT: '+JSON.stringify(s));
+await bw.click('text=📁 Audit ▾');await w(300);s=await bw.evaluate(()=>document.querySelectorAll('#menu .mi').length);ok(s===4,'Audit menu has 4');
+await bw.screenshot({path:'el3.png'});
+await bw.click('#menu .mi >> nth=1');await w(4000);s=await bw.evaluate(()=>document.querySelector('#u').value);ok(/education_content_rtp/.test(s),'bookmark opens: '+s);
+await bw.click('#add');await w(200);await bw.fill('#ai','IDT');await bw.press('#ai','Enter');await w(200);
+s=await bw.evaluate(()=>[...document.querySelectorAll('.fb')].map(b=>b.textContent).join());ok(/IDT/.test(s),'new folder: '+s);
+await bw.fill('#g','SA 700 key audit matters');await bw.press('#g','Enter');await w(3000);s=await bw.evaluate(()=>document.querySelector('#u').value);ok(/google\.com\/search\?q=SA%20700/.test(s),'google search: '+s);
+await app.close()})().catch(e=>{console.error(e);process.exit(1)});

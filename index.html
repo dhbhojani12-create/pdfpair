@@ -820,7 +820,7 @@ select.tin{appearance:auto}
       <button class="addset phlk2" id="libLink">📱 Link to laptop</button>
     </aside>
     <section class="lmain">
-      <div class="ltop"><h1 id="libTitle">Revise</h1><div class="tseg" id="libView"><button data-v="q">Questions</button><button data-v="c">Concepts</button><button data-v="m">Most asked</button><button data-v="d">Last-day</button><button data-v="i" title="Official ICAI study material and RTPs">📚 ICAI</button></div><span class="lmeta" id="libMeta"></span><span class="sp"></span><button class="btn" id="rvAll">▶ Revise all</button><button class="btn ghost" id="mtBtn" title="Write a paper under a timer, then check it">⏱ Mock test</button><button class="btn ghost" id="rvTopic" title="Topic by topic: the concept first, then all its questions" hidden>▶ Concept first</button></div>
+      <div class="ltop"><h1 id="libTitle">Revise</h1><div class="tseg" id="libView"><button data-v="q">Questions</button><button data-v="c">Concepts</button><button data-v="m">Most asked</button><button data-v="d">Last-day</button></div><span class="lmeta" id="libMeta"></span><span class="sp"></span><button class="btn" id="rvAll">▶ Revise all</button><button class="btn ghost" id="mtBtn" title="Write a paper under a timer, then check it">⏱ Mock test</button><button class="btn ghost" id="rvTopic" title="Topic by topic: the concept first, then all its questions" hidden>▶ Concept first</button></div>
       <div class="flt" id="libFlt"></div>
       <div class="lbody" id="libBody"></div>
     </section>
@@ -3009,7 +3009,7 @@ async function adoptPair(q,a){
   await openSet(set.id);
 }
 /* ---------- concept books ---------- */
-let activeTid=null,libView=prefs.libView||'q',conceptPref=false;
+let activeTid=null,libView=prefs.libView&&prefs.libView!=='i'?prefs.libView:'q',conceptPref=false;
 function sortedTopics(){return [...(st.topics||[])].sort((a,b)=>a.page-b.page||a.y-b.y)}
 function tmkEl(t,act){
   const el=document.createElement('div');el.className='tmk'+(act?' act':'');el.dataset.id=t.id;el.textContent='📖';
@@ -3863,7 +3863,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='05 Nov 09:10';   // build label, so you can check both devices have the same version
+const APPV='05 Nov 09:19';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)

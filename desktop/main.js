@@ -51,7 +51,8 @@ function setupBrowserSession(ses){
   });
 }
 
-function layoutBrowser(){if(!bwin||!view)return;const [w,h]=bwin.getContentSize();view.setBounds({x:0,y:48,width:w,height:Math.max(0,h-48)})}
+const TOP=84;
+function layoutBrowser(){if(!bwin||!view)return;const [w,h]=bwin.getContentSize();view.setBounds({x:0,y:TOP,width:w,height:Math.max(0,h-TOP)})}
 function openBrowser(url){
   url=url||'https://www.icai.org/';
   if(bwin&&!bwin.isDestroyed()){view.webContents.loadURL(url);bwin.show();bwin.focus();return}
@@ -72,6 +73,7 @@ function openBrowser(url){
 ipcMain.on('br-go',(e,u)=>{if(!view)return;let url=String(u||'').trim();if(!url)return;
   if(!/^[a-z]+:\/\//i.test(url))url=/\s/.test(url)||!/\./.test(url)?'https://www.google.com/search?q='+encodeURIComponent(url):'https://'+url;view.webContents.loadURL(url)});
 ipcMain.on('br-cmd',(e,c)=>{if(!view)return;const wc=view.webContents;if(c==='back'&&wc.navigationHistory.canGoBack())wc.navigationHistory.goBack();if(c==='fwd'&&wc.navigationHistory.canGoForward())wc.navigationHistory.goForward();if(c==='reload')wc.reload();if(c==='app'&&win){win.show();win.focus()}if(c==='ext')shell.openExternal(wc.getURL())});
+ipcMain.on('br-cover',(e,on)=>{if(view)view.setVisible(!on)});
 ipcMain.on('pp-browser',(e,u)=>openBrowser(u));
 ipcMain.handle('pp-fetch',async(e,url)=>{
   const r=await net.fetch(url);if(!r.ok)throw new Error('HTTP '+r.status);

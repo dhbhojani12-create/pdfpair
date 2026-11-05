@@ -1,21 +1,81 @@
 <!doctype html><html><head><meta charset="utf-8"><title>PDF Pair · Browser</title><style>
-body{margin:0;font:14px system-ui,Segoe UI,sans-serif;background:#fff}
-#t{height:48px;display:flex;align-items:center;gap:6px;padding:0 10px;border-bottom:1px solid #ddd;background:#f6f7f9;box-sizing:border-box}
-button{border:0;background:transparent;font-size:17px;width:34px;height:32px;border-radius:8px;cursor:pointer}button:hover{background:#e6e8ec}button:disabled{opacity:.35}
-#u{flex:1;height:32px;border:1px solid #d5d8de;border-radius:16px;padding:0 14px;font:inherit;background:#fff}
-.q{display:flex;gap:4px}.q button{width:auto;padding:0 10px;font-size:13px;background:#fff;border:1px solid #d5d8de}
-#m{font-size:12.5px;color:#23784a;max-width:300px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#app{width:auto;padding:0 12px;font-size:13px;background:#1f2328;color:#fff}#app:hover{background:#000}
-</style></head><body><div id="t">
-<button id="b" title="Back">←</button><button id="f" title="Forward">→</button><button id="r" title="Reload">⟳</button>
-<input id="u" spellcheck="false" placeholder="Type a web address or search">
-<div class="q"><button data-u="https://www.icai.org/post/sm-final-p3-may2026" title="Audit study material">ICAI Audit</button><button data-u="https://boslive.icai.org/education_content_rtp.php?c=Final" title="RTPs">RTP</button><button data-u="https://boslive.icai.org/" title="BOS Knowledge Portal">BOS</button></div>
+*{box-sizing:border-box}body{margin:0;font:14px system-ui,Segoe UI,sans-serif;background:#fff;height:100vh;overflow:hidden}
+#t{height:48px;display:flex;align-items:center;gap:6px;padding:0 10px;background:#f6f7f9}
+#bk{height:36px;display:flex;align-items:center;gap:4px;padding:0 10px;background:#f6f7f9;border-bottom:1px solid #ddd}
+button{border:0;background:transparent;font:inherit;cursor:pointer;border-radius:8px}
+.ic{font-size:17px;width:34px;height:32px}.ic:hover,.fb:hover{background:#e6e8ec}.ic:disabled{opacity:.35}
+input{height:32px;border:1px solid #d5d8de;border-radius:16px;padding:0 14px;font:inherit;background:#fff;outline:none}input:focus{border-color:#4c8dff}
+#u{flex:1;min-width:200px}#g{width:230px}
+#star{font-size:18px}#star.on{color:#f5b400}
+#m{font-size:12.5px;color:#23784a;max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app{padding:0 12px;height:32px;font-size:13px;background:#1f2328;color:#fff}#app:hover{background:#000}
+.fb{height:28px;padding:0 10px;font-size:13px;color:#24292f}.fb.on{background:#dfe3ea}
+#add{font-size:13px;color:#57606a;height:28px;padding:0 8px}
+#menu{position:fixed;top:84px;z-index:5;background:#fff;border:1px solid #d5d8de;border-radius:10px;box-shadow:0 12px 28px rgba(0,0,0,.18);min-width:300px;max-width:520px;max-height:70vh;overflow:auto;padding:6px}
+.mi{display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:7px;cursor:pointer}.mi:hover{background:#f0f2f5}.mi span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mi small{color:#8a929c;font-size:11px;max-width:160px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.mi .x{width:24px;height:24px;color:#8a929c}.mi .x:hover{background:#e6e8ec;color:#b8333a}.me{padding:10px;color:#8a929c;font-size:13px}.mh{display:flex;gap:6px;padding:6px 6px 4px;border-top:1px solid #eee;margin-top:4px}.mh button{font-size:12.5px;color:#57606a;padding:4px 8px}.mh button:hover{background:#f0f2f5}
+#dlg{position:fixed;top:56px;right:120px;z-index:6;background:#fff;border:1px solid #d5d8de;border-radius:12px;box-shadow:0 12px 28px rgba(0,0,0,.2);padding:14px;width:340px}
+#dlg h3{margin:0 0 10px;font-size:15px}#dlg label{display:block;font-size:12px;color:#57606a;margin:8px 0 4px}#dlg input{width:100%;border-radius:8px}
+.row{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}.row button{padding:7px 14px;border:1px solid #d5d8de}.row .pr{background:#1f2328;color:#fff;border-color:#1f2328}
+[hidden]{display:none!important}
+</style></head><body>
+<div id="t">
+<button class="ic" id="b" title="Back">←</button><button class="ic" id="f" title="Forward">→</button><button class="ic" id="r" title="Reload">⟳</button>
+<input id="u" spellcheck="false" placeholder="Web address"><button class="ic" id="star" title="Bookmark this page">☆</button>
+<input id="g" spellcheck="false" placeholder="🔍 Search Google">
 <span id="m"></span><button id="app" title="Back to PDF Pair">◧ PDF Pair</button></div>
+<div id="bk"></div>
+<div id="menu" hidden></div>
+<div id="ask" hidden style="position:fixed;top:56px;left:12px;z-index:7;background:#fff;border:1px solid #d5d8de;border-radius:12px;box-shadow:0 12px 28px rgba(0,0,0,.2);padding:14px;width:320px"><h3 id="aq" style="margin:0 0 10px;font-size:15px"></h3><input id="ai" style="width:100%;border-radius:8px"><div class="row"><button id="ac">Cancel</button><button id="aok" class="pr">OK</button></div></div>
+<div id="dlg" hidden><h3>Bookmark this page</h3><label for="dn">Name</label><input id="dn"><label for="ds">Subject (folder)</label><input id="ds" list="dsl"><datalist id="dsl"></datalist>
+<div class="row"><button id="drm" hidden>Remove</button><button id="dc">Cancel</button><button id="dok" class="pr">Save</button></div></div>
 <script>
 const $=s=>document.querySelector(s);
+const DEF={folders:[{name:'Audit',items:[
+ {t:'ICAI · Audit study material',u:'https://www.icai.org/post/sm-final-p3-may2026'},
+ {t:'BOS · RTPs (Final)',u:'https://boslive.icai.org/education_content_rtp.php?c=Final'},
+ {t:'BOS · Mock Test Papers (Final)',u:'https://boslive.icai.org/education_content_modelTestPapers.php?c=Final'},
+ {t:'BOS Knowledge Portal',u:'https://boslive.icai.org/'}]},
+ {name:'FR',items:[{t:'ICAI · FR study material',u:'https://www.icai.org/post/sm-final-p1-may2026'}]}]};
+let B;try{B=JSON.parse(localStorage.getItem('bm'))}catch(e){}if(!B||!B.folders)B=JSON.parse(JSON.stringify(DEF));
+let askCb=null;function ask(q,v,cb){closeMenu();$('#aq').textContent=q;$('#ai').value=v||'';askCb=cb;$('#ask').hidden=false;br.cover(true);$('#ai').focus();$('#ai').select()}
+function askDone(ok){const v=$('#ai').value.trim(),cb=askCb;askCb=null;$('#ask').hidden=true;if($('#menu').hidden&&$('#dlg').hidden)br.cover(false);if(ok&&v&&cb)cb(v)}
+const saveB=()=>{try{localStorage.setItem('bm',JSON.stringify(B))}catch(e){}};
+let cur={url:'',title:''},open=null;
+function host(u){try{return new URL(u).hostname.replace(/^www\./,'')}catch(e){return u}}
+function find(u){for(const f of B.folders)for(const it of f.items)if(it.u===u)return {f,it};return null}
+function renderBar(){const bk=$('#bk');bk.innerHTML='';
+  B.folders.forEach(f=>{const b=document.createElement('button');b.className='fb'+(open===f.name?' on':'');b.textContent='📁 '+f.name+' ▾';b.onclick=e=>{e.stopPropagation();open===f.name?closeMenu():showMenu(f,b)};bk.append(b)});
+  const a=document.createElement('button');a.id='add';a.textContent='＋ Folder';a.title='New folder, e.g. a subject';a.onclick=e=>{e.stopPropagation();ask('New folder (e.g. DT, IDT, AFM)','',n=>{if(!B.folders.some(x=>x.name.toLowerCase()===n.toLowerCase())){B.folders.push({name:n,items:[]});saveB();renderBar()}})};bk.append(a);
+  const fb=find(cur.url);$('#star').textContent=fb?'★':'☆';$('#star').classList.toggle('on',!!fb);$('#star').title=fb?'Bookmarked in '+fb.f.name+' (click to edit)':'Bookmark this page';
+}
+function showMenu(f,btn){open=f.name;const m=$('#menu');m.innerHTML='';
+  if(!f.items.length)m.innerHTML='<div class="me">No bookmarks yet. Open a page and press ☆.</div>';
+  f.items.forEach((it,i)=>{const d=document.createElement('div');d.className='mi';d.innerHTML='<span></span><small></small><button class="x" title="Remove">×</button>';
+    d.querySelector('span').textContent=it.t;d.querySelector('small').textContent=host(it.u);d.title=it.u;
+    d.onclick=()=>{closeMenu();br.go(it.u)};d.querySelector('.x').onclick=e=>{e.stopPropagation();f.items.splice(i,1);saveB();showMenu(f,btn);renderBar()};m.append(d)});
+  const h=document.createElement('div');h.className='mh';h.innerHTML='<button class="rn">Rename folder</button><button class="dl">Delete folder</button>';
+  h.querySelector('.rn').onclick=e=>{e.stopPropagation();ask('Rename folder',f.name,n=>{f.name=n;saveB();renderBar()})};
+  h.querySelector('.dl').onclick=e=>{e.stopPropagation();ask('Type DELETE to remove “'+f.name+'” and its '+f.items.length+' bookmarks','',v=>{if(v.toUpperCase()==='DELETE'){B.folders=B.folders.filter(x=>x!==f);saveB();renderBar()}})};m.append(h);
+  m.style.left=Math.min(btn.getBoundingClientRect().left,innerWidth-320)+'px';m.hidden=false;br.cover(true);renderBar();
+}
+function closeMenu(){open=null;$('#menu').hidden=true;if($('#dlg').hidden&&$('#ask').hidden)br.cover(false);renderBar()}
+document.addEventListener('click',e=>{if(!e.target.closest('#menu,#dlg,#ask,.fb,#star,#add'))closeMenu()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeMenu();closeDlg();if(!$('#ask').hidden)askDone(false)}});
+function openDlg(){closeMenu();const fb=find(cur.url);$('#dn').value=fb?fb.it.t:(cur.title||host(cur.url));$('#ds').value=fb?fb.f.name:(B.last||B.folders[0]&&B.folders[0].name||'');
+  $('#dsl').innerHTML=B.folders.map(f=>'<option value="'+f.name.replace(/"/g,'&quot;')+'">').join('');$('#drm').hidden=!fb;$('#dlg').hidden=false;br.cover(true);$('#dn').focus();$('#dn').select()}
+function closeDlg(){$('#dlg').hidden=true;if($('#menu').hidden)br.cover(false)}
+$('#star').onclick=e=>{e.stopPropagation();if(!cur.url||!/^https?:/.test(cur.url))return;openDlg()};
+$('#dc').onclick=closeDlg;
+$('#drm').onclick=()=>{const fb=find(cur.url);if(fb){fb.f.items=fb.f.items.filter(x=>x!==fb.it);saveB()}closeDlg();renderBar()};
+$('#dok').onclick=()=>{const t=$('#dn').value.trim()||host(cur.url),fn=$('#ds').value.trim()||'Other';const fb=find(cur.url);if(fb)fb.f.items=fb.f.items.filter(x=>x!==fb.it);
+  let f=B.folders.find(x=>x.name.toLowerCase()===fn.toLowerCase());if(!f){f={name:fn,items:[]};B.folders.push(f)}f.items.push({t,u:cur.url});B.last=f.name;saveB();closeDlg();renderBar()};
+['#dn','#ds'].forEach(s=>$(s).addEventListener('keydown',e=>{if(e.key==='Enter')$('#dok').click()}));
 $('#b').onclick=()=>br.cmd('back');$('#f').onclick=()=>br.cmd('fwd');$('#r').onclick=()=>br.cmd('reload');$('#app').onclick=()=>br.cmd('app');
 $('#u').addEventListener('keydown',e=>{if(e.key==='Enter')br.go($('#u').value)});
-document.querySelectorAll('[data-u]').forEach(b=>b.onclick=()=>br.go(b.dataset.u));
-br.onState(s=>{if(document.activeElement!==$('#u'))$('#u').value=s.url;$('#b').disabled=!s.back;$('#f').disabled=!s.fwd;document.title=(s.title||'Browser')+' · PDF Pair';$('#r').textContent=s.loading?'✕':'⟳'});
+$('#g').addEventListener('keydown',e=>{if(e.key==='Enter'&&$('#g').value.trim()){br.go('https://www.google.com/search?q='+encodeURIComponent($('#g').value.trim()));$('#g').value=''}});
+br.onState(s=>{cur={url:s.url,title:s.title};if(document.activeElement!==$('#u'))$('#u').value=s.url;$('#b').disabled=!s.back;$('#f').disabled=!s.fwd;document.title=(s.title||'Browser')+' · PDF Pair';$('#r').textContent=s.loading?'✕':'⟳';renderBar()});
 let mt=0;br.onMsg(m=>{$('#m').textContent=m;clearTimeout(mt);mt=setTimeout(()=>{$('#m').textContent=''},8000)});
+$('#ac').onclick=()=>askDone(false);$('#aok').onclick=()=>askDone(true);$('#ai').addEventListener('keydown',e=>{if(e.key==='Enter')askDone(true)});
+renderBar();
 </script></body></html>
