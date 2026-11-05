@@ -564,9 +564,9 @@ select.tin{appearance:auto}
 .mdo{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;cursor:pointer;text-align:left;width:100%}.mdo.on{border-color:#2f6fe0;background:#eef4ff}
 .mdo b{flex:1;font-size:14px}.mdo small{color:var(--mut);font-size:12px;text-align:right}
 @media (max-width:760px){#mockPanel{left:8px;right:8px;width:auto;top:auto;height:46%;bottom:8px}}
-#vidBar{position:absolute;z-index:44;right:14px;bottom:84px;display:flex;align-items:center;gap:6px;background:#1f2328;color:#fff;border-radius:12px;padding:7px 10px;box-shadow:0 10px 26px rgba(0,0,0,.3);font-size:12.5px;max-width:calc(100% - 28px)}#vidBar[hidden]{display:none}
-#vidBar .vt{max-width:170px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.85;margin-right:2px}#vidBar button{color:#fff;height:28px;min-width:30px;padding:0 7px;border-radius:7px;font-size:13px;white-space:nowrap}#vidBar button:hover{background:rgba(255,255,255,.14)}#vidBar .vp{font-size:15px;background:rgba(255,255,255,.12)}
-#vidBar .vs{width:170px;accent-color:#ff3b3b}#vidBar .vtm{font-variant-numeric:tabular-nums;opacity:.85;white-space:nowrap}#vidBar select{background:#2c3138;color:#fff;border:0;border-radius:6px;height:26px;font-size:12px}
+#vidBar{position:absolute;z-index:44;right:10px;bottom:10px;display:flex;align-items:center;gap:3px;background:rgba(31,35,40,.92);color:#fff;border-radius:10px;padding:4px 6px;box-shadow:0 6px 18px rgba(0,0,0,.28);font-size:12px}#vidBar[hidden]{display:none}
+#vidBar .vt{display:none;max-width:170px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.85;margin-right:2px}#vidBar button{color:#fff;height:26px;min-width:26px;padding:0 5px;border-radius:7px;font-size:13px;white-space:nowrap}#vidBar button:hover{background:rgba(255,255,255,.14)}#vidBar .vp{font-size:15px;background:rgba(255,255,255,.12)}
+#vidBar .vs{width:110px;accent-color:#ff3b3b}#vidBar .vtm{font-variant-numeric:tabular-nums;opacity:.85;white-space:nowrap;font-size:11.5px}#vidBar select{background:#2c3138;color:#fff;border:0;border-radius:6px;height:26px;font-size:12px}
 #dkCard{position:absolute;z-index:66;top:14px;left:50%;transform:translateX(-50%);width:min(560px,calc(100% - 24px));background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 14px 34px rgba(0,0,0,.22);padding:14px 16px}#dkCard[hidden]{display:none}
 #dkCard .dkt{font-weight:600;font-size:14px;margin-bottom:8px;word-break:break-all}.dkr{display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:8px}#dkCard .acts{margin-top:10px}.shh .btn{padding:4px 10px;font-size:12px}.shget.busy{opacity:.7}
 .shw{font-size:13px}.shg{margin:0 24px 18px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel)}
@@ -731,7 +731,7 @@ select.tin{appearance:auto}
 
   <div id="mockBar" hidden><span class="mt"></span><span class="mc">3:00:00</span><button id="mockFin">Finish</button></div>
   <div id="dkCard" hidden role="dialog" aria-label="Downloaded PDF"><div class="dkt"></div><div class="dkr"><input id="dkName" class="tin" placeholder="Set name"><select id="dkSub" class="tin"></select><select id="dkType" class="tin"><option value="mod">Module / chapter</option><option value="rtp">RTP</option><option value="mtp">MTP</option><option value="pyq">Past papers</option><option value="mcq">MCQ booklet</option><option value="oth">Other</option><option value="con">Concept book</option></select></div><div class="acts"><button class="btn ghost" id="dkSkip">Skip</button><button class="btn" id="dkAdd">Add to library</button></div></div>
-  <div id="vidBar" hidden role="group" aria-label="Video controls"><span class="vt"></span><button data-v="back10" title="Back 10 s (Alt+←)">⟲ 10</button><button data-v="play" class="vp" title="Play / pause (Alt+Space)">⏸</button><button data-v="fwd10" title="Forward 10 s (Alt+→)">10 ⟳</button>
+  <div id="vidBar" hidden role="group" aria-label="Video controls"><span class="vt"></span><button data-v="back10" title="Back 10 s (Alt+J)">⟲ 10</button><button data-v="play" class="vp" title="Play / pause (Alt+K)">⏸</button><button data-v="fwd10" title="Forward 10 s (Alt+L)">10 ⟳</button>
     <input type="range" class="vs" min="0" max="1000" value="0" aria-label="Position"><span class="vtm">0:00 / 0:00</span><select class="vr" title="Speed"><option>0.75</option><option selected>1</option><option>1.25</option><option>1.5</option><option>1.75</option><option>2</option></select><button data-v="back" title="Back to the tab">⤢</button></div>
   <div id="ibCard" hidden role="alertdialog" aria-label="New marks from Claude"><div class="ibt"></div><div class="ibs"></div><div class="ibn"></div><div class="acts"><button class="btn ghost" id="ibIgnore">Ignore</button><button class="btn" id="ibApply">Apply ▶</button></div></div>
   <div id="ibDlg" hidden><div class="card" role="dialog" aria-labelledby="ibT"><h1 id="ibT">📥 Claude inbox</h1>
@@ -2352,6 +2352,7 @@ const vfmt=t=>{t=Math.max(0,Math.floor(t||0));const h=Math.floor(t/3600),m=Math.
 const VJS="(()=>{const v=document.pictureInPictureElement;if(!v)return null;return {p:v.paused,t:v.currentTime,d:v.duration||0,r:v.playbackRate,title:document.title.replace(/^\\(\\d+\\)\\s*/,'').replace(/ - YouTube$/,'')}})()";
 async function vPoll(){if(!window.ppDesktop||!window.ppDesktop.video)return;let st=null;try{st=await window.ppDesktop.video(VJS)}catch(e){}
   const b=$('#vidBar');VB.on=!!st;b.hidden=!st;if(!st)return;VB.last=st;
+  {const tb=$('#bar'),r=tb&&tb.getBoundingClientRect(),bw=b.offsetWidth||380,ar=$('#app').getBoundingClientRect();const over=r&&r.width&&r.right>ar.right-10-bw;b.style.bottom=over?(ar.bottom-r.top+8)+'px':'10px'}
   $('.vt',b).textContent='🎬 '+(st.title||'Video');$('.vp',b).textContent=st.p?'▶':'⏸';$('.vtm',b).textContent=vfmt(st.t)+' / '+vfmt(st.d);
   if(!VB.drag&&st.d)$('.vs',b).value=Math.round(st.t/st.d*1000);const r=$('.vr',b);if(document.activeElement!==r)r.value=String(st.r)}
 async function vDo(js){try{await window.ppDesktop.video("(()=>{const v=document.pictureInPictureElement;if(!v)return;"+js+"})()")}catch(e){}vPoll()}
@@ -2363,7 +2364,9 @@ if(window.ppDesktop&&window.ppDesktop.video){
   const sl=$('#vidBar .vs');sl.addEventListener('input',()=>{VB.drag=true;if(VB.last)$('#vidBar .vtm').textContent=vfmt(sl.value/1000*VB.last.d)+' / '+vfmt(VB.last.d)});
   sl.addEventListener('change',()=>{VB.drag=false;vDo('v.currentTime='+(sl.value/1000)+'*(v.duration||0)')});
   $('#vidBar .vr').addEventListener('change',e=>vDo('v.playbackRate='+(+e.target.value||1)));
-  document.addEventListener('keydown',e=>{if(!VB.on||!e.altKey||e.ctrlKey)return;if(e.key==='ArrowLeft'){e.preventDefault();vDo('v.currentTime=Math.max(0,v.currentTime-10)')}else if(e.key==='ArrowRight'){e.preventDefault();vDo('v.currentTime=Math.min(v.duration||1e9,v.currentTime+10)')}else if(e.key===' '){e.preventDefault();vDo('v.paused?v.play():v.pause()')}},true);
+  window.addEventListener('keydown',e=>{if(!VB.on||!e.altKey||e.ctrlKey||e.metaKey)return;const c=e.code;
+    const act=c==='KeyJ'||c==='ArrowLeft'?'v.currentTime=Math.max(0,v.currentTime-10)':c==='KeyL'||c==='ArrowRight'?'v.currentTime=Math.min(v.duration||1e9,v.currentTime+10)':c==='KeyK'?'v.paused?v.play():v.pause()':null;
+    if(!act)return;e.preventDefault();e.stopImmediatePropagation();vDo(act)},true);
 }
 
 /* compact toolbar: colours and less-used buttons tucked into small menus */
@@ -3889,7 +3892,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='05 Nov 11:28';   // build label, so you can check both devices have the same version
+const APPV='05 Nov 11:35';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)

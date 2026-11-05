@@ -12,5 +12,9 @@ const t0=v.t;await p.click('#vidBar [data-v="fwd10"]');await w(1200);v=await vid
 await p.selectOption('#vidBar .vr','1.5');await w(1200);v=await vid();ok(v.r===1.5,'speed 1.5×');
 await p.click('#vidBar .vp');await w(1000);v=await vid();ok(!v.p,'▶ plays');
 await p.screenshot({path:'vb.png'});
+let t1=(await vid()).t;await p.keyboard.press('Alt+KeyL');await w(1200);let v2=await vid();ok(v2.t>t1+8,'Alt+L skips: '+t1.toFixed(1)+' → '+v2.t.toFixed(1));
+await p.keyboard.press('Alt+KeyK');await w(1000);ok((await vid()).p,'Alt+K pauses');await p.keyboard.press('Alt+KeyK');await w(800);
+t1=(await vid()).t;await p.keyboard.press('Alt+KeyJ');await w(1200);ok((await vid()).t<t1-8,'Alt+J back');
+const box=await p.evaluate(()=>{const r=document.querySelector('#vidBar').getBoundingClientRect(),b=document.querySelector('#bar').getBoundingClientRect();return {bar:[Math.round(r.left),Math.round(r.right),Math.round(r.top),Math.round(r.bottom)],tool:[Math.round(b.left),Math.round(b.right)],W:innerWidth,H:innerHeight}});console.log(JSON.stringify(box));
 await p.click('#vidBar [data-v="back"]');await w(2500);v=await vid();s=await p.evaluate(()=>document.querySelector('#vidBar').hidden);ok(!v.pip&&s,'⤢ back to tab: video returns, bar hides');
 console.log('errors',errs);await app.close()})().catch(e=>{console.error(e);process.exit(1)});
