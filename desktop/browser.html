@@ -63,6 +63,14 @@ textarea.ni{width:100%;min-height:62px;border:1.5px solid var(--line);border-rad
 .hb{display:flex;align-items:flex-end;gap:6px;height:90px;padding:6px 2px 0}.hb div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px;font-size:10.5px;color:var(--mut)}.hb b{width:100%;border-radius:5px 5px 2px 2px;background:linear-gradient(180deg,#8b5cf6,#4f46e5);min-height:2px}
 .srow{display:flex;align-items:center;gap:8px;font-size:12.5px;margin:6px 0}.srow span{width:92px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.srow .bar{flex:1}.srow small{width:54px;text-align:right;color:var(--mut)}
 .empty{color:var(--mut);font-size:12.5px;text-align:center;padding:14px 6px}
+/* ---- 📸 capture */
+#capOv{position:fixed;left:0;right:0;bottom:0;z-index:40;background:#111;cursor:crosshair;user-select:none}
+#capOv img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none}
+#capOv .dim{position:absolute;background:rgba(10,8,40,.45);pointer-events:none}
+#capOv .box{position:absolute;border:2px solid #fff;box-shadow:0 0 0 1px #4f46e5,0 0 0 9999px rgba(10,8,40,.45);pointer-events:none}
+#capOv .tip{position:absolute;left:50%;top:14px;transform:translateX(-50%);background:#1f2235;color:#fff;padding:8px 14px;border-radius:10px;font-size:13px;box-shadow:0 6px 20px rgba(0,0,0,.35);pointer-events:none;white-space:nowrap}
+#capOv .tip b{color:#c4b5fd}
+.t-cap{color:var(--rose)}
 </style></head><body>
 <div id="chrome">
  <div id="tabs"><div id="tabsR"><span id="m"></span><span id="focusPill" hidden></span></div></div>
@@ -70,7 +78,7 @@ textarea.ni{width:100%;min-height:62px;border:1.5px solid var(--line);border-rad
   <button class="ic" id="b" title="Back (Alt+←)">←</button><button class="ic" id="f" title="Forward (Alt+→)">→</button><button class="ic" id="r" title="Reload (F5)">⟳</button>
   <div id="addr"><input id="u" spellcheck="false" placeholder="Search or type a web address"><button id="shield" hidden title="Ads and trackers blocked on this page">🛡 0</button><span id="kh" title="Command bar: tabs, bookmarks, history, your questions, actions">Ctrl K</span><button class="ic" id="star" title="Bookmark this page">☆</button></div>
   <div class="grp adv" id="gRead"><button class="tb t-read" id="readB" title="Reader mode: a clean page without ads and menus"><i>📖</i><b>Reader</b></button><button class="tb t-hl" id="hlB" title="Highlight the selected text (Alt+H)"><i>🖍</i><b>Highlight</b></button><button class="tb t-pdf" id="pdfB" title="Save this page as a PDF in your library"><i>📄</i><b>Save PDF</b></button></div>
-  <div class="grp" id="gVid"><button class="tb t-vid" id="pip" title="Pop out the video (Alt+P)"><i>▣</i><b>Pop out</b></button><button class="tb t-link adv" id="linkB" title="Link this lecture moment to the question open in PDF Pair (Alt+M)"><i>📌</i><b>Link</b></button><button class="tb t-vid adv" id="playB" title="Playback: speed, skip silence, sleep timer"><i>⏩</i><b>Playback</b></button></div>
+  <div class="grp" id="gVid"><button class="tb t-vid" id="pip" title="Pop out the video (Alt+P)"><i>▣</i><b>Pop out</b></button><button class="tb t-link adv" id="linkB" title="Link this lecture moment to the question open in PDF Pair (Alt+M)"><i>📌</i><b>Link</b></button><button class="tb t-vid adv" id="playB" title="Playback: speed, skip silence, sleep timer"><i>⏩</i><b>Playback</b></button><button class="tb t-cap" id="capB" title="Capture part of this page or video for your PDF (Alt+S)" hidden><i>📸</i><b>Capture</b></button></div>
   <div class="grp adv"><button class="tb t-split" id="splitB" title="Split view: two pages side by side"><i>⇆</i><b>Split</b></button></div>
   <input id="g" spellcheck="false" placeholder="🔍 Search Google">
   <button class="ic adv" id="panelB" title="Notes, courses and focus (Ctrl+.)">▤</button><button class="ic" id="ext" title="Open this page in your normal browser">⧉</button>
@@ -86,6 +94,7 @@ textarea.ni{width:100%;min-height:62px;border:1.5px solid var(--line);border-rad
 <div id="dlg" class="pop dl" hidden style="top:96px;right:150px"><h3>Bookmark this page</h3><label for="dn">Name</label><input id="dn"><label for="ds">Where</label><select id="ds"></select><input id="dsn" placeholder="New folder name, e.g. DT" hidden style="margin-top:6px">
  <div class="row"><button class="btn" id="drm" hidden>Remove</button><button class="btn" id="dc">Cancel</button><button class="btn pr" id="dok">Save</button></div></div>
 <div id="ask" class="pop dl" hidden style="top:96px;left:12px"><h3 id="aq"></h3><input id="ai"><div class="row"><button class="btn" id="ac">Cancel</button><button class="btn pr" id="aok">OK</button></div></div>
+<div id="capOv" hidden><img alt=""><div class="box" hidden></div><div class="tip">📸 Drag a box around what you want · <b>Enter</b> = whole page · <b>Esc</b> = cancel</div></div>
 <div id="cmd" hidden><div class="box"><input id="cq" spellcheck="false" placeholder="Type to search tabs, bookmarks, history, your questions, or an action…"><div id="cr"></div><div class="ft"><span>↑↓ move</span><span>Enter open</span><span>Esc close</span></div></div></div>
 <script>
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];let mt=0;
@@ -185,9 +194,29 @@ function onKeyAll(e){
   if(e.ctrlKey&&k==='w'){e.preventDefault();const a=TABS.find(t=>t.active);if(a)br.tab({op:'close',id:a.id})}
   if(e.ctrlKey&&k==='l'){e.preventDefault();$('#u').focus()}
   if(e.ctrlKey&&e.key==='Tab'){e.preventDefault();const i=TABS.findIndex(t=>t.active);const n=TABS[(i+(e.shiftKey?-1:1)+TABS.length)%TABS.length];if(n)br.tab({op:'switch',id:n.id})}
+  if(e.altKey&&!e.ctrlKey&&k==='s'&&br.cap){e.preventDefault();capStart();return}
   if(window.TOOLS)TOOLS.onKey(e)}
 document.addEventListener('keydown',onKeyAll);
 if(br.onKey)br.onKey(k=>onKeyAll({key:k.key,ctrlKey:k.ctrl,altKey:k.alt,shiftKey:k.shift,preventDefault(){}}));
+/* ---- 📸 capture: freeze the page, drag a box, the picture goes to PDF Pair's tray */
+let CAPS=null;
+async function capStart(){if(CAPS||!br.cap)return;closePops();const shot=await br.cap();if(!shot){msg('Nothing to capture on this tab');return}
+  const ov=$('#capOv'),im=ov.querySelector('img');ov.style.top=$('#chrome').offsetHeight+'px';ov.style.right=$('#panel').hidden?'0':'340px';
+  CAPS={shot,a:null,b:null};im.src=shot.data;await im.decode().catch(()=>{});ov.querySelector('.box').hidden=true;ov.hidden=false;br.cover(true);ov.focus()}
+function capRect(){const ov=$('#capOv'),r=ov.getBoundingClientRect(),s=CAPS.shot;const k=Math.min(r.width/s.w,r.height/s.h);const w=s.w*k,h=s.h*k;return {x:r.left+(r.width-w)/2,y:r.top+(r.height-h)/2,w,h,k}}
+function capEnd(){CAPS=null;$('#capOv').hidden=true;$('#capOv img').removeAttribute('src');cover()}
+async function capCrop(x0,y0,x1,y1){const s=CAPS.shot,R=capRect();
+  const sx=Math.max(0,Math.round((Math.min(x0,x1)-R.x)/R.k)),sy=Math.max(0,Math.round((Math.min(y0,y1)-R.y)/R.k));
+  const sw=Math.min(s.w-sx,Math.round(Math.abs(x1-x0)/R.k)),sh=Math.min(s.h-sy,Math.round(Math.abs(y1-y0)/R.k));
+  if(sw<8||sh<8){msg('Drag a bigger box');return false}
+  const c=document.createElement('canvas');c.width=sw;c.height=sh;c.getContext('2d').drawImage($('#capOv img'),sx,sy,sw,sh,0,0,sw,sh);
+  br.capSend({data:c.toDataURL('image/png'),w:sw,h:sh,url:s.url,title:s.title});c.width=c.height=0;return true}
+$('#capOv').addEventListener('mousedown',e=>{if(!CAPS||e.button)return;e.preventDefault();CAPS.a=[e.clientX,e.clientY];CAPS.b=null});
+$('#capOv').addEventListener('mousemove',e=>{if(!CAPS||!CAPS.a)return;CAPS.b=[e.clientX,e.clientY];const ov=$('#capOv'),o=ov.getBoundingClientRect(),bx=ov.querySelector('.box');const [a,b]=[CAPS.a,CAPS.b];
+  bx.hidden=false;bx.style.left=(Math.min(a[0],b[0])-o.left)+'px';bx.style.top=(Math.min(a[1],b[1])-o.top)+'px';bx.style.width=Math.abs(b[0]-a[0])+'px';bx.style.height=Math.abs(b[1]-a[1])+'px'});
+$('#capOv').addEventListener('mouseup',async e=>{if(!CAPS||!CAPS.a)return;const a=CAPS.a,b=CAPS.b||a;CAPS.a=null;if(await capCrop(a[0],a[1],b[0],b[1])){capEnd();msg('📸 Sent to PDF Pair. There, click on a page to put it in')}else $('#capOv .box').hidden=true});
+document.addEventListener('keydown',e=>{if(!CAPS)return;e.stopPropagation();e.preventDefault();if(e.key==='Escape')capEnd();else if(e.key==='Enter'){const R=capRect();capCrop(R.x,R.y,R.x+R.w,R.y+R.h).then(ok=>{if(ok){capEnd();msg('📸 Whole page sent to PDF Pair')}})}},true);
+if(br.cap){$('#capB').hidden=false;$('#capB').onclick=e=>{e.stopPropagation();capStart()}}
 /* ---- start */
 function reportInset(){const top=$('#chrome').offsetHeight;if(ADV)br.inset({top,right:$('#panel').hidden?0:340});else br.top(top);$('#panel').style.top=top+'px'}
 (async()=>{let o=null;try{o=await br.bmGet()}catch(e){}B=o&&o.folders?o:JSON.parse(JSON.stringify(DEF));if(!B.bar)B.bar=[];

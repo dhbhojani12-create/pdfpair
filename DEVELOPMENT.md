@@ -21,12 +21,13 @@ User PDFs and backups are never committed.
 
 - **Library:** `localStorage['pp:lib']` = `{subjects, sets:[{id,name,subject,type,key,files:{q:[{id,name,size}],a:[…]},same}]}`.
   - Set types are `mod`, `mtp`, `rtp`, `pyq`, `mcq`, `oth` and `con` (concept book).
-- **Per-set marks:** `localStorage['pp:'+set.key]`. It holds `stickers{q,a}`, `hl{q,a}`, `stars{q,a}`, `bm{q,a}`, `bmn` (bookmark names), `names`, `meta{n:{ch,tp,amd}}`, `topics` (concept markers; `side:'a'` when on the answer side), `clips` (Last-day cards), `rev`, `crev`, `mcq` (answer key), `mans` (MCQ answers) and `mocks`.
+- **Per-set marks:** `localStorage['pp:'+set.key]`. It holds `stickers{q,a}`, `hl{q,a}`, `stars{q,a}`, `bm{q,a}`, `bmn` (bookmark names), `names`, `meta{n:{ch,tp,amd}}`, `topics` (concept markers; `side:'a'` when on the answer side), `clips` (Last-day cards), `rev`, `crev`, `mcq` (answer key), `mans` (MCQ answers), `mocks`, `notes` (📝 page notes) and `imgs` (📸 pictures placed on pages).
   - `key` = `name|size::name|size`.
 - **PDFs:** IndexedDB `pdfpair` / `files`, stored as `blob:<id>`.
 - **Quiz text:** stored as `quiz:<setKey>`.
+- **Search text:** IndexedDB `txt:<fileId>` = `{v:1,pages:[text per page],ocr:{pageNo:{t,b:[[offset,len,x0,y0,x1,y1]]}}}` (OCR boxes in page-width units). Pictures: IndexedDB `img:<id>` (placed) and `cap:<id>` (tray); tray list in `localStorage['cap:tray']`.
 - **Preferences:** `localStorage['pp:prefs']`.
-- **Backup zip:** `pdfpair.json` (`{app:'PDF Pair',version:1,projects,…,blobs:[ids]}`) plus `blobs/<id>.pdf`.
+- **Backup zip:** `pdfpair.json` (`{app:'PDF Pair',version:1,projects,…,blobs:[ids],imgs:[ids]}`) plus `blobs/<id>.pdf` and `imgs/<id>.png|jpg` (placed pictures).
   - Restore **merges**: sets with the same key are replaced, and all other sets stay.
   - **Always give the user "safe" restore files.** These contain only the new set's project and blob, with no `lib` entry, so nothing else in their library can be harmed.
 
@@ -98,6 +99,17 @@ Built while Darshan was away ("add them all one by one at your pace… make it l
 **Known:** the 🛡 blocker made YouTube show "You're offline" (5 Nov, Darshan's laptop; it blocks YouTube's own log/ads requests). Darshan allowed ads on youtube.com (he has Premium). Turning ads off for the site did not help, because Ghostery's page scripts (11 uBlock scriptlets on YouTube) still ran. v2.0.2 (5 Nov): the browser opens on Google instead of icai.org; Ctrl+H forwarded. v2.0.1: the cosmetic/scriptlet IPC handler is wrapped so it respects `siteOff` too, and youtube.com is unblocked by default (`adAllow` defaults to `['youtube.com']`).
 
 **Tests:** `tests/desktop-v2-all.js` (Linux Electron + `xvfb-run`; needs the mock on :9300 and `tests/rangeserver.js` serving `tests/pages` plus a 120 s webm `v3.webm` on :9401). All 19 checks pass, as do the earlier desktop tests (tabs/bookmarks, pop-out, video bar, backup, shield, popups, full screen, other downloads).
+
+## 📄 PDF features (5 Nov 2026, web + desktop v2.1.0)
+
+Darshan asked for: search inside PDFs + OCR, everyday PDF tools (add/delete pages, split, combine…), capture from video/web onto a page, and notes on pages ("for note also include the text size adjustment").
+
+- **📝 Notes (N):** Note tool in the bottom bar. Click a page to type; click a note to edit, drag to move, corner to resize (width), eraser or 🗑 deletes. Bar while editing: 🟨 sticky / T plain, black/blue/red text, A− size A+ (8–40 pt at A4 width; stored as `sz`, drawn as `sz/595` page widths so it scales with zoom). `st.notes=[{id,side,page,x,y,w,txt,sty:'s'|'p',c:'k'|'b'|'r',sz}]`. Empty notes vanish. Save PDF draws them with Helvetica (₹ becomes "Rs.", unsupported characters become "?"). Classes are `.nte/.ntx/.nta/.nbar` (`.nb`/`.cb` were taken).
+- **🔎 Search (Ctrl+F, or ⋯ More → Search PDFs):** bar at the top: This PDF / Library, ↑ ↓ (Enter / Shift+Enter / F3), results list with snippets grouped by side or set. Text comes from pdf.js once per file and is cached in IndexedDB `txt:<id>`. Matches are highlighted on the page (`.fhit` in the page div, boxes from text items). Notes are searched too (📝). Library search opens the set and jumps to the match.
+- **🔍 OCR:** when pages have no text, the bar offers "Read with OCR". Tesseract.js 5.1.1 from cdn.jsdelivr.net (worker, core `tesseract.js-core@5.1.1`, English `@tesseract.js-data/eng@1.0.0/4.0.0_best_int`), runs on the device, page by page with Stop. Results (with word boxes) are stored in `txt:<id>.ocr`.
+- **🧰 PDF tools (⋯ More → PDF tools):** one window, tabs: 📄 Organise & combine (thumbnails; click/shift-click select; drag to reorder; ⟲ ⟳ 🗑 per page or selected; ＋ Add PDF / From library / Blank page; ⤓ Extract = only selected), ✂ Split (every N / ranges / by PDF bookmarks / every page → ZIP or one set per part), 🖼 Images → PDF (A4 with margin or image size; EXIF-correct via createImageBitmap), 📤 PDF → images (PNG/JPG, 100/150/220 dpi, ZIP), #️⃣ Page numbers (position, style, start, skip first N). Ways out: ⤓ Download and 📚 Save to library never touch the original. **♻ Replace in this set** (Organise and Page numbers, only for a PDF of the open set): marks move with their pages (stickers, highlights, stars, bookmarks + names, clips, notes, topic markers, pictures), rotated pages turn their marks (`rotMark`), marks on deleted pages are counted and listed in a warning first, and the original PDF + marks are kept as a new set "<name> (original <date>)" with key `orig:<id>`. Aborts if storage is full.
+- **📸 Captures:** desktop browser 📸 Capture button / Alt+S (forwarded from pages by main v2.1.0): main `br-cap` → `capturePage()`; the toolbar shows the frozen picture, you drag a box (Enter = whole page, Esc = cancel), the crop goes `br-cap-send` → main → PDF Pair (`ppDesktop.onCapture`, IPC `pp-cap`). In PDF Pair it lands in the 📸 tray (bottom left; also ⋯ More → Captures, ＋ Picture, or paste a screenshot with Ctrl+V on the web too) and is armed: the next click on a page places it at its on-screen size. Pictures: drag, corner resize (keeps shape), ✕ or eraser, Ctrl+Z. `st.imgs=[{id,src,side,page,x,y,w,ar}]`; in Save PDF and in "Backup with PDFs" (not the JSON auto backup).
+- **Tests:** `tests/notes.js`, `tests/search-ocr.js` (needs `tesseract.js@5.1.1` and `@tesseract.js-data/eng@1.0.0` installed next to the test), `tests/pdftools.js`, `tests/desktop-capture.js` (Electron; the test box had no CDN access, so it injects pdf.js/pdf-lib/JSZip from :9401/lib). All pass. Pre-existing failures not caused by this work: `clt.js` "next clip remembers the last chapter/topic", `lkm.js` timeout.
 
 ## 📑 RTPs by subject page (5 Nov 2026)
 

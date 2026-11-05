@@ -115,7 +115,7 @@ async function pipAuto(t){const r=await pipRun(t,PIP_AUTO);if(r==='on'){pipOwner
 async function pipBack(t){if(t&&pipOwner===t.id){const r=await pipRun(t,PIP_EXIT);if(r==='off'||r==='none')pipOwner=null}}
 async function pipToggle(){const t=cur();const r=await pipRun(t,PIP_TOGGLE);if(r==='on'){pipOwner=t.id;tell('▣ Video popped out (Alt+P to bring it back)')}else if(r==='off'){pipOwner=null}else tell(r==='none'?'No video on this page':'Could not pop out this video')}
 function fwdKeys(e,i){if(i.type!=='keyDown'||!bwin||bwin.isDestroyed())return;const k=(i.key||'').toLowerCase();
-  const want=(i.control&&['k','.','t','w','l','tab','h'].includes(k))||(i.alt&&!i.control&&['h','m'].includes(k));
+  const want=(i.control&&['k','.','t','w','l','tab','h'].includes(k))||(i.alt&&!i.control&&['h','m','s'].includes(k));
   if(want){e.preventDefault();bwin.webContents.send('br-key',{key:i.key,ctrl:i.control,alt:i.alt,shift:i.shift});if(k==='l'||k==='k')bwin.webContents.focus()}}
 function pipKeys(e,i){if(i.type==='keyDown'&&i.alt&&!i.control&&(i.key==='p'||i.key==='P')){e.preventDefault();pipToggle()}}
 
@@ -237,6 +237,9 @@ ipcMain.handle('pp-video',async(e,js)=>{const t=tabById(pipOwner)||cur();if(!t||
 ipcMain.on('pp-browser-show',()=>{if(bwin&&!bwin.isDestroyed()){bwin.show();bwin.focus()}});
 ipcMain.handle('br-run',async(e,js)=>{const c=cur();if(!c)return null;try{return await c.view.webContents.executeJavaScript(String(js),true)}catch(err){return {error:String(err.message||err)}}});
 ipcMain.on('br-cover',(e,on)=>{covered=!!on;layoutBrowser()});
+// 📸 capture: a picture of the page as it looks now; the toolbar lets you drag a box, then it goes to PDF Pair
+ipcMain.handle('br-cap',async()=>{const c=cur();if(!c||!alive(c))return null;try{const wc=c.view.webContents;const img=await wc.capturePage();const sz=img.getSize();if(!sz.width)return null;try{bwin.webContents.focus()}catch(e){}return {data:img.toDataURL(),w:sz.width,h:sz.height,url:wc.getURL(),title:wc.getTitle()}}catch(e){return null}});
+ipcMain.on('br-cap-send',(e,o)=>{if(!o||typeof o.data!=='string'||!o.data.startsWith('data:image/'))return;if(win&&!win.isDestroyed())win.webContents.send('pp-cap',{data:o.data,w:+o.w||0,h:+o.h||0,url:String(o.url||''),title:String(o.title||'')})});
 ipcMain.on('pp-browser',(e,u)=>openBrowser(u));
 ipcMain.handle('pp-fetch',async(e,url)=>{
   const r=await net.fetch(url);if(!r.ok)throw new Error('HTTP '+r.status);
