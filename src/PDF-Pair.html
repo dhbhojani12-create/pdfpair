@@ -756,6 +756,32 @@ select.tin{appearance:auto}
 #app.cset #dock .qo2{display:none}#app.phone:not(.cset) #dock .co2{display:none}
 #dock.drag{transition:none;opacity:.85}
 @media (max-height:520px){#dock button{width:36px;height:36px;font-size:16px}#dock{gap:2px;padding:3px}}
+#dkVid svg{width:22px;height:22px;fill:none;stroke:#fff;stroke-width:2}
+#dkVid .vd{position:absolute;right:3px;top:3px;width:9px;height:9px;border-radius:50%;background:#8b5cf6;box-shadow:0 0 0 2px #1b1e23}
+#vidPop{position:absolute;z-index:36;display:flex;align-items:center;gap:5px;height:52px;padding:0 6px 0 12px;border-radius:26px;background:linear-gradient(135deg,#312e81,#6d28d9);color:#fff;box-shadow:0 8px 22px rgba(20,10,80,.4);font:600 12.5px var(--sans);touch-action:manipulation}
+#vidPop[hidden]{display:none}
+#vidPop .vptm{font-variant-numeric:tabular-nums;color:#d6d3fb;margin-right:2px;white-space:nowrap}
+#vidPop button{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;font:700 12px var(--sans);display:grid;place-items:center}
+#vidPop button.pp{background:#fff;color:#312e81;font-size:15px}
+#vidSheet{position:absolute;inset:0;z-index:60;background:rgba(15,18,30,.35);display:flex;align-items:flex-end}
+#vidSheet[hidden]{display:none}
+#vidSheet .vsh{width:100%;background:var(--panel);color:var(--ink);border-radius:24px 24px 0 0;padding:10px 18px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -10px 30px rgba(0,0,0,.2);font:14px var(--sans)}
+#vidSheet .vgrab{width:40px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 12px}
+#vidSheet .vvt{display:flex;gap:11px;align-items:center}
+#vidSheet .vth{width:62px;height:40px;border-radius:8px;background:linear-gradient(135deg,#312e81,#7c3aed);display:grid;place-items:center;color:#fff;flex:none}
+#vidSheet .vvt b{display:block;font-size:14.5px;line-height:1.3;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+#vidSheet .vvt span{color:var(--mut);font-size:12px}
+#vidSheet input[type=range]{width:100%;margin:16px 0 2px;accent-color:#6d28d9}
+#vidSheet .vtms{display:flex;justify-content:space-between;font-size:12px;color:var(--mut);font-variant-numeric:tabular-nums}
+#vidSheet .vbig{display:flex;justify-content:center;align-items:center;gap:24px;margin:12px 0 14px}
+#vidSheet .vbig button{width:56px;height:56px;border-radius:50%;background:var(--hover);color:var(--ink);font:700 14px var(--sans)}
+#vidSheet .vbig .pp{width:70px;height:70px;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;font-size:24px;box-shadow:0 8px 20px rgba(79,70,229,.35)}
+#vidSheet .vsp{display:flex;gap:6px}#vidSheet .vsp button{flex:1;padding:8px 0;border-radius:10px;background:var(--hover);font:600 13px var(--sans);color:var(--ink)}
+#vidSheet .vsp button.on{background:#1f2235;color:#fff}
+#vidSheet .vacts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+#vidSheet .vacts button{padding:11px 8px;border-radius:12px;background:rgba(99,102,241,.1);color:#4338ca;font:600 13px var(--sans);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#vidSheet .vnt{display:flex;gap:8px;margin-top:10px}#vidSheet .vnt[hidden]{display:none}
+#vidSheet .vnt textarea{flex:1;min-height:44px;border:1px solid var(--line);border-radius:10px;padding:8px;font:14px var(--sans);background:var(--panel);color:var(--ink)}
 #dkCol{position:absolute;z-index:35;background:rgba(27,30,35,.94);border-radius:22px;padding:5px 7px;gap:6px;align-items:center;box-shadow:0 4px 14px rgba(0,0,0,.3)}
 #app.phone #dkCol.open{display:flex!important}
 #dkCol button{width:32px;height:32px;border-radius:50%;display:grid;place-items:center}
@@ -1001,9 +1027,16 @@ select.tin{appearance:auto}
     <button id="phMoreB"><b>⋯</b>More</button>
   </div>
   <button id="fab" class="ph" aria-label="Tools"></button>
-  <div id="dock" class="ph idle"><button data-dt="hl" aria-label="Highlighter">▬<i></i></button><button data-dt="sticker" class="qo2" aria-label="Sticker"><span class="nb" id="dkNb">1</span></button><button data-dt="topic" class="co2" aria-label="Topic marker">📖</button><button data-dt="star" aria-label="Star"><span style="color:#f5b400">★</span></button><button data-dt="erase" id="dkEr" aria-label="Eraser">⌫</button><span class="dsep"></span><button id="dkFlip" aria-label="Question or answer">⇄</button><button id="dkUndo" aria-label="Undo">↶</button><button id="dkQp" aria-label="Previous question">‹</button><button id="dkQn" aria-label="Next question">›</button><button id="dkMore" aria-label="More">⋯</button></div>
+  <div id="dock" class="ph idle"><button data-dt="hl" aria-label="Highlighter">▬<i></i></button><button data-dt="sticker" class="qo2" aria-label="Sticker"><span class="nb" id="dkNb">1</span></button><button data-dt="topic" class="co2" aria-label="Topic marker">📖</button><button data-dt="star" aria-label="Star"><span style="color:#f5b400">★</span></button><button data-dt="erase" id="dkEr" aria-label="Eraser">⌫</button><span class="dsep"></span><button id="dkFlip" aria-label="Question or answer">⇄</button><button id="dkUndo" aria-label="Undo">↶</button><button id="dkVid" hidden aria-label="Lecture on the laptop"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9v6l5-3z" fill="#fff" stroke="none"/></svg><span class="vd"></span></button><button id="dkQp" aria-label="Previous question">‹</button><button id="dkQn" aria-label="Next question">›</button><button id="dkMore" aria-label="More">⋯</button></div>
   <div id="dkCol" class="ph"></div>
   <div id="fan" class="ph"></div>
+  <div id="vidPop" hidden><span class="vptm">🎬 0:00</span><button data-va="b10">⟲10</button><button data-va="pp" class="pp">⏸</button><button data-va="f10">10⟳</button><button data-va="rate">1×</button><button data-va="more">⌃</button></div>
+  <div id="vidSheet" hidden><div class="vsh"><div class="vgrab"></div><div class="vvt"><div class="vth">▶</div><div><b class="vti">Lecture</b><span>playing on your laptop</span></div></div>
+    <input type="range" min="0" max="1000" value="0" class="vsl"><div class="vtms"><span class="vt1">0:00</span><span class="vt2">0:00</span></div>
+    <div class="vbig"><button data-va="b10">⟲10</button><button data-va="pp" class="pp">⏸</button><button data-va="f10">10⟳</button></div>
+    <div class="vsp"><button data-r="0.75">0.75</button><button data-r="1">1×</button><button data-r="1.25">1.25</button><button data-r="1.5">1.5</button><button data-r="2">2×</button></div>
+    <div class="vacts"><button data-va="link">📌 Link to question</button><button data-va="cap">📸 Capture this frame</button><button data-va="note">🗒 Note at 0:00</button><button data-va="close">⤓ Close</button></div>
+    <div class="vnt" hidden><textarea placeholder="Your note (saved on the question open on the laptop)"></textarea><button class="btn" data-va="nsave">Save</button></div></div></div>
   <div id="phMore" class="ph"><div class="sbody"><span class="grab"></span><div id="phMg"></div></div></div>
   <div id="phLab" class="ph"><b id="phLt"></b><span id="phLp"></span></div>
   <div id="phDrop" class="ph"><b id="phDc"></b><span id="phDs"></span><button id="phDx">✕ Exit revision</button></div>
@@ -3804,6 +3837,58 @@ document.addEventListener('paste',e=>{if(e.target.closest&&e.target.closest('inp
 if(window.ppDesktop&&window.ppDesktop.onCapture)window.ppDesktop.onCapture(async o=>{try{const b=await (await fetch(o.data)).blob();await capTake(b,o)}catch(e){toast('Could not take the capture')}});
 {const b=document.createElement('button');b.className='b';b.id='bCaps';b.title='Pictures you captured or pasted, ready to put on a page';b.innerHTML='<span class="mi">📸</span><span>Captures</span>';b.addEventListener('click',capOpen);$('#morePop').prepend(b)}
 capRender();
+
+/* 🎬 phone remote for the lecture playing in the laptop's browser (desktop app). Laptop publishes rooms/<room>/vid; phone sends cmd {op:'vid',a,v} */
+let lkVid=null;
+const VSEL="const v=document.pictureInPictureElement||[...document.querySelectorAll('video')].filter(x=>x.duration>0).sort((a,b)=>(a.paused-b.paused)||(b.duration-a.duration))[0];if(!v)return null;";
+const VJS2="(()=>{"+VSEL+"return {p:v.paused,t:v.currentTime,d:v.duration||0,r:v.playbackRate,u:location.href,title:document.title.replace(/^\\(\\d+\\)\\s*/,'').replace(/ - YouTube$/,'')}})()";
+const VR={last:'',at:0,s:null};
+async function vRemoteTick(){if(!DESK||!window.ppDesktop.video||SY.role()!=='laptop'||!syncOk())return;let s=null;try{s=await window.ppDesktop.video(VJS2)}catch(e){}
+  const now=Date.now();
+  if(!s){if(VR.last!=='none'){VR.last='none';VR.s=null;fbReq('PUT','rooms/'+SY.room()+'/vid',null).catch(()=>{})}return}
+  const q=activeN?label(activeN):'';const sig=[s.p,s.r,s.title,Math.round(s.d),q].join('|');
+  const exp=VR.s?VR.s.t+(VR.s.p?0:(now-VR.at)/1000*VR.s.r):-99;
+  if(sig!==VR.last||Math.abs(exp-s.t)>2.5||now-VR.at>15000){VR.last=sig;VR.s=s;VR.at=now;fbReq('PUT','rooms/'+SY.room()+'/vid',{p:s.p,t:s.t,d:s.d,r:s.r,title:String(s.title||'').slice(0,160),q}).catch(()=>{})}}
+if(DESK&&window.ppDesktop.video)setInterval(vRemoteTick,1500);
+async function vRemoteCmd(c){if(!DESK||!window.ppDesktop.video)return;const a=c.a,V=window.ppDesktop.video;
+  const js=a==='toggle'?'v.paused?v.play():v.pause()':a==='seek'?'v.currentTime=Math.max(0,Math.min(v.duration||1e9,v.currentTime+('+(+c.v||0)+')))':a==='to'?'v.currentTime='+Math.max(0,Math.min(1,+c.v||0))+'*(v.duration||0)':a==='rate'?'v.playbackRate='+Math.max(.25,Math.min(4,+c.v||1)):null;
+  if(js){try{await V('(()=>{'+VSEL+js+';return 1})()')}catch(e){}VR.last='';vRemoteTick();try{vPoll()}catch(e){}return}
+  let s=null;try{s=await V(VJS2)}catch(e){}if(!s){toast('No video is playing in the browser');return}
+  if(a==='link'||a==='note'){const r=window.__ppDesk[a]({u:s.u,t:s.t,title:s.title,text:c.v});if(r&&r.error)toast(r.error);return}
+  if(a==='cap'){let d=null;try{d=await V('(()=>{'+VSEL+'try{const c=document.createElement("canvas");c.width=v.videoWidth;c.height=v.videoHeight;c.getContext("2d").drawImage(v,0,0);return c.toDataURL("image/png")}catch(e){return "ERR"}})()')}catch(e){}
+    if(!d||d==='ERR'){toast('This video does not allow taking its picture. Use 📸 Capture (Alt+S) in the browser');return}
+    await capTake(await (await fetch(d)).blob(),{title:s.title,url:s.u})}}
+// phone side
+const PHV={s:null,rx:0,open:false};
+const phvNow=()=>{const s=PHV.s;if(!s)return 0;return Math.min(s.d||1e9,s.t+(s.p?0:(Date.now()-PHV.rx)/1000*(s.r||1)))};
+function phVid(s){PHV.s=s&&s.d!=null?s:null;PHV.rx=Date.now();const b=$('#dkVid');if(b)b.hidden=!PHV.s;if(!PHV.s){$('#vidPop').hidden=true;$('#vidSheet').hidden=true;PHV.open=false}phvDraw()}
+function phvDraw(){const s=PHV.s;if(!s)return;const t=phvNow(),pp=s.p?'▶':'⏸';
+  const P0=$('#vidPop');$('.vptm',P0).textContent='🎬 '+vfmt(t);$('[data-va="pp"]',P0).textContent=pp;$('[data-va="rate"]',P0).textContent=(s.r===1?'1':String(s.r))+'×';
+  const S=$('#vidSheet');$('.vti',S).textContent=s.title||'Lecture';$('.vbig .pp',S).textContent=pp;$('.vt1',S).textContent=vfmt(t);$('.vt2',S).textContent='−'+vfmt((s.d||0)-t);
+  if(!PHV.drag&&s.d)$('.vsl',S).value=Math.round(t/s.d*1000);$$('.vsp button',S).forEach(x=>x.classList.toggle('on',+x.dataset.r===s.r));
+  $('[data-va="link"]',S).textContent='📌 Link to '+(s.q||'question');$('[data-va="note"]',S).textContent='🗒 Note at '+vfmt(t)}
+setInterval(()=>{if(PHV.s&&(!$('#vidPop').hidden||!$('#vidSheet').hidden))phvDraw()},500);
+function phvCmd(a,v){if(!syncOk())return;fbReq('POST','rooms/'+SY.room()+'/cmd',{op:'vid',a,v:v==null?null:v,t:{'.sv':'timestamp'}}).catch(()=>toast('Could not reach the laptop. Check the internet.'));
+  const s=PHV.s;if(!s)return;const t=phvNow();   // show it straight away; the laptop confirms
+  if(a==='toggle'){s.t=t;s.p=!s.p;PHV.rx=Date.now()}else if(a==='seek'){s.t=Math.max(0,Math.min(s.d||1e9,t+v));PHV.rx=Date.now()}else if(a==='to'){s.t=v*(s.d||0);PHV.rx=Date.now()}else if(a==='rate'){s.t=t;s.r=v;PHV.rx=Date.now()}phvDraw()}
+function vidPopToggle(){const P0=$('#vidPop');if(!P0.hidden){P0.hidden=true;return}if(!PHV.s)return;
+  const b=$('#dkVid'),r=b.getBoundingClientRect(),dk=$('#dock').getBoundingClientRect(),a=APP.getBoundingClientRect();P0.hidden=false;phvDraw();
+  P0.style.top=(r.top-a.top+r.height/2-26)+'px';P0.style.left=P0.style.right='';
+  if(prefs.dock==='l')P0.style.left=(dk.right-a.left+8)+'px';else P0.style.right=(a.right-dk.left+8)+'px'}
+const RATES=[1,1.25,1.5,1.75,2,0.75];
+function phvAct(a){if(a==='b10')phvCmd('seek',-10);else if(a==='f10')phvCmd('seek',10);else if(a==='pp')phvCmd('toggle');
+  else if(a==='rate'){const i=RATES.indexOf(PHV.s?PHV.s.r:1);phvCmd('rate',RATES[(i+1)%RATES.length])}
+  else if(a==='more'){$('#vidPop').hidden=true;$('#vidSheet').hidden=false;$('#vidSheet .vnt').hidden=true;phvDraw()}
+  else if(a==='close'){$('#vidSheet').hidden=true}
+  else if(a==='link'){phvCmd('link');toast('📌 Linked on the laptop')}
+  else if(a==='cap'){phvCmd('cap');toast('📸 Sent to the laptop’s tray')}
+  else if(a==='note'){const n=$('#vidSheet .vnt');n.hidden=!n.hidden;if(!n.hidden)$('textarea',n).focus()}
+  else if(a==='nsave'){const tx=$('#vidSheet textarea');const v=tx.value.trim();if(!v)return;phvCmd('note',v);tx.value='';$('#vidSheet .vnt').hidden=true;toast('🗒 Note saved on the laptop')}}
+['#vidPop','#vidSheet'].forEach(id=>{$(id).addEventListener('pointerdown',e=>e.stopPropagation());$(id).addEventListener('click',e=>{e.stopPropagation();const k=e.target.closest('[data-va]');if(k)phvAct(k.dataset.va);const r=e.target.closest('[data-r]');if(r)phvCmd('rate',+r.dataset.r);if(e.target.id==='vidSheet')$('#vidSheet').hidden=true})});
+{const sl=$('#vidSheet .vsl');sl.addEventListener('input',()=>{PHV.drag=true;if(PHV.s)$('#vidSheet .vt1').textContent=vfmt(sl.value/1000*PHV.s.d)});sl.addEventListener('change',()=>{PHV.drag=false;phvCmd('to',sl.value/1000)})}
+$('#vidSheet textarea').addEventListener('keydown',e=>e.stopPropagation());
+window.addEventListener('pointerdown',e=>{if(!$('#vidPop').hidden&&!e.target.closest('#vidPop,#dkVid'))$('#vidPop').hidden=true},true);
+window.__ppVid={PHV,phVid,vRemoteCmd,VR,prefs,linkStart,setActive:n=>setActive(n)};
 window.__ppFind={FX,fxSearch,fxOpen,fxOcr,ocrPage,showSetDialog,CAP,capTake};
 window.__ppTest={due,autoRun,AB,bkAction,allNums,save,renderAll,key:()=>key,getSt:()=>st,sharedDoc:()=>!!P.q.docs[0]&&P.q.docs[0]===P.a.docs[0],openDocs:()=>DOCS.size};
 // make a set from a question/answer pair that has no set yet (old saved pair, or an old backup)
@@ -4601,6 +4686,7 @@ document.addEventListener('pointerup',e=>{
     if(b.dataset.dt){const t=b.dataset.dt;setTool(prefs.tool===t?'none':t);if(prefs.tool==='hl')showCol();else col.classList.remove('open');return}
     if(b.id==='dkFlip'){const to=prefs.view==='a'?'q':'a';phFlip(to,to==='a'?-1:1);return}
     if(b.id==='dkUndo'){if(APP.classList.contains('linked'))phoneUndo();else undo();return}
+    if(b.id==='dkVid'){vidPopToggle();return}
     if(b.id==='dkMore'){openMore();return}
   }
   window.addEventListener('pointerdown',e=>{if(col.classList.contains('open')&&!e.target.closest('#dkCol,#dock'))col.classList.remove('open')},true);
@@ -4701,7 +4787,7 @@ async function keepAwake(on){
     else if(!on&&wakeL){await wakeL.release();wakeL=null}}catch(e){wakeL=null}
 }
 document.addEventListener('visibilitychange',()=>{if(SY.role()==='laptop'&&syncOk()&&document.visibilityState==='visible')keepAwake(true)});
-function linkStop(){keepAwake(false);if(lkRtc){lkRtc.close();lkRtc=null}if(lkCmd){lkCmd.close();lkCmd=null}if(lkES){lkES.close();lkES=null}clearInterval(lkBeat);lkBeat=0}
+function linkStop(){keepAwake(false);if(lkVid){lkVid.close();lkVid=null}phVid(null);if(lkRtc){lkRtc.close();lkRtc=null}if(lkCmd){lkCmd.close();lkCmd=null}if(lkES){lkES.close();lkES=null}clearInterval(lkBeat);lkBeat=0}
 function linkStart(){
   linkStop();if(!syncOk())return updLinkUI();
   const room=SY.room();
@@ -4713,6 +4799,7 @@ function linkStart(){
   }else{
     lkRtc=fbStream('rooms/'+room+'/rtc',(t,d)=>{if(t==='put'&&d.path==='/'&&d.data)phoneRtc(d.data).catch(e=>{xferUI(null);toast('Receiving stopped: '+(e.message||e))})});
     lkES=fbStream('rooms/'+room+'/follow',(t,d)=>{if(t==='put'&&d.path==='/'&&d.data)phoneFollow(d.data)});
+    lkVid=fbStream('rooms/'+room+'/vid',(t,d)=>{if(t==='put'&&d.path==='/')phVid(d.data)});
     const beat=()=>fbReq('PUT','rooms/'+room+'/phone',{t:{'.sv':'timestamp'}}).catch(()=>{});
     beat();lkBeat=setInterval(beat,15000);
     if(!prefs.linkToolSet){prefs.linkToolSet=1;if(prefs.tool!=='hl')setTool('hl')}
@@ -4772,6 +4859,7 @@ function laptopCmd(d){
   for(const id in items){const c=items[id];if(!c||lkSeen.has(id))continue;lkSeen.add(id);fbReq('DELETE','rooms/'+SY.room()+'/cmd/'+id).catch(()=>{});
     if(Date.now()-(c.t||0)>30000)continue;   // ignore old taps
     if(c.op==='step')stepQ(c.d>0?1:-1);
+    if(c.op==='vid'){try{vRemoteCmd(c)}catch(e){}}
     if(c.op==='mcq')mcqFromPhone(c);
     if(c.op==='rtc')laptopRtcAnswer(c);
     if(c.op==='pos'&&prefs.lkFollowPhone&&c.k===key&&(c.s==='q'||c.s==='a')&&P[c.s].pages.length){   // laptop follows the phone's scrolling
