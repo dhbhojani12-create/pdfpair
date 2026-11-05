@@ -1,36 +1,40 @@
-// 📱 mini window: video tab moves into a small always-on-top window; video-only while playing, full page when paused; controls; back to the tab
+// 📱 mini window v2: a lecture shows ONLY the video (playing or paused), controls inside it on hover; pages to pick from use the phone layout
 const {_electron}=require('playwright');const w=ms=>new Promise(r=>setTimeout(r,ms));const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)process.exitCode=1};
 const EL=process.env.EL||'/tmp/claude-0/-home-claude/18f77194-c1b7-561f-938c-23c25eb72d78/scratchpad/el/electron';
 (async()=>{const app=await _electron.launch({executablePath:EL,args:['/home/claude/pdfpair-desktop/app','--no-sandbox','--autoplay-policy=no-user-gesture-required'],env:Object.assign({},process.env,{PP_URL:'http://127.0.0.1:9300/app.html',PP_TEST:'1'})});
 const p=await app.firstWindow();await w(3000);await p.evaluate(()=>{const o=document.querySelector('#open');if(o)o.hidden=true});
-await p.evaluate(()=>window.ppDesktop.openBrowser('http://127.0.0.1:9401/v.html'));await w(4000);
-const bw=app.windows().find(x=>x!==p&&/browser\.html/.test(x.url()));
-ok(await bw.isVisible('#miniB'),'📱 Mini button in the browser toolbar');
-await bw.click('#miniB');await w(2500);
-const info=()=>app.evaluate(({BrowserWindow,webContents})=>{const m=BrowserWindow.getAllWindows().find(x=>/mini\.html/.test(x.webContents.getURL()));const wc=webContents.getAllWebContents().find(x=>/v\.html$/.test(x.getURL()));
-  return {mini:!!m,top:m?m.isAlwaysOnTop():null,b:m?m.getBounds():null,cs:m?m.getContentSize():null,inMini:m?m.contentView.children.length:0}});
-let s=await info();ok(s.mini&&s.top&&s.inMini===1,'mini window open, always on top, holds the video tab: '+JSON.stringify(s.b));
-const vid=()=>app.evaluate(({webContents})=>{const wc=webContents.getAllWebContents().find(x=>/v\.html$/.test(x.getURL()));return wc.executeJavaScript('({p:document.querySelector("video").paused,t:document.querySelector("video").currentTime,r:document.querySelector("video").playbackRate,cls:document.documentElement.className,vw:document.querySelector("video").getBoundingClientRect().width,iw:innerWidth})')});
-let v=await vid();ok(!v.p&&/ppminiv/.test(v.cls)&&Math.abs(v.vw-v.iw)<2,'playing: video only, filling the window');
-const ratio=(s.cs[1]-34)/s.cs[0];ok(ratio<0.8,'video-only window is short (16:9-ish): '+ratio.toFixed(2));
-await w(500);let m=app.windows().find(x=>/mini\.html/.test(x.url()));
-await m.click('[data-c="play"]');await w(3500);v=await vid();s=await info();ok(v.p&&!/ppminiv/.test(v.cls)&&(s.cs[1]-34)/s.cs[0]>1.3,'paused: full page, phone-tall window: '+JSON.stringify(s.cs));
-await m.click('[data-c="play"]');await w(3500);v=await vid();s=await info();ok(!v.p&&/ppminiv/.test(v.cls),'play again: back to video only');
-const t0=v.t;await m.click('[data-c="fwd10"]');await w(600);v=await vid();ok(v.t>t0+9,'10⟳ works');
-await m.click('[data-c="rate"]');await w(500);v=await vid();ok(v.r===1.25,'speed 1.25');
-await m.click('[data-c="mode"]');await w(1500);s=await info();v=await vid();ok(!/ppminiv/.test(v.cls)&&!v.p,'⌄ shows the full page while it keeps playing');
-await m.click('[data-c="mode"]');await w(1500);v=await vid();ok(/ppminiv/.test(v.cls),'⌃ back to video only');
-await m.click('[data-c="cap"]');await w(2000);ok(await p.evaluate(()=>__ppFind.CAP.tray.length)===1,'📸 frame lands in PDF Pair tray');
-await m.click('[data-c="size"]');await w(800);const s2=await info();ok(s2.cs[0]!==s.cs[0],'⇲ changes size: '+s.cs[0]+'→'+s2.cs[0]);
-// phone remote / video bar path uses the mini tab
-const st=await p.evaluate(()=>window.ppDesktop.video("(()=>({ok:!!document.querySelector('video')}))()"));ok(st&&st.ok,'PDF Pair controls reach the mini video');
-// manual resize: width sticks, shape follows the video, no jumping afterwards
-await app.evaluate(({BrowserWindow})=>{const m=BrowserWindow.getAllWindows().find(x=>/mini\.html/.test(x.webContents.getURL()));const b=m.getBounds();m.setBounds({x:b.x-100,y:b.y,width:b.width+100,height:b.height});m.emit('resized')});
-await w(400);const r1=await info();await w(3000);const r2=await info();
-ok(Math.abs(r2.cs[0]-r1.cs[0])<3&&Math.abs(r2.cs[1]-r1.cs[1])<3,'after a resize it stays still: '+JSON.stringify(r1.cs)+' → '+JSON.stringify(r2.cs));
-await m.click('[data-c="back"]');await w(1500);s=await info();v=await vid();ok(!s.mini&&!v.p&&!/ppminiv/.test(v.cls),'⤢ back to the tab, still playing');
-// Alt+P toggles
-await app.evaluate(({webContents})=>{const wc=webContents.getAllWebContents().find(x=>/v\.html$/.test(x.getURL()));wc.focus();wc.sendInputEvent({type:'keyDown',keyCode:'P',modifiers:['alt']})});await w(2500);
-s=await info();ok(s.mini,'Alt+P opens the mini window');
-m=app.windows().find(x=>/mini\.html/.test(x.url()));await m.click('[data-c="close"]');await w(1500);s=await info();v=await vid();ok(!s.mini&&v.p,'✕ closes, video paused in its tab');
+const info=()=>app.evaluate(({BrowserWindow})=>{const m=BrowserWindow.getAllWindows().find(x=>/mini\.html/.test(x.webContents.getURL()));if(!m)return {mini:false};const v=m.contentView.children[0];return {mini:true,top:m.isAlwaysOnTop(),cs:m.getContentSize(),vb:v?v.getBounds():null}});
+const pg=js=>app.evaluate(({webContents},js)=>{const wc=webContents.getAllWebContents().find(x=>/9401\/(v|prev|t)\.html/.test(x.getURL()));return wc?wc.executeJavaScript(js):null},js);
+// 1) lecture straight from ▶ Lectures
+await p.evaluate(()=>window.ppDesktop.openMini('http://127.0.0.1:9401/v.html'));await w(5000);
+let s=await info();ok(s.mini&&s.top,'mini window open, always on top');
+ok(s.vb&&s.vb.y===0&&s.vb.height===s.cs[1],'video fills the whole window (no bar, no page): '+JSON.stringify(s.vb)+' '+JSON.stringify(s.cs));
+ok(s.cs[1]/s.cs[0]<0.7,'window has the video shape: '+s.cs);
+let v=await pg("({p:document.querySelector('video').paused,ov:!!document.getElementById('ppmov'),vis:getComputedStyle(document.querySelector('p')||document.body).visibility,vw:document.querySelector('video').getBoundingClientRect().width,iw:innerWidth})");
+ok(!v.p&&v.ov&&Math.abs(v.vw-v.iw)<2,'playing, controls layer present, video full width');
+// 2) pause by clicking the video: still video only, same size
+const s0=s.cs;await pg("document.getElementById('ppmov').dispatchEvent(new MouseEvent('click',{bubbles:true,clientX:100,clientY:100}))");await w(2500);
+v=await pg("({p:document.querySelector('video').paused,paused:document.getElementById('ppmov').classList.contains('paused')})");s=await info();
+ok(v.p&&v.paused&&s.cs[0]===s0[0]&&s.cs[1]===s0[1]&&s.vb.y===0,'click pauses: big ▶, still only the video, same size');
+await pg("document.getElementById('ppmov').dispatchEvent(new MouseEvent('click',{bubbles:true,clientX:100,clientY:100}))");await w(800);v=await pg("document.querySelector('video').paused");ok(v===false,'click again plays');
+// 3) hover controls
+v=await pg("(()=>{const o=document.getElementById('ppmov');o.dispatchEvent(new MouseEvent('mousemove',{bubbles:true}));return o.classList.contains('on')})()");ok(v,'controls fade in on hover');
+const t0=await pg("document.querySelector('video').currentTime");await pg("document.querySelector('#ppmov [data-k=f10]').click()");await w(400);ok(await pg("document.querySelector('video').currentTime")>t0+9,'10⟳');
+await pg("document.querySelector('#ppmov [data-k=rate]').click()");ok(await pg("document.querySelector('video').playbackRate")===1.25,'speed');
+const m0=await pg("document.querySelector('video').muted");await pg("document.querySelector('#ppmov [data-k=mute]').click()");ok(await pg("document.querySelector('video').muted")===!m0,'🔊 mute toggles');
+await pg("(()=>{const o=document.getElementById('ppmov');o.dispatchEvent(new MouseEvent('mousemove',{bubbles:true}));return 1})()");await w(300);
+await app.evaluate(async({webContents})=>{const wc=webContents.getAllWebContents().find(x=>/9401\/v\.html/.test(x.getURL()));const img=await wc.capturePage();process.getBuiltinModule('fs').writeFileSync('/tmp/claude-0/mini-hover.png',img.toPNG())});
+await w(2600);ok(await pg("!document.getElementById('ppmov').classList.contains('on')"),'controls fade out again');
+// 4) 📸 from inside the video
+await pg("document.querySelector('#ppmov [data-k=cap]').click()");await w(2500);ok(await p.evaluate(()=>__ppFind.CAP.tray.length)===1,'📸 frame to PDF Pair tray');
+// 5) size, steady
+await pg("document.querySelector('#ppmov [data-k=size]').click()");await w(1000);const a1=(await info()).cs;await w(3000);const a2=(await info()).cs;ok(a1[0]!==s0[0]&&a1[0]===a2[0]&&a1[1]===a2[1],'⇲ size changes and stays: '+s0+' → '+a1);
+// 6) a page to pick from: phone-size page with a slim bar, steady while previews play
+await p.evaluate(()=>window.ppDesktop.openMini('http://127.0.0.1:9401/prev.html'));await w(4000);
+s=await info();ok(s.vb.y===34&&s.cs[1]/s.cs[0]>1.5,'page: phone-tall window with a slim bar: '+s.cs);
+const seen=new Set();for(let i=0;i<8;i++){seen.add(JSON.stringify((await info()).cs));await w(500)}ok(seen.size===1,'steady while previews play');
+// 7) back to a lecture → video only again; ⤢ back to the browser
+await p.evaluate(()=>window.ppDesktop.openMini('http://127.0.0.1:9401/v.html'));await w(5000);s=await info();ok(s.vb.y===0&&s.cs[1]/s.cs[0]<0.7,'next lecture: video only again');
+await pg("document.querySelector('#ppmov [data-k=back]').click()");await w(2000);s=await info();v=await pg("({p:document.querySelector('video').paused,ov:!!document.getElementById('ppmov'),c:document.documentElement.className})");
+ok(!s.mini&&!v.p&&!v.ov&&!/ppminiv/.test(v.c),'⤢ back to the browser tab, still playing, page normal again');
 await app.close()})().catch(e=>{console.error(e);process.exit(1)});

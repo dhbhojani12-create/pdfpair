@@ -105,46 +105,120 @@ function openBrowser(url,hidden){
 }
 
 
-// ---- 📱 mini window: the video's tab moves into a small always-on-top window (same signed-in session). Video only while playing, phone-size page when paused
-let miniWin=null,miniId=null,miniMode='full',miniForce=false,miniSize=1,miniTimer=0,miniWasP=null,miniW=null,miniBusy=0,miniWant=null,miniWantN=0;
-const MINI_BAR=34,MINI_W=[300,340,420];
-// only the page's real video: on YouTube just watch/live/shorts pages (search results and home play muted previews on hover), elsewhere a big video
-const MINI_SEL="const yt=/(^|\\.)youtube\\.com$/.test(location.hostname);const v=(yt&&!/^\\/(watch|live|shorts|embed)/.test(location.pathname))?null:[...document.querySelectorAll('video')].filter(x=>x.duration>0&&!x.closest('#inline-preview-player,ytd-video-preview,#video-preview')&&(document.documentElement.classList.contains('ppminiv')||x.getBoundingClientRect().width>=Math.min(innerWidth*0.5,300))).sort((a,b)=>(a.paused-b.paused)||(b.duration-a.duration))[0];";
-const MINI_CSS="html.ppminiv,html.ppminiv body{overflow:hidden!important;background:#000!important}html.ppminiv .html5-video-player,html.ppminiv video.ppmv{position:fixed!important;left:0!important;top:0!important;width:100vw!important;height:100vh!important;z-index:2147483646!important;background:#000!important;margin:0!important;transform:none!important}html.ppminiv .html5-video-player video{width:100vw!important;height:100vh!important;left:0!important;top:0!important;object-fit:contain!important}html.ppminiv ytd-app #masthead-container,html.ppminiv #masthead-container{visibility:hidden!important}";
+// ---- 📱 mini window: the lecture's tab moves into a small always-on-top window (same signed-in session).
+// A lecture page shows ONLY the video (playing or paused), with our controls fading in on hover. Pages without a video (search, home) use YouTube's phone layout to pick from.
+let miniWin=null,miniId=null,miniMode='full',miniSize=1,miniTimer=0,miniW=null,miniBusy=0,miniWant=null,miniWantN=0,miniDrag=null,miniUA=null;
+const MINI_BAR=34,MINI_W=[300,360,440],MINI_PH=1.78;
+const MOBILE_UA='Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36';
+// the page's real lecture: on YouTube only watch/live/shorts pages (results and home play muted previews), elsewhere a big video
+const MINI_SEL="const yt=/(^|\\.)youtube\\.com$/.test(location.hostname);const v=(yt&&!/^\\/(watch|live|shorts|embed)/.test(location.pathname))?null:[...document.querySelectorAll('video')].filter(x=>x.duration>0&&!x.closest('#inline-preview-player,ytd-video-preview,#video-preview')&&(document.documentElement.classList.contains('ppminiv')||x.getBoundingClientRect().width>=innerWidth*0.6)).sort((a,b)=>(a.paused-b.paused)||(b.duration-a.duration))[0];";
+const MINI_CSS=[
+ "html.ppminiv,html.ppminiv body{overflow:hidden!important;background:#000!important}",
+ "html.ppminiv body *{visibility:hidden!important}",
+ "html.ppminiv .ppmvbox,html.ppminiv .ppmvbox video,html.ppminiv #ppmov,html.ppminiv #ppmov *{visibility:visible!important}",
+ "html.ppminiv .ppmvbox{position:fixed!important;left:0!important;top:0!important;width:100vw!important;height:100vh!important;max-width:none!important;max-height:none!important;z-index:2147483646!important;background:#000!important;margin:0!important;padding:0!important;transform:none!important}",
+ "html.ppminiv .ppmvbox video{position:absolute!important;left:0!important;top:0!important;width:100vw!important;height:100vh!important;object-fit:contain!important;transform:none!important}",
+ "#ppmov{position:fixed;inset:0;z-index:2147483647;font:600 12px Segoe UI,system-ui,sans-serif;color:#fff;user-select:none;cursor:default}",
+ "#ppmov .tp{position:absolute;left:0;right:0;top:0;height:34px;display:flex;align-items:center;gap:2px;padding:0 6px 0 10px;background:linear-gradient(180deg,rgba(20,18,50,.9),rgba(20,18,50,0));cursor:move;opacity:0;transition:opacity .25s}",
+ "#ppmov .tp b{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}",
+ "#ppmov .bt{position:absolute;left:0;right:0;bottom:0;padding:26px 10px 8px;background:linear-gradient(0deg,rgba(0,0,0,.8),rgba(0,0,0,0));opacity:0;transition:opacity .25s}",
+ "#ppmov.on .tp,#ppmov.on .bt{opacity:1}",
+ "#ppmov button{border:0;background:rgba(255,255,255,.16);color:#fff;font:700 11.5px Segoe UI,system-ui,sans-serif;height:26px;min-width:28px;padding:0 6px;border-radius:7px;cursor:pointer}",
+ "#ppmov .tp button{background:transparent}#ppmov button:hover{background:rgba(255,255,255,.3)}",
+ "#ppmov .pr{height:5px;border-radius:3px;background:rgba(255,255,255,.3);margin-bottom:7px;position:relative;cursor:pointer}#ppmov .pr i{position:absolute;left:0;top:0;bottom:0;background:#ff0033;border-radius:3px}",
+ "#ppmov .rw{display:flex;align-items:center;gap:6px}#ppmov .tm{margin-left:auto;font-variant-numeric:tabular-nums;opacity:.9}",
+ "#ppmov .big{position:absolute;left:50%;top:50%;width:62px;height:62px;margin:-31px 0 0 -31px;border-radius:50%;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;font-size:26px;pointer-events:none}",
+ "#ppmov.paused .big{display:flex}#ppmov.paused{background:rgba(0,0,0,.18)}",
+ "#ppmov .msg{position:absolute;left:50%;top:42px;transform:translateX(-50%);background:rgba(20,18,50,.92);border-radius:8px;padding:5px 10px;display:none;white-space:nowrap}"
+].join('');
+// the overlay inside the page: talks to us through console messages ("ppmini:...")
+const MINI_OV="(()=>{"+
+ "let st=document.getElementById('ppminicss');if(!st){st=document.createElement('style');st.id='ppminicss';document.documentElement.appendChild(st)}st.textContent="+JSON.stringify(MINI_CSS)+";"+
+ MINI_SEL+"if(!v)return 0;document.querySelectorAll('.ppmvbox').forEach(x=>x.classList.remove('ppmvbox'));(v.closest('.html5-video-player')||v.parentElement||v).classList.add('ppmvbox');"+
+ "document.documentElement.classList.add('ppminiv');window.dispatchEvent(new Event('resize'));"+
+ "if(document.getElementById('ppmov'))return 1;"+
+ "const o=document.createElement('div');o.id='ppmov';o.innerHTML='<div class=\"tp\"><b></b><button data-k=\"link\" title=\"Link this moment to the open question\">📌</button><button data-k=\"cap\" title=\"Frame to Captures tray\">📸</button><button data-k=\"size\" title=\"Size\">⇲</button><button data-k=\"back\" title=\"Back to the browser\">⤢</button><button data-k=\"close\" title=\"Close\">✕</button></div><div class=\"big\">▶</div><div class=\"msg\"></div><div class=\"bt\"><div class=\"pr\"><i></i></div><div class=\"rw\"><button data-k=\"b10\">⟲10</button><button data-k=\"pp\">⏸</button><button data-k=\"f10\">10⟳</button><button data-k=\"rate\">1×</button><button data-k=\"mute\">🔊</button><span class=\"tm\"></span></div></div>';"+
+ "document.documentElement.appendChild(o);const V=()=>{"+MINI_SEL+"return v};let ht=0;"+
+ "const fmt=t=>{t=Math.max(0,Math.floor(t||0));const h=Math.floor(t/3600),m=Math.floor(t%3600/60),s=t%60;return (h?h+':'+String(m).padStart(2,'0'):m)+':'+String(s).padStart(2,'0')};"+
+ "const show=()=>{o.classList.add('on');clearTimeout(ht);ht=setTimeout(()=>o.classList.remove('on'),2000)};"+
+ "const draw=()=>{const v=V();if(!v)return;o.classList.toggle('paused',v.paused);o.querySelector('[data-k=pp]').textContent=v.paused?'▶':'⏸';o.querySelector('[data-k=rate]').textContent=(v.playbackRate===1?'1':v.playbackRate)+'×';o.querySelector('[data-k=mute]').textContent=v.muted||v.volume===0?'🔇':v.volume<.5?'🔉':'🔊';o.querySelector('.tm').textContent=fmt(v.currentTime)+' / '+fmt(v.duration);o.querySelector('.pr i').style.width=(v.duration?v.currentTime/v.duration*100:0)+'%';o.querySelector('.tp b').textContent=document.title.replace(/^\\(\\d+\\)\\s*/,'').replace(/ - YouTube$/,'')};"+
+ "setInterval(draw,500);draw();o.addEventListener('mousemove',show);o.addEventListener('mouseenter',show);"+
+ "window.__ppmsay=t=>{const m=o.querySelector('.msg');m.textContent=t;m.style.display='block';clearTimeout(m._t);m._t=setTimeout(()=>{m.style.display='none'},3000)};"+
+ "o.addEventListener('wheel',e=>{const v=V();if(!v)return;e.preventDefault();v.muted=false;v.volume=Math.max(0,Math.min(1,v.volume+(e.deltaY<0?.05:-.05)));show();draw()},{passive:false});"+
+ "o.addEventListener('pointerdown',e=>{show();const b=e.target.closest('button');if(b)return;if(e.target.closest('.pr')){const v=V();const r=e.target.closest('.pr').getBoundingClientRect();if(v&&v.duration)v.currentTime=(e.clientX-r.left)/r.width*v.duration;draw();return}"+
+ "if(e.target.closest('.tp')){e.preventDefault();o.setPointerCapture(e.pointerId);console.log('ppmini:drag:'+e.screenX+':'+e.screenY);const up=()=>{console.log('ppmini:dragend');o.removeEventListener('pointerup',up);o.removeEventListener('pointercancel',up)};o.addEventListener('pointerup',up);o.addEventListener('pointercancel',up);return}"+
+ "o._d={x:e.clientX,y:e.clientY}});"+
+ "o.addEventListener('click',e=>{const b=e.target.closest('button');const v=V();"+
+ "if(b){e.stopPropagation();const k=b.dataset.k;if(!v&&!/link|cap|size|back|close/.test(k))return;"+
+ "if(k==='pp')v.paused?v.play():v.pause();else if(k==='b10')v.currentTime=Math.max(0,v.currentTime-10);else if(k==='f10')v.currentTime=Math.min(v.duration||1e9,v.currentTime+10);"+
+ "else if(k==='rate')v.playbackRate=({1:1.25,1.25:1.5,1.5:1.75,1.75:2,2:0.75,0.75:1})[v.playbackRate]||1;else if(k==='mute')v.muted=!v.muted;else console.log('ppmini:'+k);draw();return}"+
+ "if(e.target.closest('.tp,.bt'))return;if(o._d&&Math.hypot(e.clientX-o._d.x,e.clientY-o._d.y)>6)return;if(v){v.paused?v.play():v.pause();draw()}},true);"+
+ "return 1})()";
 function miniTab(){return tabById(miniId)}
 async function miniRun(js){const t=miniTab();if(!t)return null;try{return await t.view.webContents.executeJavaScript(js,true)}catch(e){return null}}
 async function miniState(){return miniRun("(()=>{"+MINI_SEL+"if(!v)return {none:1,title:document.title};return {p:v.paused,t:v.currentTime,d:v.duration,r:v.playbackRate,vw:v.videoWidth,vh:v.videoHeight,u:location.href,title:document.title.replace(/^\\(\\d+\\)\\s*/,'').replace(/ - YouTube$/,'')}})()")}
-function miniLayout(){if(!miniWin||miniWin.isDestroyed())return;const t=miniTab();if(!t)return;const [w,h]=miniWin.getContentSize();t.view.setBounds({x:0,y:MINI_BAR,width:w,height:Math.max(0,h-MINI_BAR)});t.view.setVisible(true)}
+const miniBarH=()=>miniMode==='vid'?0:MINI_BAR;
+function miniLayout(){if(!miniWin||miniWin.isDestroyed())return;const t=miniTab();if(!t)return;const [w,h]=miniWin.getContentSize();const B=miniBarH();t.view.setBounds({x:0,y:B,width:w,height:Math.max(0,h-B)});t.view.setVisible(true);
+  try{miniWin.webContents.send('mini-mode',miniMode)}catch(e){}}
 function miniResize(mode,ar){if(!miniWin||miniWin.isDestroyed())return;const b=miniWin.getBounds();const W=miniW||MINI_W[miniSize];
   const wa=screen.getDisplayMatching(b).workArea;
-  const H=Math.min(wa.height-16,mode==='vid'?Math.round(W*(ar||9/16))+MINI_BAR:Math.round(W*16/9*1.05));let x=b.x+b.width-W,y=b.y+b.height-H;   // keep the bottom-right corner where it is
+  const H=Math.min(wa.height-16,mode==='vid'?Math.round(W*(ar||9/16)):Math.round(W*MINI_PH)+MINI_BAR);let x=b.x+b.width-W,y=b.y+b.height-H;   // keep the bottom-right corner where it is
   x=Math.max(wa.x,Math.min(x,wa.x+wa.width-W));y=Math.max(wa.y,Math.min(y,wa.y+wa.height-H));miniBusy=Date.now();miniWin.setAspectRatio(0);miniWin.setBounds({x,y,width:W,height:H});
-  if(mode==='vid')miniWin.setAspectRatio(1/(ar||9/16),{width:0,height:MINI_BAR});miniLayout()}
-async function miniSetMode(mode,ar){miniMode=mode;await miniRun("(()=>{let st=document.getElementById('ppminicss');if(!st){st=document.createElement('style');st.id='ppminicss';st.textContent="+JSON.stringify(MINI_CSS)+";document.documentElement.appendChild(st)}"+MINI_SEL+"document.querySelectorAll('video.ppmv').forEach(x=>x.classList.remove('ppmv'));if(v&&!v.closest('.html5-video-player'))v.classList.add('ppmv');document.documentElement.classList.toggle('ppminiv',"+(mode==='vid')+");window.dispatchEvent(new Event('resize'));return 1})()");miniResize(mode,ar)}
-async function miniWatch(){if(!miniTab()){miniEnd(false,true);return}const s=await miniState();if(!s||s.none)return;const ar=s.vw&&s.vh?s.vh/s.vw:9/16;
-  if(miniWasP!==null&&miniWasP!==s.p&&!s.p)miniForce=false;   // a new "play" ends a manual full view
-  miniWasP=s.p;const want=(!s.p&&!miniForce)?'vid':'full';
-  if(want===miniMode||Date.now()-miniBusy<1500){miniWantN=0;return}   // ignore while you drag/resize, and wait for a steady state
-  if(miniWant!==want){miniWant=want;miniWantN=1;return}if(++miniWantN<2)return;miniWantN=0;miniSetMode(want,ar)}
+  if(mode==='vid')miniWin.setAspectRatio(1/(ar||9/16));miniLayout()}
+async function miniSetMode(mode,ar){miniMode=mode;
+  if(mode==='vid')await miniRun(MINI_OV);else await miniRun("(()=>{document.documentElement.classList.remove('ppminiv');const o=document.getElementById('ppmov');if(o)o.remove();window.dispatchEvent(new Event('resize'));return 1})()");
+  miniResize(mode,ar)}
+async function miniPhone(){   // pages to pick from: YouTube's phone layout so it fits the small window
+  const t=miniTab();if(!t)return;const wc=t.view.webContents;let u='';try{u=wc.getURL()}catch(e){return}
+  if(/^https:\/\/(www\.)?youtube\.com\//.test(u)&&!/\/(watch|live|shorts|embed)/.test(new URL(u).pathname)){if(miniUA==null)miniUA=wc.getUserAgent();wc.setUserAgent(MOBILE_UA);wc.loadURL(u.replace(/^https:\/\/(www\.)?youtube\.com/,'https://m.youtube.com'))}}
+async function miniWatch(){if(!miniTab()){miniEnd(false,true);return}const s=await miniState();if(!s)return;
+  if(miniMode==='vid'&&!s.none){const has=await miniRun("!!document.getElementById('ppmov')&&document.documentElement.classList.contains('ppminiv')");if(!has)await miniRun(MINI_OV)}
+  const want=s.none?'full':'vid';
+  if(want===miniMode||Date.now()-miniBusy<1200||miniDrag){miniWantN=0;return}
+  if(miniWant!==want){miniWant=want;miniWantN=1;return}if(++miniWantN<2)return;miniWantN=0;
+  await miniSetMode(want,s.vw&&s.vh?s.vh/s.vw:9/16);if(want==='full')miniPhone()}
+async function miniCmd(c){const t=miniTab();if(!t)return null;
+  if(c==='size'){miniSize=(miniSize+1)%3;miniW=MINI_W[miniSize];const s=await miniState();miniResize(miniMode,s&&s.vw?s.vh/s.vw:9/16);return {msg:['Small','Medium','Large'][miniSize]}}
+  if(c==='back'){miniEnd(true);return {}}
+  if(c==='close'){miniEnd(false,true);return {}}
+  if(c==='goback'){try{t.view.webContents.navigationHistory.goBack()}catch(e){}return {}}
+  const s=await miniState();if(!s||s.none)return {msg:'No video here'};
+  if(c==='link'){if(!win||win.isDestroyed())return {msg:'Open PDF Pair first'};let r=null;try{r=await win.webContents.executeJavaScript('window.__ppDesk?__ppDesk.link('+JSON.stringify({u:s.u.replace('://m.youtube.com','://www.youtube.com'),t:s.t,title:s.title})+'):{error:"Open PDF Pair first"}',true)}catch(err){}
+    return {msg:r&&r.ok?'📌 Linked to '+r.label:(r&&r.error)||'Could not link'}}
+  if(c==='cap'){const ov=await miniRun("(()=>{const o=document.getElementById('ppmov');if(o)o.style.display='none';return 1})()");
+    const rect=await miniRun("(()=>{"+MINI_SEL+"if(!v)return null;const r=v.getBoundingClientRect();return {x:Math.max(0,Math.round(r.left)),y:Math.max(0,Math.round(r.top)),width:Math.round(Math.min(r.width,innerWidth)),height:Math.round(Math.min(r.height,innerHeight))}})()");
+    let out;try{const img=await t.view.webContents.capturePage(rect&&rect.width>10?rect:undefined);const sz=img.getSize();if(win&&!win.isDestroyed())win.webContents.send('pp-cap',{data:img.toDataURL(),w:sz.width,h:sz.height,url:s.u,title:s.title});out={msg:'📸 In PDF Pair’s Captures tray'}}catch(err){out={msg:'Could not capture'}}
+    await miniRun("(()=>{const o=document.getElementById('ppmov');if(o)o.style.display='';return 1})()");return out}
+  return {}}
+function miniConsole(e,level,message){const m=String((e&&e.message)||message||'');if(!m.startsWith('ppmini:')||!miniWin||miniWin.isDestroyed())return;const k=m.slice(7);
+  if(k.startsWith('drag:')){const b=miniWin.getBounds(),p=screen.getCursorScreenPoint();miniDrag={dx:p.x-b.x,dy:p.y-b.y};miniBusy=Date.now();clearInterval(miniDrag.t);
+    miniDrag.t=setInterval(()=>{if(!miniDrag||!miniWin||miniWin.isDestroyed())return;const q=screen.getCursorScreenPoint();miniWin.setPosition(q.x-miniDrag.dx,q.y-miniDrag.dy);miniBusy=Date.now()},16);return}
+  if(k==='dragend'){if(miniDrag){clearInterval(miniDrag.t);miniDrag=null;miniSnap()}return}
+  miniCmd(k).then(r=>{if(r&&r.msg)miniRun('window.__ppmsay&&__ppmsay('+JSON.stringify(r.msg)+')')})}
+function miniSnap(){if(!miniWin||miniWin.isDestroyed())return;const b=miniWin.getBounds(),wa=screen.getDisplayMatching(b).workArea,S=60;let {x,y}=b;
+  if(Math.abs(x-wa.x)<S)x=wa.x+8;if(Math.abs(wa.x+wa.width-(x+b.width))<S)x=wa.x+wa.width-b.width-8;if(Math.abs(y-wa.y)<S)y=wa.y+8;if(Math.abs(wa.y+wa.height-(y+b.height))<S)y=wa.y+wa.height-b.height-8;
+  if(x!==b.x||y!==b.y)miniWin.setPosition(x,y)}
 async function miniStart(t){if(!t||!alive(t)||!bwin||bwin.isDestroyed())return;if(miniWin&&!miniWin.isDestroyed()){if(miniId===t.id){miniWin.show();return}await miniEnd(false)}
   await pipRun(t,PIP_EXIT);if(pipOwner===t.id)pipOwner=null;
-  miniId=t.id;miniForce=false;miniWasP=null;miniMode='full';
-  const wa=screen.getDisplayMatching(bwin.getBounds()).workArea,W=MINI_W[miniSize],H=Math.round(W*16/9*1.05);
-  miniWin=new BrowserWindow({width:W,height:H,x:wa.x+wa.width-W-16,y:wa.y+wa.height-H-16,frame:false,alwaysOnTop:true,resizable:true,minimizable:false,maximizable:false,fullscreenable:false,skipTaskbar:false,title:'Lecture',backgroundColor:'#0f0f0f',
+  miniId=t.id;miniMode='full';miniWant=null;miniWantN=0;miniUA=null;
+  const wa=screen.getDisplayMatching(bwin.getBounds()).workArea,W=MINI_W[miniSize],H=Math.round(W*MINI_PH)+MINI_BAR;
+  miniWin=new BrowserWindow({width:W,height:H,x:wa.x+wa.width-W-16,y:wa.y+wa.height-H-16,frame:false,alwaysOnTop:true,resizable:true,minimizable:false,maximizable:false,fullscreenable:false,title:'Lecture',backgroundColor:'#000000',
     webPreferences:{nodeIntegration:true,contextIsolation:false,sandbox:false}});
-  miniWin.setAlwaysOnTop(true,'floating');miniWin.loadFile(path.join(__dirname,'mini.html'));
+  miniWin.setAlwaysOnTop(true,'floating');miniWin.setMinimumSize(200,112);miniWin.loadFile(path.join(__dirname,'mini.html'));
   try{bwin.contentView.removeChildView(t.view)}catch(e){}miniWin.contentView.addChildView(t.view);
-  if(active===t.id){const o=tabs.find(x=>x.id!==t.id&&alive(x));if(o)active=o.id;else{newTab('https://www.google.com/');}}
+  t.view.webContents.on('console-message',miniConsole);t._miniCon=true;
+  if(active===t.id){const o=tabs.find(x=>x.id!==t.id&&alive(x));if(o)active=o.id;else newTab('https://www.google.com/')}
   layoutBrowser();state();miniLayout();
-  miniWin.setMinimumSize(220,150);miniWin.on('resize',()=>{miniBusy=Date.now();miniLayout()});miniWin.on('will-resize',()=>{miniBusy=Date.now()});
+  miniWin.on('resize',()=>{miniBusy=Date.now();miniLayout()});miniWin.on('will-resize',()=>{miniBusy=Date.now()});
   miniWin.on('resized',()=>{if(!miniWin||miniWin.isDestroyed())return;miniBusy=Date.now();miniW=miniWin.getBounds().width;miniLayout()});
-  miniWin.on('moved',()=>{if(!miniWin||miniWin.isDestroyed())return;miniBusy=Date.now();const b=miniWin.getBounds(),wa=screen.getDisplayMatching(b).workArea,S=60;let {x,y}=b;   // snap to corners/edges
-    if(Math.abs(x-wa.x)<S)x=wa.x+8;if(Math.abs(wa.x+wa.width-(x+b.width))<S)x=wa.x+wa.width-b.width-8;if(Math.abs(y-wa.y)<S)y=wa.y+8;if(Math.abs(wa.y+wa.height-(y+b.height))<S)y=wa.y+wa.height-b.height-8;
-    if(x!==b.x||y!==b.y)miniWin.setPosition(x,y)});
+  miniWin.on('moved',()=>{miniBusy=Date.now();if(!miniDrag)miniSnap()});
   miniWin.on('closed',()=>{if(miniId!=null)miniEnd(false,true,true);miniWin=null});
-  clearInterval(miniTimer);miniTimer=setInterval(miniWatch,700);tell('📱 Lecture moved to the mini window (Alt+P brings it back)')}
-async function miniEnd(show,pause,closed){const t=miniTab();const id=miniId;miniId=null;clearInterval(miniTimer);miniTimer=0;
-  if(t&&alive(t)){try{await t.view.webContents.executeJavaScript("(()=>{document.documentElement.classList.remove('ppminiv');"+(pause?MINI_SEL+"if(v)v.pause();":"")+"window.dispatchEvent(new Event('resize'));return 1})()",true)}catch(e){}
+  clearInterval(miniTimer);miniTimer=setInterval(miniWatch,600);
+  const s=await miniState();if(s&&!s.none)miniSetMode('vid',s.vw&&s.vh?s.vh/s.vw:9/16);else miniPhone()}
+async function miniEnd(show,pause,closed){const t=miniTab();const id=miniId;miniId=null;clearInterval(miniTimer);miniTimer=0;if(miniDrag){clearInterval(miniDrag.t);miniDrag=null}
+  if(t&&alive(t)){const wc=t.view.webContents;try{wc.removeListener('console-message',miniConsole)}catch(e){}
+    let tm=null;try{tm=await wc.executeJavaScript("(()=>{document.documentElement.classList.remove('ppminiv');const o=document.getElementById('ppmov');if(o)o.remove();"+MINI_SEL+(pause?"if(v)v.pause();":"")+"window.dispatchEvent(new Event('resize'));return v?v.currentTime:null})()",true)}catch(e){}
+    if(miniUA!=null){wc.setUserAgent(miniUA);miniUA=null;const u=wc.getURL();if(/^https:\/\/m\.youtube\.com\//.test(u)){let w2=u.replace('https://m.youtube.com','https://www.youtube.com');if(tm>5&&/[?&]v=/.test(w2))w2=w2.replace(/([?&])t=\d+s?&?/,'$1')+'&t='+Math.floor(tm)+'s';wc.loadURL(w2)}}
     try{if(miniWin&&!miniWin.isDestroyed())miniWin.contentView.removeChildView(t.view)}catch(e){}
     if(bwin&&!bwin.isDestroyed()){bwin.contentView.addChildView(t.view);if(show){lastActive=active;active=id}layoutBrowser();state();if(show){bwin.show();bwin.focus()}}}
   if(!closed&&miniWin&&!miniWin.isDestroyed()){const w=miniWin;miniWin=null;w.destroy()}}
@@ -152,29 +226,20 @@ async function miniToggle(){if(miniId!=null){miniEnd(true);return}const c=cur();
   const t=tabById(pipOwner)||(c&&(await pipRun(c,"(()=>!!document.querySelector('video'))()"))===true?c:null);if(!t){tell('No video on this page');return}miniStart(t)}
 ipcMain.on('br-mini',()=>miniToggle());
 // ▶ Lectures (from PDF Pair): open a page straight in the mini window, without showing the browser
+const toPhone=u=>/^https:\/\/(www\.)?youtube\.com\//.test(u)&&!/\/(watch|live|shorts|embed)/.test(new URL(u).pathname);
 ipcMain.on('mini-open',async(e,u)=>{u=String(u||'');if(!/^https?:\/\//.test(u))return;
-  if(miniId!=null&&miniTab()&&miniWin&&!miniWin.isDestroyed()){miniForce=false;miniWasP=null;miniTab().view.webContents.loadURL(u);if(miniMode==='vid')await miniSetMode('full');miniWin.show();return}
+  if(miniId!=null&&miniTab()&&miniWin&&!miniWin.isDestroyed()){const wc=miniTab().view.webContents;
+    if(toPhone(u)){if(miniUA==null)miniUA=wc.getUserAgent();wc.setUserAgent(MOBILE_UA);u=u.replace(/^https:\/\/(www\.)?youtube\.com/,'https://m.youtube.com')}
+    wc.loadURL(u);if(miniMode==='vid'&&toPhone(u))await miniSetMode('full');miniWin.show();return}
   const had=!!(bwin&&!bwin.isDestroyed());openBrowser(had?null:u,true);let t;
   if(had){t=newTab(u)}else t=cur();setTimeout(()=>miniStart(t),300)});
+ipcMain.handle('mini-state',async()=>{const s=await miniState();return s?Object.assign(s,{mode:miniMode}):null});
+ipcMain.handle('mini-cmd',(e,c)=>miniCmd(c));
 ipcMain.handle('lec-list',()=>{const P=kvGet('pos')||{},C=kvGet('courses')||[];
   const recent=Object.entries(P).filter(([k,o])=>/^yt:/.test(k)&&o&&o.u&&o.d>0&&o.t<o.d-20).sort((a,b)=>(b[1].at||0)-(a[1].at||0)).slice(0,4).map(([k,o])=>({u:o.u,t:o.t,d:o.d,title:o.title||'',at:o.at||0}));
   const vid=u=>{try{const x=new URL(u);if(/youtu\.be$/.test(x.hostname))return x.pathname.slice(1);return x.searchParams.get('v')}catch(e){return null}};
   const courses=C.map(c=>{const items=c.items||[];const nx=items.find(it=>{const p=P['yt:'+vid(it.u)];return !p||!p.d||p.max<p.d*.9});if(!nx)return null;const p=P['yt:'+vid(nx.u)]||{};return {name:c.name,subject:c.subject||'',u:nx.u,title:nx.title||'',t:p.t||0}}).filter(Boolean);
   return {recent,courses}});
-ipcMain.handle('mini-state',async()=>{const s=await miniState();return s?Object.assign(s,{mode:miniMode}):null});
-ipcMain.handle('mini-cmd',async(e,c)=>{const t=miniTab();if(!t)return null;
-  const act={play:'v.paused?v.play():v.pause()',back10:'v.currentTime=Math.max(0,v.currentTime-10)',fwd10:'v.currentTime=Math.min(v.duration||1e9,v.currentTime+10)',rate:'v.playbackRate=({1:1.25,1.25:1.5,1.5:1.75,1.75:2,2:0.75,0.75:1})[v.playbackRate]||1'}[c];
-  if(act){await miniRun("(()=>{"+MINI_SEL+"if(v){"+act+"}return 1})()");return {}}
-  if(c==='mode'){miniForce=miniMode==='vid';const s=await miniState();await miniSetMode(miniMode==='vid'?'full':'vid',s&&s.vw?s.vh/s.vw:9/16);if(miniMode==='vid')miniForce=false;return {}}
-  if(c==='size'){miniSize=(miniSize+1)%3;miniW=MINI_W[miniSize];const s=await miniState();miniResize(miniMode,s&&s.vw?s.vh/s.vw:9/16);return {msg:['Small','Medium','Large'][miniSize]}}
-  if(c==='back'){miniEnd(true);return {}}
-  if(c==='close'){miniEnd(false,true);return {}}
-  const s=await miniState();if(!s||s.none)return {msg:'No video here'};
-  if(c==='link'){if(!win||win.isDestroyed())return {msg:'Open PDF Pair first'};let r=null;try{r=await win.webContents.executeJavaScript('window.__ppDesk?__ppDesk.link('+JSON.stringify({u:s.u,t:s.t,title:s.title})+'):{error:"Open PDF Pair first"}',true)}catch(err){}
-    return {msg:r&&r.ok?'📌 Linked to '+r.label:(r&&r.error)||'Could not link'}}
-  if(c==='cap'){const rect=await miniRun("(()=>{"+MINI_SEL+"if(!v)return null;const r=v.getBoundingClientRect();return {x:Math.max(0,Math.round(r.left)),y:Math.max(0,Math.round(r.top)),width:Math.round(Math.min(r.width,innerWidth)),height:Math.round(Math.min(r.height,innerHeight))}})()");
-    try{const img=await t.view.webContents.capturePage(rect&&rect.width>10?rect:undefined);const sz=img.getSize();if(win&&!win.isDestroyed())win.webContents.send('pp-cap',{data:img.toDataURL(),w:sz.width,h:sz.height,url:s.u,title:s.title});return {msg:'📸 In PDF Pair’s Captures tray'}}catch(err){return {msg:'Could not capture'}}}
-  return {}});
 
 // ---- picture-in-picture: the playing video floats on top; it comes back when you return to its tab
 const PIP_TOGGLE="(async()=>{const ms=(v)=>{try{const S=navigator.mediaSession;S.setActionHandler('seekbackward',()=>{v.currentTime=Math.max(0,v.currentTime-10)});S.setActionHandler('seekforward',()=>{v.currentTime=Math.min(v.duration||1e9,v.currentTime+10)})}catch(e){}};try{if(document.pictureInPictureElement){await document.exitPictureInPicture();return 'off'}const v=[...document.querySelectorAll('video')].filter(x=>x.readyState>0).sort((a,b)=>b.clientWidth*b.clientHeight-a.clientWidth*a.clientHeight)[0];if(!v)return 'none';v.disablePictureInPicture=false;ms(v);await v.requestPictureInPicture();return 'on'}catch(e){return 'err:'+e.message}})()";

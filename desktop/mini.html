@@ -7,19 +7,13 @@ button:hover{background:rgba(255,255,255,.2)}button.pp{background:#fff;color:#31
 #msg{position:fixed;left:8px;right:8px;top:38px;background:#1f2235;color:#c7f9d4;border-radius:8px;padding:5px 9px;font-size:11.5px;display:none}
 </style></head><body>
 <div id="bar"><span id="t">Lecture</span>
-<button data-c="back10" title="Back 10 s">⟲10</button><button data-c="play" class="pp" id="pp" title="Play / pause">⏸</button><button data-c="fwd10" title="Forward 10 s">10⟳</button><button data-c="rate" id="rt" title="Speed">1×</button>
-<button data-c="link" title="Link this moment to the question open in PDF Pair">📌</button><button data-c="cap" title="Put this frame in PDF Pair's Captures tray">📸</button>
-<button data-c="mode" id="md" title="Show the full page / video only">⌄</button><button data-c="size" title="Size: small, medium, large">⇲</button><button data-c="back" title="Back to the browser tab (keeps playing)">⤢</button><button data-c="close" title="Close (video goes back to its tab, paused)">✕</button></div>
+<button data-c="goback" title="Back">←</button><button data-c="size" title="Size: small, medium, large">⇲</button><button data-c="back" title="Back to the browser tab (keeps playing)">⤢</button><button data-c="close" title="Close (video goes back to its tab, paused)">✕</button></div>
 <div id="msg"></div>
 <script>
 const {ipcRenderer}=require('electron');
 document.getElementById('bar').addEventListener('click',async e=>{const b=e.target.closest('[data-c]');if(!b)return;const r=await ipcRenderer.invoke('mini-cmd',b.dataset.c);if(r&&r.msg)say(r.msg);tick()});
 let mt=0;function say(m){const x=document.getElementById('msg');x.textContent=m;x.style.display='block';clearTimeout(mt);mt=setTimeout(()=>{x.style.display='none'},3500)}
 ipcRenderer.on('mini-msg',(e,m)=>say(m));
-const VB=['back10','play','fwd10','rate','link','cap','mode'];
-async function tick(){const s=await ipcRenderer.invoke('mini-state');if(!s)return;document.getElementById('t').textContent=(s.title||'Lecture').replace(/ - YouTube$/,'');document.title=s.title||'Lecture';
-  const nv=!!s.none||s.r==null;VB.forEach(c=>{const b=document.querySelector('[data-c="'+c+'"]');if(b)b.style.display=nv?'none':''});if(nv)return;
-  document.getElementById('pp').textContent=s.p?'▶':'⏸';document.getElementById('rt').textContent=(s.r===1||s.r==null?'1':s.r)+'×';document.getElementById('md').textContent=s.mode==='vid'?'⌄':'⌃';
-  document.getElementById('md').title=s.mode==='vid'?'Show the full page (Up next, chapters)':'Video only'}
+async function tick(){const s=await ipcRenderer.invoke('mini-state');if(!s)return;document.getElementById('t').textContent=(s.title||'YouTube').replace(/ - YouTube$/,'');document.title=s.title||'Lecture'}
 setInterval(tick,800);tick();
 </script></body></html>
