@@ -7,6 +7,7 @@ const APP_ORIGIN=new URL(APP_URL).origin;
 let win=null,bwin=null,view=null;
 if(!app.requestSingleInstanceLock()){app.quit()}else app.on('second-instance',()=>{if(win){if(win.isMinimized())win.restore();win.focus()}});
 Menu.setApplicationMenu(null);
+process.on('uncaughtException',err=>{try{console.error(err)}catch(e){}});
 
 function sendFile(f){if(win&&!win.isDestroyed())win.webContents.send('pp-file',f)}
 function tell(msg){if(bwin&&!bwin.isDestroyed())bwin.webContents.send('br-msg',msg)}
@@ -24,6 +25,7 @@ function createMain(){
 }
 
 function setupBrowserSession(ses){
+  try{ses.setUserAgent(app.userAgentFallback.replace(/\s*Electron\/\S+/,'').replace(/\s*(pdf-?pair|PDF Pair)\/\S+/ig,''))}catch(err){}
   // PDFs are downloaded (into the library) instead of opening in the viewer
   ses.webRequest.onHeadersReceived((d,cb)=>{
     const h=d.responseHeaders||{};
@@ -56,20 +58,25 @@ const BR_URL=process.env.PP_BR_URL||APP_URL.replace(/[^/]*$/,'')+'desktop/browse
 let top=112,tabs=[],active=null,nextId=1;
 const BMF=()=>path.join(app.getPath('userData'),'bookmarks.json');
 function cur(){return tabs.find(t=>t.id===active)}
-function layoutBrowser(){if(!bwin)return;const [w,h]=bwin.getContentSize();for(const t of tabs){t.view.setBounds({x:0,y:top,width:w,height:Math.max(0,h-top)});t.view.setVisible(t.id===active&&!covered)}}
+function layoutBrowser(){if(!bwin||bwin.isDestroyed())return;const [w,h]=bwin.getContentSize();for(const t of tabs.filter(x=>x&&x.view)){t.view.setBounds({x:0,y:top,width:w,height:Math.max(0,h-top)});t.view.setVisible(t.id===active&&!covered)}}
 let covered=false;
-function state(){if(!bwin||bwin.isDestroyed())return;const c=cur(),wc=c&&c.view.webContents;
+const alive=t=>t&&t.view&&t.view.webContents&&!t.view.webContents.isDestroyed();
+function state(){try{if(!bwin||bwin.isDestroyed())return;tabs=tabs.filter(alive);if(!tabs.some(t=>t.id===active)&&tabs.length)active=tabs[tabs.length-1].id;const c=cur(),wc=c&&c.view.webContents;
   bwin.webContents.send('br-state',{tabs:tabs.map(t=>({id:t.id,title:t.view.webContents.getTitle()||t.view.webContents.getURL(),url:t.view.webContents.getURL(),loading:t.view.webContents.isLoading(),active:t.id===active})),
-    url:wc?wc.getURL():'',title:wc?wc.getTitle():'',back:!!wc&&wc.navigationHistory.canGoBack(),fwd:!!wc&&wc.navigationHistory.canGoForward(),loading:!!wc&&wc.isLoading()})}
+    url:wc?wc.getURL():'',title:wc?wc.getTitle():'',back:!!wc&&wc.navigationHistory.canGoBack(),fwd:!!wc&&wc.navigationHistory.canGoForward(),loading:!!wc&&wc.isLoading()})}catch(e){}}
 function newTab(url){
   const ses=session.fromPartition('persist:browser');
   const v=new WebContentsView({webPreferences:{session:ses,contextIsolation:true,sandbox:true}});
   const t={id:nextId++,view:v};tabs.push(t);bwin.contentView.addChildView(v);
   const wc=v.webContents;['did-navigate','did-navigate-in-page','page-title-updated','did-start-loading','did-stop-loading'].forEach(ev=>wc.on(ev,state));
-  wc.setWindowOpenHandler(({url})=>{newTab(url);return {action:'deny'}});
+  wc.setWindowOpenHandler(({url,disposition})=>{
+    if(disposition==='new-window'||/accounts\.google\.com|appleid\.apple\.com|login\.microsoftonline|oauth|auth/i.test(url))
+      return {action:'allow',overrideBrowserWindowOptions:{width:520,height:720,parent:bwin,autoHideMenuBar:true,webPreferences:{session:ses,contextIsolation:true,sandbox:true}}};
+    newTab(url);return {action:'deny'}});
+  wc.on('destroyed',()=>{const k=tabs.indexOf(t);if(k<0)return;try{bwin&&!bwin.isDestroyed()&&bwin.contentView.removeChildView(v)}catch(e){}tabs.splice(k,1);if(bwin&&!bwin.isDestroyed()){if(!tabs.length)newTab('https://www.google.com/');else{if(active===t.id)active=tabs[Math.max(0,k-1)].id;layoutBrowser();state()}}});
   wc.loadURL(url||'https://www.google.com/');active=t.id;layoutBrowser();state();return t;
 }
-function closeTab(id){const k=tabs.findIndex(t=>t.id===id);if(k<0)return;const t=tabs[k];bwin.contentView.removeChildView(t.view);try{t.view.webContents.close()}catch(e){}tabs.splice(k,1);
+function closeTab(id){const k=tabs.findIndex(t=>t.id===id);if(k<0)return;const t=tabs[k];tabs.splice(k,1);try{bwin.contentView.removeChildView(t.view)}catch(e){}try{t.view.webContents.close()}catch(e){}
   if(!tabs.length){newTab('https://www.google.com/');return}if(active===id)active=(tabs[k]||tabs[k-1]).id;layoutBrowser();state()}
 let sesReady=false;
 function openBrowser(url){
