@@ -4000,7 +4000,12 @@ function lpBuild(){if($('#lp'))return;
   window.addEventListener('blur',()=>setTimeout(()=>{const f=$('#lp iframe');if(f&&document.activeElement===f){f.blur();window.focus()}},0));
   setInterval(lpTick,500);
 }
-function lpShowMode(){const w=$('#lp'),a=$('#lpA');if(!w)return;const on=!!LP.id||!!LP.list;w.classList.toggle('off',!on||LP.mode==='a');a.hidden=!on||LP.mode!=='a'}
+function lpShowMode(){const w=$('#lp'),a=$('#lpA');if(!w)return;const on=!!LP.id||!!LP.list;w.classList.toggle('off',!on||LP.mode==='a');a.hidden=!on||LP.mode!=='a';lpClamp()}
+// keep the video fully inside the window (the window may be smaller than when it was placed)
+function lpClamp(){const w=$('#lp');if(!w||w.classList.contains('off'))return;const r=w.getBoundingClientRect();
+  if(r.top<0)w.style.bottom=Math.max(0,innerHeight-r.height)+'px';if(r.left<0)w.style.right=Math.max(0,innerWidth-r.width)+'px';
+  if(r.width>innerWidth-16)w.style.width=Math.max(220,innerWidth-16)+'px'}
+window.addEventListener('resize',lpClamp);
 function lpTick(){const p=LP.p;if(!p||!p.getPlayerState)return;const st0=p.getPlayerState(),t=p.getCurrentTime()||0,d=p.getDuration()||0;
   const title=(p.getVideoData&&p.getVideoData().title)||'';if(p.getVideoData&&p.getVideoData().video_id)LP.id=p.getVideoData().video_id;
   ['#lp','#lpA'].forEach(s=>{const el=$(s);if(!el)return;$('.lppp',el).textContent=st0===1||st0===3?'⏸':'▶';$('.lpn',el).textContent=title;$('.lpn',el).title=title;
@@ -4948,7 +4953,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='05 Nov 18:31';   // build label, so you can check both devices have the same version
+const APPV='05 Nov 18:36';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)

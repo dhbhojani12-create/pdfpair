@@ -50,5 +50,6 @@ let ok=0,bad=0;const chk=(c,m)=>{c?ok++:bad++;console.log((c?'✓ ':'✗ ')+m)};
   if(!desk){await p.click('#bLec');await p.fill('#lecQ','blockedvid1');await p.press('#lecQ','Enter');await p.waitForTimeout(400);
    chk(await p.locator('#lp .lpmsg').isVisible()&&(await p.textContent('#lp .lpmsg')).includes('does not allow'),W+'blocked video explains itself');
    await p.click('#bLec');await p.fill('#lecQ','hello world');await p.press('#lecQ','Enter');await p.waitForTimeout(100);chk((await p.textContent('#toast')).includes('desktop app'),W+'web: search explains it needs a link')}
+  await p.setViewportSize({width:1300,height:420});await p.waitForTimeout(200);if(await p.locator('#lp').evaluate(e=>!e.classList.contains('off'))){const bb=await p.locator('#lp').boundingBox();chk(bb.y>=0,W+'stays inside a smaller window')}
   chk(!errs.length,W+'no page errors '+errs.join(' | '));await p.close()}
  await b.close();console.log(ok+' passed, '+bad+' failed');process.exit(bad?1:0)})();
