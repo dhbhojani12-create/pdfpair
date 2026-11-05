@@ -79,7 +79,7 @@ function newTab(url){
   const ses=session.fromPartition('persist:browser');
   const v=new WebContentsView({webPreferences:{session:ses,contextIsolation:true,sandbox:true}});
   const t={id:nextId++,view:v};tabs.push(t);bwin.contentView.addChildView(v);
-  v.webContents.on('enter-html-full-screen',()=>{htmlFs=true;setFs(true)});v.webContents.on('leave-html-full-screen',()=>{htmlFs=false;setFs(false)});v.webContents.on('before-input-event',fsKeys);
+  v.webContents.on('enter-html-full-screen',()=>{htmlFs=true;setFs(true)});v.webContents.on('leave-html-full-screen',()=>{htmlFs=false;setFs(false)});v.webContents.on('before-input-event',(ev,i)=>{fsKeys(ev,i);pipKeys(ev,i)});
   const wc=v.webContents;['did-navigate','did-navigate-in-page','page-title-updated','did-start-loading','did-stop-loading'].forEach(ev=>wc.on(ev,state));
   wc.setWindowOpenHandler(({url,disposition})=>{
     if(disposition==='new-window'||/accounts\.google\.com|appleid\.apple\.com|login\.microsoftonline|oauth|auth/i.test(url))
@@ -101,9 +101,21 @@ function openBrowser(url){
   bwin.webContents.on('did-finish-load',async()=>{if(fell)return;try{if(!(await bwin.webContents.executeJavaScript("!!document.getElementById('chrome')&&typeof br==='object'")))local()}catch(e){local()}});
   bwin.loadURL(BR_URL+'?v='+Date.now()).catch(()=>{});
   tabs=[];active=null;newTab(url||'https://www.icai.org/');
-  bwin.on('resize',layoutBrowser);bwin.on('leave-full-screen',()=>{fsMode=false;layoutBrowser()});bwin.webContents.on('before-input-event',fsKeys);bwin.webContents.on('did-finish-load',state);
+  bwin.on('resize',layoutBrowser);bwin.on('blur',()=>{setTimeout(()=>{if(bwin&&!bwin.isDestroyed()&&!bwin.isFocused())pipAuto(cur())},250)});bwin.on('focus',()=>pipBack(cur()));bwin.on('minimize',()=>pipAuto(cur()));bwin.on('leave-full-screen',()=>{fsMode=false;layoutBrowser()});bwin.webContents.on('before-input-event',(ev,i)=>{fsKeys(ev,i);pipKeys(ev,i)});bwin.webContents.on('did-finish-load',state);
   bwin.on('closed',()=>{bwin=null;tabs=[];active=null});
 }
+
+// ---- picture-in-picture: the playing video floats on top; it comes back when you return to its tab
+const PIP_TOGGLE="(async()=>{try{if(document.pictureInPictureElement){await document.exitPictureInPicture();return 'off'}const v=[...document.querySelectorAll('video')].filter(x=>x.readyState>0).sort((a,b)=>b.clientWidth*b.clientHeight-a.clientWidth*a.clientHeight)[0];if(!v)return 'none';v.disablePictureInPicture=false;await v.requestPictureInPicture();return 'on'}catch(e){return 'err:'+e.message}})()";
+const PIP_AUTO="(async()=>{try{if(document.pictureInPictureElement)return 'on';const v=[...document.querySelectorAll('video')].find(x=>!x.paused&&!x.ended&&x.readyState>2&&x.clientWidth>200);if(!v)return 'none';v.disablePictureInPicture=false;await v.requestPictureInPicture();return 'on'}catch(e){return 'err'}})()";
+const PIP_EXIT="(async()=>{try{if(document.pictureInPictureElement){await document.exitPictureInPicture();return 'off'}return 'none'}catch(e){return 'err'}})()";
+let pipOwner=null;
+const tabById=id=>tabs.find(t=>t.id===id&&alive(t));
+async function pipRun(t,js){if(!t||!alive(t))return 'none';try{return await t.view.webContents.executeJavaScript(js,true)}catch(e){return 'err'}}
+async function pipAuto(t){const r=await pipRun(t,PIP_AUTO);if(r==='on'){pipOwner=t.id;tell('▣ Video popped out. Come back to the tab to bring it back')}}
+async function pipBack(t){if(t&&pipOwner===t.id){const r=await pipRun(t,PIP_EXIT);if(r==='off'||r==='none')pipOwner=null}}
+async function pipToggle(){const t=cur();const r=await pipRun(t,PIP_TOGGLE);if(r==='on'){pipOwner=t.id;tell('▣ Video popped out (Alt+P to bring it back)')}else if(r==='off'){pipOwner=null}else tell(r==='none'?'No video on this page':'Could not pop out this video')}
+function pipKeys(e,i){if(i.type==='keyDown'&&i.alt&&!i.control&&(i.key==='p'||i.key==='P')){e.preventDefault();pipToggle()}}
 async function readBm(){try{return JSON.parse(fs.readFileSync(BMF(),'utf8'))}catch(e){}
   // first run of this version: bring over bookmarks saved by the old (local) browser bar
   try{const w=new BrowserWindow({show:false,webPreferences:{contextIsolation:true}});await w.loadFile(path.join(__dirname,'offline.html'));
@@ -112,11 +124,12 @@ async function readBm(){try{return JSON.parse(fs.readFileSync(BMF(),'utf8'))}cat
 ipcMain.handle('bm-get',()=>readBm());
 ipcMain.on('bm-set',(e,o)=>{try{fs.writeFileSync(BMF(),JSON.stringify(o))}catch(err){}});
 ipcMain.on('br-top',(e,px)=>{top=Math.max(40,Math.min(240,+px||112));layoutBrowser()});
-ipcMain.on('br-tab',(e,a)=>{if(!bwin)return;if(a.op==='new')newTab(a.url);if(a.op==='close')closeTab(a.id);if(a.op==='switch'&&tabs.some(t=>t.id===a.id)){active=a.id;layoutBrowser();state()}});
+ipcMain.on('br-tab',(e,a)=>{if(!bwin)return;if(a.op==='new'){const prev=cur();newTab(a.url);pipAuto(prev)}if(a.op==='close')closeTab(a.id);if(a.op==='switch'&&tabs.some(t=>t.id===a.id)&&a.id!==active){const prev=cur();active=a.id;layoutBrowser();state();pipAuto(prev);pipBack(cur())}});
 ipcMain.on('br-go',(e,u)=>{const c=cur();if(!c)return;let url=String(u||'').trim();if(!url)return;
   if(!/^[a-z]+:\/\//i.test(url))url=/\s/.test(url)||!/\./.test(url)?'https://www.google.com/search?q='+encodeURIComponent(url):'https://'+url;c.view.webContents.loadURL(url)});
-ipcMain.on('br-cmd',(e,cmd)=>{if(cmd==='app'&&win){win.show();win.focus();return}const c=cur();if(!c)return;const wc=c.view.webContents;
+ipcMain.on('br-cmd',(e,cmd)=>{if(cmd==='app'&&win){pipAuto(cur());win.show();win.focus();return}if(cmd==='pip'){pipToggle();return}const c=cur();if(!c)return;const wc=c.view.webContents;
   if(cmd==='back'&&wc.navigationHistory.canGoBack())wc.navigationHistory.goBack();if(cmd==='fwd'&&wc.navigationHistory.canGoForward())wc.navigationHistory.goForward();if(cmd==='reload')wc.reload();if(cmd==='stop')wc.stop();if(cmd==='ext')shell.openExternal(wc.getURL())});
+ipcMain.handle('br-run',async(e,js)=>{const c=cur();if(!c)return null;try{return await c.view.webContents.executeJavaScript(String(js),true)}catch(err){return {error:String(err.message||err)}}});
 ipcMain.on('br-cover',(e,on)=>{covered=!!on;layoutBrowser()});
 ipcMain.on('pp-browser',(e,u)=>openBrowser(u));
 ipcMain.handle('pp-fetch',async(e,url)=>{

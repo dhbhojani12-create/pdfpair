@@ -10,7 +10,7 @@
 button{border:0;background:transparent;font:inherit;cursor:pointer;border-radius:8px}
 .ic{font-size:17px;width:34px;height:32px}.ic:hover,.fb:hover,.bb:hover{background:#e6e8ec}.ic:disabled{opacity:.35}
 input,select{height:32px;border:1px solid #d5d8de;border-radius:16px;padding:0 14px;font:inherit;background:#fff;outline:none}input:focus{border-color:#4c8dff}
-#u{flex:1;min-width:200px}#g{width:230px}#star{font-size:18px}#star.on{color:#f5b400}
+#u{flex:1;min-width:200px}#g{width:230px}#star{font-size:18px}#pip{height:30px;padding:0 11px;border-radius:15px;font-size:12.5px;background:#ece8ff;color:#4b32c3;font-weight:600;white-space:nowrap}#pip:hover{background:#ddd5ff}#star.on{color:#f5b400}
 #m{font-size:12.5px;color:#23784a;max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #app{padding:0 12px;height:32px;font-size:13px;background:#1f2328;color:#fff}#app:hover{background:#000}
 .fb,.bb{height:26px;padding:0 9px;font-size:12.5px;color:#24292f;white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis}.fb.on{background:#dfe3ea}
@@ -25,7 +25,7 @@ input,select{height:32px;border:1px solid #d5d8de;border-radius:16px;padding:0 1
 </style></head><body>
 <div id="chrome"><div id="tabs"></div>
 <div id="t"><button class="ic" id="b" title="Back">←</button><button class="ic" id="f" title="Forward">→</button><button class="ic" id="r" title="Reload">⟳</button>
-<input id="u" spellcheck="false" placeholder="Web address"><button class="ic" id="star" title="Bookmark this page">☆</button>
+<input id="u" spellcheck="false" placeholder="Web address"><button class="ic" id="star" title="Bookmark this page">☆</button><button id="pip" title="Pop out the video (Alt+P). It also pops out by itself when you leave a playing video, and comes back when you return">▣ Pop out</button>
 <input id="g" spellcheck="false" placeholder="🔍 Search Google"><button class="ic" id="ext" title="Open this page in your normal browser (for sites that need Google sign-in)">⧉</button><span id="m"></span><button id="app" title="Back to PDF Pair">◧ PDF Pair</button></div>
 <div id="bk"></div></div>
 <div id="menu" class="pop" hidden></div>
@@ -82,7 +82,7 @@ $('#dok').onclick=()=>{const t=$('#dn').value.trim()||host(cur.url);let w=$('#ds
   B.last=w;saveB();closeDlg();renderBar()};
 ['#dn','#dsn'].forEach(s=>$(s).addEventListener('keydown',e=>{if(e.key==='Enter')$('#dok').click()}));
 $('#ac').onclick=()=>askDone(false);$('#aok').onclick=()=>askDone(true);$('#ai').addEventListener('keydown',e=>{if(e.key==='Enter')askDone(true)});
-$('#b').onclick=()=>br.cmd('back');$('#f').onclick=()=>br.cmd('fwd');$('#r').onclick=()=>br.cmd(cur.loading?'stop':'reload');$('#app').onclick=()=>br.cmd('app');const SIGN=/^https:\/\/(accounts\.google\.|appleid\.apple\.com|login\.microsoftonline\.com)/i,lastSite={};
+$('#b').onclick=()=>br.cmd('back');$('#f').onclick=()=>br.cmd('fwd');$('#r').onclick=()=>br.cmd(cur.loading?'stop':'reload');$('#app').onclick=()=>br.cmd('app');$('#pip').onclick=()=>br.pip?br.pip():br.cmd('pip');const SIGN=/^https:\/\/(accounts\.google\.|appleid\.apple\.com|login\.microsoftonline\.com)/i,lastSite={};
 $('#ext').onclick=()=>{const a=TABS.find(t=>t.active);if(SIGN.test(cur.url)){const u=a&&lastSite[a.id];if(u){br.go(u);setTimeout(()=>br.cmd('ext'),1500);msg('Opened the site in Chrome. Sign in there.')}else msg('Go back to the website first, then press ⧉');return}br.cmd('ext')};
 function msg(m){$('#m').textContent=m;clearTimeout(mt);mt=setTimeout(()=>{$('#m').textContent=''},8000)}
 $('#u').addEventListener('keydown',e=>{if(e.key==='Enter')br.go($('#u').value)});

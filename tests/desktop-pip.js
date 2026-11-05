@@ -1,0 +1,13 @@
+const {_electron}=require('playwright');const w=ms=>new Promise(r=>setTimeout(r,ms));const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);
+(async()=>{const app=await _electron.launch({executablePath:'/tmp/claude-0/-home-claude/18f77194-c1b7-561f-938c-23c25eb72d78/scratchpad/el/electron',args:['/home/claude/pdfpair-desktop/app','--no-sandbox','--autoplay-policy=no-user-gesture-required'],env:Object.assign({},process.env,{PP_URL:'http://127.0.0.1:9300/app.html',PP_TEST:'1'})});
+const p=await app.firstWindow();await w(3000);await p.evaluate(()=>window.ppDesktop.openBrowser('http://127.0.0.1:9401/v.html'));await w(4000);
+const bw=app.windows().find(x=>x!==p&&/browser\.html/.test(x.url()));
+const pip=()=>app.evaluate(({webContents})=>{const wc=webContents.getAllWebContents().find(x=>/v\.html$/.test(x.getURL()));return wc.executeJavaScript('!!document.pictureInPictureElement')});
+await bw.click('#pip');await w(1500);ok(await pip(),'▣ Pop out: video floats');
+await bw.click('#pip');await w(1000);ok(!(await pip()),'▣ again: back in the page');
+await bw.click('#nt');await w(1500);ok(await pip(),'switch to another tab: pops out by itself');
+await bw.click('.tab >> nth=0');await w(1500);ok(!(await pip()),'back to the video tab: comes back by itself');
+await bw.click('#app');await w(1500);ok(await pip(),'◧ PDF Pair button: pops out');
+await bw.bringToFront();await app.evaluate(({BrowserWindow})=>{const b=BrowserWindow.getAllWindows().find(x=>/Video|Browser/.test(x.getTitle()));b&&b.focus()});await w(1500);ok(!(await pip()),'back to the browser: comes back: ');
+const m=await bw.evaluate(()=>document.querySelector('#m').textContent);console.log('msg:',m);
+await app.close()})().catch(e=>{console.error(e);process.exit(1)});
