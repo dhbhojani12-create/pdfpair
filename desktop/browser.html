@@ -33,7 +33,7 @@ input,select{height:32px;border:1px solid #d5d8de;border-radius:16px;padding:0 1
 <div class="row"><button id="drm" hidden>Remove</button><button id="dc">Cancel</button><button id="dok" class="pr">Save</button></div></div>
 <div id="ask" class="pop dl" hidden style="top:86px;left:12px"><h3 id="aq"></h3><input id="ai"><div class="row"><button id="ac">Cancel</button><button id="aok" class="pr">OK</button></div></div>
 <script>
-const $=s=>document.querySelector(s);const BAR='__bar__';
+const $=s=>document.querySelector(s);let mt=0;const BAR='__bar__';
 const DEF={bar:[{t:'Claude',u:'https://claude.ai/'},{t:'RTPs by subject',u:'https://dhbhojani12-create.github.io/pdfpair/rtp.html'}],folders:[{name:'Audit',items:[
  {t:'ICAI · Audit study material',u:'https://www.icai.org/post/sm-final-p3-may2026'},{t:'BOS · RTPs (Final)',u:'https://boslive.icai.org/education_content_rtp.php?c=Final'},
  {t:'BOS · Mock Test Papers (Final)',u:'https://boslive.icai.org/education_content_modelTestPapers.php?c=Final'},{t:'BOS Knowledge Portal',u:'https://boslive.icai.org/'}]},
@@ -82,7 +82,9 @@ $('#dok').onclick=()=>{const t=$('#dn').value.trim()||host(cur.url);let w=$('#ds
   B.last=w;saveB();closeDlg();renderBar()};
 ['#dn','#dsn'].forEach(s=>$(s).addEventListener('keydown',e=>{if(e.key==='Enter')$('#dok').click()}));
 $('#ac').onclick=()=>askDone(false);$('#aok').onclick=()=>askDone(true);$('#ai').addEventListener('keydown',e=>{if(e.key==='Enter')askDone(true)});
-$('#b').onclick=()=>br.cmd('back');$('#f').onclick=()=>br.cmd('fwd');$('#r').onclick=()=>br.cmd(cur.loading?'stop':'reload');$('#app').onclick=()=>br.cmd('app');$('#ext').onclick=()=>br.cmd('ext');
+$('#b').onclick=()=>br.cmd('back');$('#f').onclick=()=>br.cmd('fwd');$('#r').onclick=()=>br.cmd(cur.loading?'stop':'reload');$('#app').onclick=()=>br.cmd('app');const SIGN=/^https:\/\/(accounts\.google\.|appleid\.apple\.com|login\.microsoftonline\.com)/i,lastSite={};
+$('#ext').onclick=()=>{const a=TABS.find(t=>t.active);if(SIGN.test(cur.url)){const u=a&&lastSite[a.id];if(u){br.go(u);setTimeout(()=>br.cmd('ext'),1500);msg('Opened the site in Chrome. Sign in there.')}else msg('Go back to the website first, then press ⧉');return}br.cmd('ext')};
+function msg(m){$('#m').textContent=m;clearTimeout(mt);mt=setTimeout(()=>{$('#m').textContent=''},8000)}
 $('#u').addEventListener('keydown',e=>{if(e.key==='Enter')br.go($('#u').value)});
 $('#g').addEventListener('keydown',e=>{if(e.key==='Enter'&&$('#g').value.trim()){br.tab({op:'new',url:'https://www.google.com/search?q='+encodeURIComponent($('#g').value.trim())});$('#g').value=''}});
 let TABS=[];
@@ -90,8 +92,8 @@ function renderTabs(){const tb=$('#tabs');tb.innerHTML='';TABS.forEach(t=>{const
   d.querySelector('span').textContent=(t.loading?'⏳ ':'')+(t.title||'New tab');d.onclick=()=>br.tab({op:'switch',id:t.id});d.onauxclick=e=>{if(e.button===1)br.tab({op:'close',id:t.id})};
   d.querySelector('button').onclick=e=>{e.stopPropagation();br.tab({op:'close',id:t.id})};tb.append(d)});
   const n=document.createElement('button');n.id='nt';n.textContent='+';n.title='New tab (Ctrl+T)';n.onclick=()=>br.tab({op:'new'});tb.append(n)}
-br.onState(s=>{cur={url:s.url,title:s.title,loading:s.loading};TABS=s.tabs||[];renderTabs();if(document.activeElement!==$('#u'))$('#u').value=s.url;$('#b').disabled=!s.back;$('#f').disabled=!s.fwd;document.title=(s.title||'Browser')+' · PDF Pair';$('#r').textContent=s.loading?'✕':'⟳';renderBar()});
-let mt=0;br.onMsg(m=>{$('#m').textContent=m;clearTimeout(mt);mt=setTimeout(()=>{$('#m').textContent=''},8000)});
+br.onState(s=>{cur={url:s.url,title:s.title,loading:s.loading};TABS=s.tabs||[];(TABS||[]).forEach(t=>{if(/^https?:/.test(t.url)&&!SIGN.test(t.url))lastSite[t.id]=t.url});renderTabs();if(document.activeElement!==$('#u'))$('#u').value=s.url;$('#b').disabled=!s.back;$('#f').disabled=!s.fwd;document.title=(s.title||'Browser')+' · PDF Pair';$('#r').textContent=s.loading?'✕':'⟳';renderBar()});
+br.onMsg(m=>{$('#m').textContent=m;clearTimeout(mt);mt=setTimeout(()=>{$('#m').textContent=''},8000)});
 (async()=>{let o=null;try{o=await br.bmGet()}catch(e){}B=o&&o.folders?o:JSON.parse(JSON.stringify(DEF));if(!B.bar)B.bar=[];
   if(!B.claudeSeeded){if(!B.bar.some(x=>/claude\.ai/.test(x.u)))B.bar.unshift({t:'Claude',u:'https://claude.ai/'});if(!B.bar.some(x=>/rtp\.html/.test(x.u)))B.bar.push({t:'RTPs by subject',u:'https://dhbhojani12-create.github.io/pdfpair/rtp.html'});B.claudeSeeded=true;saveB()}
   renderBar();br.top($('#chrome').offsetHeight)})();
