@@ -119,7 +119,18 @@ async function splitMenu(){if(SPLIT==null){br.split({op:'toggle'});say('⇆ Spli
 let panelOn=false,ptab='notes';
 async function setPanel(on,tab){panelOn=on;if(tab)ptab=tab;$('#panel').hidden=!on;$('#panelB').classList.toggle('on',on);$$('#ptabs button').forEach(b=>b.classList.toggle('on',b.dataset.p===ptab));reportInset();if(on)renderPanel();const p=await kget('ui',{});p.panel=on;p.ptab=ptab;kset('ui',p)}
 $$('#ptabs button').forEach(b=>b.onclick=()=>setPanel(true,b.dataset.p));
-function renderPanel(){if(!panelOn)return;({notes:renderNotes,courses:renderCourses,focus:renderFocus})[ptab]()}
+function renderPanel(){if(!panelOn)return;({notes:renderNotes,courses:renderCourses,focus:renderFocus,history:renderHistory})[ptab]()}
+/* history */
+let histQ='';
+async function renderHistory(){const body=$('#pbody');const L=(await br.hist.get(histQ,400))||[];
+  body.innerHTML='<div class="card" style="background:#f6f5ff"><h4>🕘 History</h4><input id="hQ" placeholder="Search history…" style="width:100%;height:34px;border:1.5px solid var(--line);border-radius:9px;padding:0 10px;background:#fff" value="'+esc(histQ)+'"><div class="row" style="justify-content:space-between;margin-top:8px"><span class="sub">'+L.length+(L.length>=400?'+':'')+' pages · Ctrl+H</span><button class="btn" id="hClr">Clear history</button></div></div><div id="hL"></div>';
+  const box=body.querySelector('#hL');if(!L.length)box.innerHTML='<div class="empty">'+(histQ?'Nothing found':'Pages you visit appear here')+'</div>';
+  const day=t=>{const d=new Date(t),n=new Date(),y=new Date(n);y.setDate(n.getDate()-1);return d.toDateString()===n.toDateString()?'Today':d.toDateString()===y.toDateString()?'Yesterday':d.toLocaleDateString([], {weekday:'long',day:'numeric',month:'short'})};
+  let last='',card=null;L.forEach(x=>{const g=day(x.at||0);if(g!==last){last=g;card=document.createElement('div');card.className='card';card.innerHTML='<h4>'+esc(g)+'</h4>';box.append(card)}
+    const r=document.createElement('div');r.className='mi';r.title=x.u+'\nCtrl+click: new tab';r.innerHTML='<small style="width:44px;flex:none">'+new Date(x.at||0).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})+'</small><span></span><small></small>';
+    r.querySelector('span').textContent=x.t||x.u;r.querySelectorAll('small')[1].textContent=host(x.u);r.onclick=e=>e.ctrlKey?br.tab({op:'new',url:x.u}):br.go(x.u);card.append(r)});
+  const q=body.querySelector('#hQ');q.addEventListener('input',()=>{histQ=q.value;clearTimeout(renderHistory.t);renderHistory.t=setTimeout(async()=>{await renderHistory();const q2=$('#hQ');if(q2){q2.focus();q2.setSelectionRange(q2.value.length,q2.value.length)}},250)});
+  body.querySelector('#hClr').onclick=()=>ask('Type CLEAR to delete your browsing history','',v=>{if(v.toUpperCase()==='CLEAR'){br.hist.clear();setTimeout(renderHistory,300);say('History cleared')}})}
 /* notes */
 async function renderNotes(){const body=$('#pbody'),u=cur.url,k=pageKey(u);const N=await kget('notes',{}),H=await kget('hl',{});
   if(!isWeb(u)){body.innerHTML='<div class="empty">Open a web page or lecture to write notes for it.</div>'+allPages(N,H);bindAll(body);return}
@@ -198,7 +209,7 @@ async function cmdOpen(){closePops();$('#cmd').hidden=false;cover();$('#cq').val
 function cmdClose(){$('#cmd').hidden=true;cover()}
 const ACTIONS=()=>[['➕','New tab',()=>br.tab({op:'new'})],['📖','Reader mode',reader],['🖍','Highlight selection',highlight],['📄','Save page as PDF',savePdf],['▣','Pop out video',()=>br.pip()],['📌','Link this moment to the open question',linkMoment],
   ['⏩','Playback options',playMenu],['⇆','Split view',splitMenu],['🗒','Notes panel',()=>setPanel(true,'notes')],['🎓','Courses',()=>setPanel(true,'courses')],['🧘','Focus 25 min',()=>startFocus(25)],['🧘','Focus 50 min',()=>startFocus(50)],
-  ['☆','Bookmark this page',()=>openDlg()],['◧','Back to PDF Pair',()=>br.cmd('app')],['🧹','Clear browsing history',()=>ask('Type CLEAR to delete your browsing history','',v=>{if(v.toUpperCase()==='CLEAR'){br.hist.clear();say('History cleared')}})]];
+  ['🕘','History',()=>setPanel(true,'history')],['☆','Bookmark this page',()=>openDlg()],['◧','Back to PDF Pair',()=>br.cmd('app')],['🧹','Clear browsing history',()=>ask('Type CLEAR to delete your browsing history','',v=>{if(v.toUpperCase()==='CLEAR'){br.hist.clear();say('History cleared')}})]];
 const words=q=>q.toLowerCase().split(/\s+/).filter(Boolean),hit=(t,ws)=>{t=t.toLowerCase();return ws.every(w=>t.includes(w))};
 async function cmdRender(q){const ws=words(q),groups=[];
   const acts=ACTIONS().filter(a=>!ws.length||hit(a[1],ws)).slice(0,ws.length?6:8).map(a=>({i:a[0],t:a[1],run:a[2]}));
@@ -229,6 +240,7 @@ window.TOOLS={
     if(s.url!==lastUrl){const prev=lastUrl;lastUrl=s.url;if(pageKey(prev)!==pageKey(s.url)){lastKeyLoaded='';readerOn.delete(a.id);$('#readB').classList.remove('on')}
       if(panelOn&&ptab==='notes'&&!anyOpen())renderNotes()}
     if(!s.loading){clearTimeout(initT);initT=setTimeout(pageInit,900)}},
+  history(){setPanel(true,'history')},
   onKey(e){const k=e.key.toLowerCase();
     if(e.ctrlKey&&k==='k'){e.preventDefault();$('#cmd').hidden?cmdOpen():cmdClose()}
     if(e.ctrlKey&&k==='.'){e.preventDefault();setPanel(!panelOn)}

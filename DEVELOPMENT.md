@@ -88,6 +88,7 @@ Built while Darshan was away ("add them all one by one at your pace… make it l
 - **⏩ Playback:** remembers the position (resume), speed per channel (`play.rates`), skip silence (Web Audio RMS, 2.5× during gaps, "saved" counter), sleep timer (minutes or end of video). Position is saved every 5 s in kv `pos`.
 - **🎓 Courses:** kv `courses` `[{id,name,subject,items:[{u,title}]}]`; progress = max watched / duration.
 - **⏱ Focus:** 25/50/90/custom minutes; distracting sites (editable list, path-aware, e.g. youtube.com/shorts) get `focus.html`. Stats come from kv `stats.days[YYYY-MM-DD][subject] {read,watch}` minutes: PDF Pair sends a minute each minute it is in front and was used in the last 2 minutes (`ppDesktop.track`); main adds a minute per minute of a playing video (subject from its course, else "Lectures"). Today bars + 7-day chart.
+- **🕘 History** (panel tab, Ctrl+H; also in Ctrl+K): grouped by day, search, open (Ctrl+click: new tab), Clear history. Main records every page visit (`hist-get`, last 3000). Ctrl+H typed while a *page* has focus is forwarded only by main.js v2.0.2+ (next zip); from the bar it works now.
 - **⌘ Command bar (Ctrl+K):** actions, open tabs, bookmarks, history (main `hist-get`), your questions (`__ppDesk.index()`), or go/search.
 - **⇆ Split:** active tab left, another right; ratio 40/50/60/70, swap, close (`br-split`).
 - Keys typed while a page has focus are forwarded to the bar (`br-key`): Ctrl+K/./T/W/L/Tab, Alt+H/M.
