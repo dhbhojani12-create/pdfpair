@@ -94,6 +94,8 @@ Built while Darshan was away ("add them all one by one at your pace… make it l
 
 **Main additions:** kv store (`userData/kv/*.json`, `kv-get`/`kv-set`), history, `br-pdf`, `app-run` (runs JS in the PDF Pair window; used only with `window.__ppDesk`), `asset` (bundled readability/tools), focus blocking in `onBeforeRequest`, the stats timer, split layout, key forwarding. Browser-side data (notes, highlights, courses, stats) lives in the desktop app's data folder and is **not** in PDF Pair backups; links and notes added to questions are.
 
+**Known:** the 🛡 blocker made YouTube show "You're offline" (5 Nov, Darshan's laptop; it blocks YouTube's own log/ads requests). Darshan allowed ads on youtube.com (he has Premium). `main.js` now leaves youtube.com unblocked by default (`adAllow` defaults to `['youtube.com']`); this ships with the next zip.
+
 **Tests:** `tests/desktop-v2-all.js` (Linux Electron + `xvfb-run`; needs the mock on :9300 and `tests/rangeserver.js` serving `tests/pages` plus a 120 s webm `v3.webm` on :9401). All 19 checks pass, as do the earlier desktop tests (tabs/bookmarks, pop-out, video bar, backup, shield, popups, full screen, other downloads).
 
 ## 📑 RTPs by subject page (5 Nov 2026)

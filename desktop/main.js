@@ -128,7 +128,7 @@ const DAY=864e5,fresh=p=>{try{return Date.now()-fs.statSync(p).mtimeMs<DAY}catch
 const seed=(name)=>{const p=path.join(UD(),name),b=path.join(__dirname,'seed',name);if(!fs.existsSync(p)&&fs.existsSync(b))try{fs.copyFileSync(b,p)}catch(e){}return p};
 const hostOf=u=>{try{return new URL(u).hostname.toLowerCase().replace(/^www\./,'')}catch(e){return ''}};
 function isBad(h){if(!h)return false;const parts=h.split('.');for(let i=0;i<parts.length-1;i++){const d=parts.slice(i).join('.');if(SH.allowBad.has(d))return false;if(SH.bad.has(d))return true}return false}
-const siteOff=h=>{const c=cfg();return !!c.adOff||(c.adAllow||[]).includes(h)};
+const siteOff=h=>{const c=cfg();return !!c.adOff||(c.adAllow||['youtube.com']).includes(h)};   // YouTube is left alone by default: blocking its own requests makes it think it is offline
 async function loadBad(){const p=seed('badhosts.txt');
   if(!fresh(p)){try{let out='';for(const u of BAD_LISTS){const r=await net.fetch(u);if(r.ok)out+=await r.text()+'\n'}if(out.length>10000)fs.writeFileSync(p,out)}catch(e){}}
   try{const set=new Set();for(const l of fs.readFileSync(p,'utf8').split('\n')){const m=l.match(/^(?:0\.0\.0\.0|127\.0\.0\.1)\s+([a-z0-9.-]+)/i);if(m&&m[1]!=='0.0.0.0')set.add(m[1].toLowerCase())}SH.bad=set}catch(e){}}
@@ -168,8 +168,8 @@ function shield(ses){
     SH.ready=true;bump()})();
 }
 let bumpT=null;function bump(){if(bumpT)return;bumpT=setTimeout(()=>{bumpT=null;state()},400)}
-ipcMain.handle('ad-info',()=>{const c=cur(),wc=c&&c.view.webContents,h=hostOf(wc?wc.getURL():'');const k=cfg();return {host:h,blocked:wc?(SH.count.get(wc.id)||0):0,siteOff:(k.adAllow||[]).includes(h),allOff:!!k.adOff,ready:SH.ready,lists:{ads:!!SH.blocker,bad:SH.bad.size}}});
-ipcMain.handle('ad-set',(e,o)=>{const k=cfg();let allow=k.adAllow||[];if(o.site){allow=o.off?[...new Set([...allow,o.site])]:allow.filter(x=>x!==o.site)}const n={adAllow:allow};if('allOff' in o)n.adOff=!!o.allOff;setCfg(n);const c=cur();if(c&&o.reload!==false)c.view.webContents.reload();return true});
+ipcMain.handle('ad-info',()=>{const c=cur(),wc=c&&c.view.webContents,h=hostOf(wc?wc.getURL():'');const k=cfg();return {host:h,blocked:wc?(SH.count.get(wc.id)||0):0,siteOff:(k.adAllow||['youtube.com']).includes(h),allOff:!!k.adOff,ready:SH.ready,lists:{ads:!!SH.blocker,bad:SH.bad.size}}});
+ipcMain.handle('ad-set',(e,o)=>{const k=cfg();let allow=k.adAllow||['youtube.com'];if(o.site){allow=o.off?[...new Set([...allow,o.site])]:allow.filter(x=>x!==o.site)}const n={adAllow:allow};if('allOff' in o)n.adOff=!!o.allOff;setCfg(n);const c=cur();if(c&&o.reload!==false)c.view.webContents.reload();return true});
 
 // ---- key/value store for the browser tools (notes, highlights, courses, focus, stats, playback memory)
 const KVD=()=>{const d=path.join(app.getPath('userData'),'kv');try{fs.mkdirSync(d,{recursive:true})}catch(e){}return d};
