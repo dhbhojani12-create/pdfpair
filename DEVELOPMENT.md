@@ -60,6 +60,15 @@ How Claude delivers marks straight into the app, instead of restore files.
 - **Package (inside):** `{setKey, qSize (size of the question PDF, used when the key does not match), setName, note, stickers{q,a}, names, meta}`, numbers from 1. The app shows a card "📥 New marks from Claude: <set> · N stickers", then Apply / Ignore. Apply opens that set, adds stickers after its highest number, skips any within 3% of an existing sticker on the same page, and one Ctrl+Z undoes it. Applied or ignored ids go in `prefs.ibDone`. If the set isn't on that device, Apply is disabled.
 - **To send (Claude):** get the code from Darshan in chat (never commit it), build marks.json (set key from his backup .json), run `python3 tools/inbox_send.py CODE marks.json`, then commit and push `inbox/`. Items older than 45 days are pruned on each send. Test: `tests/ib.js`.
 
+## 📚 ICAI shelf (built 5 Nov 2026)
+
+Library → 📚 ICAI tab (per subject). Lists official ICAI PDFs from `shelf.json` in this repo (read from raw.githubusercontent.com, cached in `localStorage['shelf:data']`). Darshan chose **one set per chapter** (not whole modules). So far: **Audit** (Paper 3 study material Aug 2025 reprint, 20 chapter/unit files, + RTPs May 24 – Nov 26).
+
+- **⤓ Get** opens the ICAI PDF (ICAI's CDN has no CORS, so the app cannot download it itself). The file is picked up by: a watched folder (`showDirectoryPicker`, handle in IDB `shelfDir`, scanned every 3 s), **⤓ Add downloaded files** (file picker starting in Downloads), or drag-drop onto the shelf. Matched by size (+ ICAI file name, "(1)" copies ok), added as a `same:true` set with `icai:<id>`, subject = the shelf paper key, type `mod`/`rtp`. No duplicates.
+- "✨ marks ready" shows when an inbox package has the same `qSize`.
+- **Adding a paper:** www.icai.org pages are readable with WebFetch (find them with WebSearch); `boslive.icai.org` and `resource.cdn.icai.org` work with curl (`tools/icai_scrape.py URL pattern` lists PDF links with the text before them). RTP lists: `boslive.icai.org/education_content_rtp_list.php?c=Final&content_year=November, 2026` etc. Get sizes with `curl -sI`, add to `shelf.json`, push (no app release needed). Study-material pages: Audit icai.org/post/sm-final-p3-may2026, FR icai.org/post/sm-final-p1-may2026.
+- Test: `tests/shelf.js` (needs two ICAI PDFs in $SHDIR).
+
 ## ✨ Auto-mark: removed (4 Nov 2026)
 
 Built on 4 Nov (ICAI finder + Gemini) and removed the same day at Darshan's request ("it is useless"). Don't bring it back unless he asks. The app now deletes the Gemini key it had saved (`gem:key`). The code is in git history (commits bb8fcae…b8e4d76) if ever needed.
