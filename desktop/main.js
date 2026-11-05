@@ -106,7 +106,7 @@ function openBrowser(url,hidden){
 
 
 // ---- 📱 mini window: the video's tab moves into a small always-on-top window (same signed-in session). Video only while playing, phone-size page when paused
-let miniWin=null,miniId=null,miniMode='full',miniForce=false,miniSize=1,miniTimer=0,miniWasP=null;
+let miniWin=null,miniId=null,miniMode='full',miniForce=false,miniSize=1,miniTimer=0,miniWasP=null,miniW=null,miniBusy=0,miniWant=null,miniWantN=0;
 const MINI_BAR=34,MINI_W=[300,340,420];
 const MINI_SEL="const v=[...document.querySelectorAll('video')].filter(x=>x.duration>0).sort((a,b)=>(a.paused-b.paused)||(b.duration-a.duration))[0];";
 const MINI_CSS="html.ppminiv,html.ppminiv body{overflow:hidden!important;background:#000!important}html.ppminiv .html5-video-player,html.ppminiv video.ppmv{position:fixed!important;left:0!important;top:0!important;width:100vw!important;height:100vh!important;z-index:2147483646!important;background:#000!important;margin:0!important;transform:none!important}html.ppminiv .html5-video-player video{width:100vw!important;height:100vh!important;left:0!important;top:0!important;object-fit:contain!important}html.ppminiv ytd-app #masthead-container,html.ppminiv #masthead-container{visibility:hidden!important}";
@@ -114,14 +114,17 @@ function miniTab(){return tabById(miniId)}
 async function miniRun(js){const t=miniTab();if(!t)return null;try{return await t.view.webContents.executeJavaScript(js,true)}catch(e){return null}}
 async function miniState(){return miniRun("(()=>{"+MINI_SEL+"if(!v)return {none:1,title:document.title};return {p:v.paused,t:v.currentTime,d:v.duration,r:v.playbackRate,vw:v.videoWidth,vh:v.videoHeight,u:location.href,title:document.title.replace(/^\\(\\d+\\)\\s*/,'').replace(/ - YouTube$/,'')}})()")}
 function miniLayout(){if(!miniWin||miniWin.isDestroyed())return;const t=miniTab();if(!t)return;const [w,h]=miniWin.getContentSize();t.view.setBounds({x:0,y:MINI_BAR,width:w,height:Math.max(0,h-MINI_BAR)});t.view.setVisible(true)}
-function miniResize(mode,ar){if(!miniWin||miniWin.isDestroyed())return;const b=miniWin.getBounds();const W=MINI_W[miniSize];
-  const H=mode==='vid'?Math.round(W*(ar||9/16))+MINI_BAR:Math.round(W*16/9*1.05);
-  const wa=screen.getDisplayMatching(b).workArea;let x=b.x+b.width-W,y=b.y+b.height-H;   // keep the bottom-right corner where it is
-  x=Math.max(wa.x,Math.min(x,wa.x+wa.width-W));y=Math.max(wa.y,Math.min(y,wa.y+wa.height-H));miniWin.setBounds({x,y,width:W,height:H});miniLayout()}
+function miniResize(mode,ar){if(!miniWin||miniWin.isDestroyed())return;const b=miniWin.getBounds();const W=miniW||MINI_W[miniSize];
+  const wa=screen.getDisplayMatching(b).workArea;
+  const H=Math.min(wa.height-16,mode==='vid'?Math.round(W*(ar||9/16))+MINI_BAR:Math.round(W*16/9*1.05));let x=b.x+b.width-W,y=b.y+b.height-H;   // keep the bottom-right corner where it is
+  x=Math.max(wa.x,Math.min(x,wa.x+wa.width-W));y=Math.max(wa.y,Math.min(y,wa.y+wa.height-H));miniBusy=Date.now();miniWin.setAspectRatio(0);miniWin.setBounds({x,y,width:W,height:H});
+  if(mode==='vid')miniWin.setAspectRatio(1/(ar||9/16),{width:0,height:MINI_BAR});miniLayout()}
 async function miniSetMode(mode,ar){miniMode=mode;await miniRun("(()=>{let st=document.getElementById('ppminicss');if(!st){st=document.createElement('style');st.id='ppminicss';st.textContent="+JSON.stringify(MINI_CSS)+";document.documentElement.appendChild(st)}"+MINI_SEL+"document.querySelectorAll('video.ppmv').forEach(x=>x.classList.remove('ppmv'));if(v&&!v.closest('.html5-video-player'))v.classList.add('ppmv');document.documentElement.classList.toggle('ppminiv',"+(mode==='vid')+");window.dispatchEvent(new Event('resize'));return 1})()");miniResize(mode,ar)}
 async function miniWatch(){if(!miniTab()){miniEnd(false,true);return}const s=await miniState();if(!s||s.none)return;const ar=s.vw&&s.vh?s.vh/s.vw:9/16;
   if(miniWasP!==null&&miniWasP!==s.p&&!s.p)miniForce=false;   // a new "play" ends a manual full view
-  miniWasP=s.p;const want=(!s.p&&!miniForce)?'vid':'full';if(want!==miniMode)miniSetMode(want,ar)}
+  miniWasP=s.p;const want=(!s.p&&!miniForce)?'vid':'full';
+  if(want===miniMode||Date.now()-miniBusy<1500){miniWantN=0;return}   // ignore while you drag/resize, and wait for a steady state
+  if(miniWant!==want){miniWant=want;miniWantN=1;return}if(++miniWantN<2)return;miniWantN=0;miniSetMode(want,ar)}
 async function miniStart(t){if(!t||!alive(t)||!bwin||bwin.isDestroyed())return;if(miniWin&&!miniWin.isDestroyed()){if(miniId===t.id){miniWin.show();return}await miniEnd(false)}
   await pipRun(t,PIP_EXIT);if(pipOwner===t.id)pipOwner=null;
   miniId=t.id;miniForce=false;miniWasP=null;miniMode='full';
@@ -132,8 +135,9 @@ async function miniStart(t){if(!t||!alive(t)||!bwin||bwin.isDestroyed())return;i
   try{bwin.contentView.removeChildView(t.view)}catch(e){}miniWin.contentView.addChildView(t.view);
   if(active===t.id){const o=tabs.find(x=>x.id!==t.id&&alive(x));if(o)active=o.id;else{newTab('https://www.google.com/');}}
   layoutBrowser();state();miniLayout();
-  miniWin.on('resize',miniLayout);
-  miniWin.on('moved',()=>{if(!miniWin||miniWin.isDestroyed())return;const b=miniWin.getBounds(),wa=screen.getDisplayMatching(b).workArea,S=60;let {x,y}=b;   // snap to corners/edges
+  miniWin.setMinimumSize(220,150);miniWin.on('resize',()=>{miniBusy=Date.now();miniLayout()});miniWin.on('will-resize',()=>{miniBusy=Date.now()});
+  miniWin.on('resized',()=>{if(!miniWin||miniWin.isDestroyed())return;miniBusy=Date.now();miniW=miniWin.getBounds().width;miniLayout()});
+  miniWin.on('moved',()=>{if(!miniWin||miniWin.isDestroyed())return;miniBusy=Date.now();const b=miniWin.getBounds(),wa=screen.getDisplayMatching(b).workArea,S=60;let {x,y}=b;   // snap to corners/edges
     if(Math.abs(x-wa.x)<S)x=wa.x+8;if(Math.abs(wa.x+wa.width-(x+b.width))<S)x=wa.x+wa.width-b.width-8;if(Math.abs(y-wa.y)<S)y=wa.y+8;if(Math.abs(wa.y+wa.height-(y+b.height))<S)y=wa.y+wa.height-b.height-8;
     if(x!==b.x||y!==b.y)miniWin.setPosition(x,y)});
   miniWin.on('closed',()=>{if(miniId!=null)miniEnd(false,true,true);miniWin=null});
@@ -161,7 +165,7 @@ ipcMain.handle('mini-cmd',async(e,c)=>{const t=miniTab();if(!t)return null;
   const act={play:'v.paused?v.play():v.pause()',back10:'v.currentTime=Math.max(0,v.currentTime-10)',fwd10:'v.currentTime=Math.min(v.duration||1e9,v.currentTime+10)',rate:'v.playbackRate=({1:1.25,1.25:1.5,1.5:1.75,1.75:2,2:0.75,0.75:1})[v.playbackRate]||1'}[c];
   if(act){await miniRun("(()=>{"+MINI_SEL+"if(v){"+act+"}return 1})()");return {}}
   if(c==='mode'){miniForce=miniMode==='vid';const s=await miniState();await miniSetMode(miniMode==='vid'?'full':'vid',s&&s.vw?s.vh/s.vw:9/16);if(miniMode==='vid')miniForce=false;return {}}
-  if(c==='size'){miniSize=(miniSize+1)%3;const s=await miniState();miniResize(miniMode,s&&s.vw?s.vh/s.vw:9/16);return {msg:['Small','Medium','Large'][miniSize]}}
+  if(c==='size'){miniSize=(miniSize+1)%3;miniW=MINI_W[miniSize];const s=await miniState();miniResize(miniMode,s&&s.vw?s.vh/s.vw:9/16);return {msg:['Small','Medium','Large'][miniSize]}}
   if(c==='back'){miniEnd(true);return {}}
   if(c==='close'){miniEnd(false,true);return {}}
   const s=await miniState();if(!s||s.none)return {msg:'No video here'};

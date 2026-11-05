@@ -14,8 +14,8 @@ const vid=()=>app.evaluate(({webContents})=>{const wc=webContents.getAllWebConte
 let v=await vid();ok(!v.p&&/ppminiv/.test(v.cls)&&Math.abs(v.vw-v.iw)<2,'playing: video only, filling the window');
 const ratio=(s.cs[1]-34)/s.cs[0];ok(ratio<0.8,'video-only window is short (16:9-ish): '+ratio.toFixed(2));
 await w(500);let m=app.windows().find(x=>/mini\.html/.test(x.url()));
-await m.click('[data-c="play"]');await w(1800);v=await vid();s=await info();ok(v.p&&!/ppminiv/.test(v.cls)&&(s.cs[1]-34)/s.cs[0]>1.3,'paused: full page, phone-tall window: '+JSON.stringify(s.cs));
-await m.click('[data-c="play"]');await w(1800);v=await vid();s=await info();ok(!v.p&&/ppminiv/.test(v.cls),'play again: back to video only');
+await m.click('[data-c="play"]');await w(3500);v=await vid();s=await info();ok(v.p&&!/ppminiv/.test(v.cls)&&(s.cs[1]-34)/s.cs[0]>1.3,'paused: full page, phone-tall window: '+JSON.stringify(s.cs));
+await m.click('[data-c="play"]');await w(3500);v=await vid();s=await info();ok(!v.p&&/ppminiv/.test(v.cls),'play again: back to video only');
 const t0=v.t;await m.click('[data-c="fwd10"]');await w(600);v=await vid();ok(v.t>t0+9,'10⟳ works');
 await m.click('[data-c="rate"]');await w(500);v=await vid();ok(v.r===1.25,'speed 1.25');
 await m.click('[data-c="mode"]');await w(1500);s=await info();v=await vid();ok(!/ppminiv/.test(v.cls)&&!v.p,'⌄ shows the full page while it keeps playing');
@@ -24,6 +24,10 @@ await m.click('[data-c="cap"]');await w(2000);ok(await p.evaluate(()=>__ppFind.C
 await m.click('[data-c="size"]');await w(800);const s2=await info();ok(s2.cs[0]!==s.cs[0],'⇲ changes size: '+s.cs[0]+'→'+s2.cs[0]);
 // phone remote / video bar path uses the mini tab
 const st=await p.evaluate(()=>window.ppDesktop.video("(()=>({ok:!!document.querySelector('video')}))()"));ok(st&&st.ok,'PDF Pair controls reach the mini video');
+// manual resize: width sticks, shape follows the video, no jumping afterwards
+await app.evaluate(({BrowserWindow})=>{const m=BrowserWindow.getAllWindows().find(x=>/mini\.html/.test(x.webContents.getURL()));const b=m.getBounds();m.setBounds({x:b.x-100,y:b.y,width:b.width+100,height:b.height});m.emit('resized')});
+await w(400);const r1=await info();await w(3000);const r2=await info();
+ok(Math.abs(r2.cs[0]-r1.cs[0])<3&&Math.abs(r2.cs[1]-r1.cs[1])<3,'after a resize it stays still: '+JSON.stringify(r1.cs)+' → '+JSON.stringify(r2.cs));
 await m.click('[data-c="back"]');await w(1500);s=await info();v=await vid();ok(!s.mini&&!v.p&&!/ppminiv/.test(v.cls),'⤢ back to the tab, still playing');
 // Alt+P toggles
 await app.evaluate(({webContents})=>{const wc=webContents.getAllWebContents().find(x=>/v\.html$/.test(x.getURL()));wc.focus();wc.sendInputEvent({type:'keyDown',keyCode:'P',modifiers:['alt']})});await w(2500);
