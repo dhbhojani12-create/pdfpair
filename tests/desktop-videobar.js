@@ -1,0 +1,16 @@
+const {_electron}=require('playwright');const w=ms=>new Promise(r=>setTimeout(r,ms));const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);
+(async()=>{const app=await _electron.launch({executablePath:'/tmp/claude-0/-home-claude/18f77194-c1b7-561f-938c-23c25eb72d78/scratchpad/el/electron',args:['/home/claude/pdfpair-desktop/app','--no-sandbox','--autoplay-policy=no-user-gesture-required'],env:Object.assign({},process.env,{PP_URL:'http://127.0.0.1:9300/app.html',PP_TEST:'1'})});
+const p=await app.firstWindow();const errs=[];p.on('pageerror',e=>errs.push(e.message));await w(3000);await p.evaluate(()=>{const o=document.querySelector('#open');if(o)o.hidden=true});
+await p.evaluate(()=>window.ppDesktop.openBrowser('http://127.0.0.1:9401/v.html'));await w(4000);
+const bw=app.windows().find(x=>x!==p&&/browser\.html/.test(x.url()));
+const vid=()=>app.evaluate(({webContents})=>{const wc=webContents.getAllWebContents().find(x=>/v\.html$/.test(x.getURL()));return wc.executeJavaScript('({pip:!!document.pictureInPictureElement,p:document.querySelector("video").paused,t:document.querySelector("video").currentTime,r:document.querySelector("video").playbackRate})')});
+ok(await p.evaluate(()=>document.querySelector('#vidBar').hidden),'no bar before pop-out');
+await bw.click('#app');await w(2500);
+let s=await p.evaluate(()=>({h:document.querySelector('#vidBar').hidden,t:document.querySelector('#vidBar .vtm').textContent,ti:document.querySelector('#vidBar .vt').textContent}));ok(!s.h,'bar shows in PDF Pair: '+JSON.stringify(s));
+await p.click('#vidBar .vp');await w(1200);let v=await vid();ok(v.p&&v.pip,'⏸ pauses');
+const t0=v.t;await p.click('#vidBar [data-v="fwd10"]');await w(1200);v=await vid();ok(v.t>t0+9,'10 ⟳ skips: '+t0.toFixed(1)+' → '+v.t.toFixed(1));
+await p.selectOption('#vidBar .vr','1.5');await w(1200);v=await vid();ok(v.r===1.5,'speed 1.5×');
+await p.click('#vidBar .vp');await w(1000);v=await vid();ok(!v.p,'▶ plays');
+await p.screenshot({path:'vb.png'});
+await p.click('#vidBar [data-v="back"]');await w(2500);v=await vid();s=await p.evaluate(()=>document.querySelector('#vidBar').hidden);ok(!v.pip&&s,'⤢ back to tab: video returns, bar hides');
+console.log('errors',errs);await app.close()})().catch(e=>{console.error(e);process.exit(1)});
