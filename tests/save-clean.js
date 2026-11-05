@@ -1,0 +1,16 @@
+const {chromium}=require('playwright');const {execSync}=require('child_process');
+const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m)};
+(async()=>{const b=await chromium.launch({args:['--no-proxy-server']});const ctx=await b.newContext({viewport:{width:1300,height:860},acceptDownloads:true});const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));
+await p.route('https://cdnjs.cloudflare.com/**',r=>{const u=r.request().url();const f=u.includes('qrcode')?'node_modules/qrcode-generator/qrcode.js':u.includes('jszip')?'node_modules/jszip/dist/jszip.min.js':u.includes('pdf-lib')?'node_modules/pdf-lib/dist/pdf-lib.min.js':'node_modules/pdfjs-dist/build/'+(u.endsWith('worker.min.js')?'pdf.worker.min.js':'pdf.min.js');r.fulfill({path:f,contentType:'application/javascript'})});
+await p.route('https://fonts.**',r=>r.fulfill({body:'',contentType:'text/css'}));
+await p.goto('http://127.0.0.1:9300/app.html');await p.waitForTimeout(1500);
+await p.setInputFiles('#fq','/home/claude/mtp/q1.pdf');await p.setInputFiles('#fa','/home/claude/mtp/a1.pdf');await p.click('#oGo');await p.waitForTimeout(3000);
+await p.evaluate(()=>{document.querySelector('#lib').hidden=true;const st=__ppTest.getSt();st.stickers.q.push({n:1,page:1,x:.1,y:.3});st.stickers.a.push({n:1,page:1,x:.1,y:.3});st.hl.q.push({page:1,x1:.1,y1:.5,x2:.6,y2:.5,t:.012,c:0});__ppTest.save();__ppTest.renderAll()});
+const exp=async clean=>{const dp=p.waitForEvent('download');await p.evaluate(()=>document.querySelector('#bSave').click());await p.waitForTimeout(400);if(clean)await p.click('#eClean');await p.click('#eGo');const d=await dp;const f='/tmp/claude-0/'+d.suggestedFilename();await d.saveAs(f);return f};
+const f1=await exp(false),f2=await exp(true);
+const ann=f=>+execSync('python3 -c "import fitz,sys;d=fitz.open(sys.argv[1]);print(sum(len(list(p.annots()))+len(p.get_links()) for p in d), len(d[0].get_drawings()))" "'+f+'"').toString().split(' ')[0];
+const raw=f=>execSync('python3 -c "import fitz,sys;d=fitz.open(sys.argv[1]);print(len(d[0].get_drawings()))" "'+f+'"').toString().trim();
+console.log(f1,f2);ok(/clean/.test(f2),'clean file name');ok(ann(f1)>0&&ann(f2)===0,'marked has links, clean has none: '+ann(f1)+' / '+ann(f2));
+const o=execSync('python3 -c "import fitz;d=fitz.open(\'/home/claude/mtp/q1.pdf\');print(len(d[0].get_drawings()))"').toString().trim();
+ok(raw(f2)===o&&raw(f1)!==o,'clean page 1 has no drawn marks: '+raw(f2)+' vs original '+o+', marked '+raw(f1));
+ok(await p.evaluate(()=>[...document.querySelectorAll('#exp [data-inc]')].every(x=>!x.checked)),'choice is remembered');console.log(errs);await b.close()})();

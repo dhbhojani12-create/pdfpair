@@ -119,6 +119,10 @@ Darshan: control the laptop's video from the linked phone, but "while annotation
 - Works with the desktop app from v2.0 (uses the existing `ppDesktop.video`), no new zip. Class names are prefixed (`vsh`, `vbig`, `vsp`…) because generic ones (`.sh`, `.big`) were taken.
 - Test: `tests/desktop-phoneremote.js` (Electron laptop + Pixel 7 phone on the mock); all 18 checks pass.
 
+## ⤓ Save PDF: choose what goes on it (5 Nov 2026)
+
+Darshan could not get a PDF without stickers. The Save PDF dialog now has "Put on the PDF:" Stickers & links / Highlights / Notes & pictures / Stars, plus "Clean PDF (nothing)". Remembered in `prefs.expInc`. With nothing ticked the file is named "(clean)" and has no marks, links or pair bookmarks. Test: `tests/save-clean.js`.
+
 ## 📑 RTPs by subject page (5 Nov 2026)
 
 `rtp.html` (served at https://dhbhojani12-create.github.io/pdfpair/rtp.html): ICAI Final RTPs from every attempt, grouped by paper (FR, AFM, Audit, DT, IDT, IBS) plus group-wise PDFs, with corrigenda under their paper. Rebuild with `python3 tools/rtp_page.py` when a new attempt is added to `YEARS`. All paper RTPs are also in `shelf.json`, so in the desktop browser a click files them as "RTP <attempt>" in the right subject (new subjects are created). `sw.js` skips same-origin pages other than the app itself, so opening rtp.html never replaces the cached app.

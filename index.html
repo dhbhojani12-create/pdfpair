@@ -216,6 +216,7 @@ body.t-erase .cim:hover{box-shadow:0 0 0 2px #d23a3a}
 .capi:hover .x{display:block}
 .capi .u{position:absolute;left:3px;bottom:3px;background:rgba(22,163,74,.9);color:#fff;font:700 10px var(--sans);padding:1px 5px;border-radius:6px}
 @media (max-width:720px){#capTray{left:8px;right:8px;width:auto;bottom:70px}}
+.einc{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin:12px 0 4px;font-size:13px}.einc span{color:var(--mut);width:100%}.einc label{display:flex;align-items:center;gap:5px}.einc .lnk{color:#2f6fe0;font:600 12.5px var(--sans);text-decoration:underline}
 .nbar .nsz{min-width:28px;text-align:center;font-variant-numeric:tabular-nums}
 .clipbox{position:absolute;border:2px dashed #2f6fe0;background:rgba(47,111,224,.10);z-index:6;pointer-events:none}
 .clp{position:absolute;border:2px dashed rgba(47,111,224,.55);border-radius:4px;z-index:3;pointer-events:none;display:none}
@@ -1010,6 +1011,7 @@ select.tin{appearance:auto}
       <label class="fl" for="eTitle">Title for the contents page</label>
       <input id="eTitle" class="tin" placeholder="e.g. V4 FR Question Bank">
       <label class="ck"><input type="checkbox" id="eToc"><span id="eTocL">Add a contents page grouped by chapter and topic</span></label>
+      <div class="einc"><span>Put on the PDF:</span><label><input type="checkbox" data-inc="s"> Stickers &amp; links</label><label><input type="checkbox" data-inc="h"> Highlights</label><label><input type="checkbox" data-inc="n"> Notes &amp; pictures</label><label><input type="checkbox" data-inc="k"> Stars</label><button type="button" class="lnk" id="eClean">Clean PDF (nothing)</button></div>
       <p class="err" id="eErr" role="alert"></p>
       <div class="acts"><span class="priv" id="eInfo"></span><button class="btn ghost" id="eCancel">Cancel</button><button class="btn" id="eGo">Save PDF</button></div>
     </div>
@@ -2931,7 +2933,7 @@ async function exportPdf(){
   if(!window.PDFLib){toast('The PDF writer could not load. Check your internet connection and reload.');return}
   const recs={q:P.q.recs||[],a:P.a.recs||[]};
   if(!recs.q.length&&!recs.a.length){toast('Open your PDFs first');return}
-  const opts=await askExport();if(!opts)return;
+  const opts=await askExport();if(!opts)return;const inc=opts.inc||{s:true,h:true,n:true,k:true};
   exporting=true;$('#bSave').classList.add('on');toast('Building your PDF…');
   try{
     const {PDFDocument,StandardFonts,rgb,degrees,BlendMode,PDFName,PDFHexString}=PDFLib;
@@ -2966,13 +2968,13 @@ async function exportPdf(){
       return ctx.obj([page.ref,'Fit']);
     }
     // highlights
-    for(const s of ['q','a'])for(const h of st.hl[s]){
+    for(const s of (inc.h?['q','a']:[]))for(const h of st.hl[s]){
       const page=pageOf(s,h.page);if(!page)continue;const m=map(page);const t=h.t/2;
       const r=h.y1===h.y2?m.rect(h.x1,h.y1-t,h.x2,h.y1+t):m.rect(h.x1-t,h.y1,h.x1+t,h.y2);
       page.drawRectangle({x:r.x,y:r.y,width:r.w,height:r.h,color:HLC[h.c]||HLC[0],opacity:.45,blendMode:BlendMode.Multiply});
     }
     // notes
-    if((st.notes||[]).length){
+    if(inc.n&&(st.notes||[]).length){
       const nf=await out.embedFont(StandardFonts.Helvetica);const NC={k:rgb(.114,.122,.137),b:rgb(.122,.373,.839),r:rgb(.824,.227,.227)};
       const okc=new Map();const safe=t=>String(t).replace(/₹/g,'Rs.').replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/[–—]/g,'-').replace(/…/g,'...').replace(/\t/g,'    ')
         .split('').map(ch=>{if(ch==='\n')return ch;if(!okc.has(ch)){let ok=true;try{nf.encodeText(ch);nf.widthOfTextAtSize(ch,10)}catch(e){ok=false}okc.set(ch,ok)}return okc.get(ch)?ch:'?'}).join('');
@@ -2992,14 +2994,14 @@ async function exportPdf(){
       }
     }
     // pictures placed on pages (captures)
-    for(const s of ['q','a'])for(const im of (st.imgs||[]).filter(z=>z.side===s)){
+    for(const s of (inc.n?['q','a']:[]))for(const im of (st.imgs||[]).filter(z=>z.side===s)){
       const page=pageOf(s,im.page);if(!page)continue;const blob=await idbGet('img:'+im.id);if(!blob)continue;
       try{const by=new Uint8Array(await blob.arrayBuffer());const emb=blob.type==='image/jpeg'?await out.embedJpg(by):await out.embedPng(by);const m=map(page);
         const h=im.w*im.ar,o=m.pt(im.x,im.y+h);page.drawImage(emb,{x:o.x,y:o.y,width:im.w*m.vw,height:h*m.vw,rotate:degrees(m.rot)})}catch(e){console.warn('picture skipped',e)}
     }
     // stars (no links)
     const GOLD=rgb(.96,.71,0),GD=rgb(.54,.4,0);
-    for(const s of ['q','a'])for(const t of (st.stars||{})[s]||[]){
+    for(const s of (inc.k?['q','a']:[]))for(const t of (st.stars||{})[s]||[]){
       const page=pageOf(s,t.page);if(!page)continue;const m=map(page);const R=.02*m.vw;
       const pts=[];for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr=i%2?R*.45:R;pts.push((Math.cos(a)*rr).toFixed(2)+' '+(Math.sin(a)*rr).toFixed(2))}
       const c=m.pt(t.x,t.y);const mate=starPartner(s,t),fill=mate||isCset();
@@ -3010,7 +3012,7 @@ async function exportPdf(){
       if(d){const r=m.rect(t.x-.025,t.y-.025,t.x+.025,t.y+.025);page.node.addAnnot(ctx.register(ctx.obj({Type:'Annot',Subtype:'Link',Rect:[r.x,r.y,r.x+r.w,r.y+r.h],Border:[0,0,0],Dest:d})))}
     }
     // stickers + links to the matching sticker on the other side
-    for(const s of ['q','a'])for(const k of st.stickers[s]){
+    for(const s of (inc.s?['q','a']:[]))for(const k of st.stickers[s]){
       const page=pageOf(s,k.page);if(!page)continue;const m=map(page);
       const R=.022*m.vw;const c=m.pt(k.x,k.y);const pair=findS(other(s),k.n);
       if(pair){page.drawCircle({x:c.x,y:c.y,size:R,color:RED})}
@@ -3024,7 +3026,7 @@ async function exportPdf(){
         page.node.addAnnot(ctx.register(an));}
     }
     // small "< 6 | 8 >" links under every question sticker
-    {
+    if(inc.s){
       const ns=allNums();
       const target=n=>{const q=findS('q',n),a=findS('a',n);return (q&&dest('q',q))||(a&&dest('a',a))||null};
       const BG=rgb(.95,.95,.96),LN=rgb(.72,.74,.78),INK=rgb(.22,.24,.28),MUT=rgb(.68,.7,.73);
@@ -3049,11 +3051,11 @@ async function exportPdf(){
     // PDF bookmarks: every pair (opens its question, with an "Answer" entry under it), then bookmarked pages
     const pageDest=(sd,n)=>{const page=pageOf(sd,n);if(!page)return null;const m=map(page);
       return m.rot===0?ctx.obj([page.ref,'XYZ',null,m.b.y+m.b.height,null]):ctx.obj([page.ref,'Fit'])};
-    const pairNode=n=>{const q=findS('q',n),a=findS('a',n);const dq=q&&dest('q',q),da=a&&dest('a',a);
+    const pairNode=n=>{if(!inc.s)return null;const q=findS('q',n),a=findS('a',n);const dq=q&&dest('q',q),da=a&&dest('a',a);
       if(!dq&&!da)return null;return {title:n+'. '+label(n),dest:dq||da,kids:(dq&&da)?[{title:'Answer',dest:da}]:[],open:false}};
     const tree=[];
     const tagged=allNums().some(n=>meta(n).ch||meta(n).tp);
-    if(opts.toc&&tagged){
+    if(opts.toc&&tagged&&inc.s){
       const toc=await addContents(out,opts,{pageOf,dest,base,count,font,RED,WHITE});
       tree.push({title:'Contents',dest:ctx.obj([toc[0].ref,'XYZ',null,toc[0].getHeight(),null])});
     }
@@ -3090,7 +3092,7 @@ async function exportPdf(){
       out.catalog.set(PDFName.of('PageMode'),PDFName.of('UseOutlines'));
     }
     const bytes=await out.save();
-    const nm=((curSet()&&curSet().name)||(recs.q[0]||recs.a[0]).name.replace(/\.pdf$/i,''))+' (linked).pdf';
+    const nm=((curSet()&&curSet().name)||(recs.q[0]||recs.a[0]).name.replace(/\.pdf$/i,''))+(inc.s||inc.h||inc.n||inc.k?' (linked).pdf':' (clean).pdf');
     await saveFile(nm,new Blob([bytes],{type:'application/pdf'}));
   }catch(err){console.error(err);toast('Could not build the PDF: '+(err&&err.message||err))}
   finally{exporting=false;$('#bSave').classList.remove('on')}
@@ -3106,7 +3108,9 @@ function askExport(){
     $('#eInfo').textContent=ns.length?ns.length+' linked questions':'No stickers yet';
     const done=v=>{m.hidden=true;m.onkeydown=null;res(v)};
     $('#eCancel').onclick=()=>done(null);
-    $('#eGo').onclick=()=>{st.docTitle=$('#eTitle').value.trim();if(tg)st.wantToc=ck.checked;save();done({title:st.docTitle,toc:ck.checked&&!!tg})};
+    const inc0=Object.assign({s:true,h:true,n:true,k:true},prefs.expInc||{});$$('#exp [data-inc]').forEach(x=>{x.checked=!!inc0[x.dataset.inc]});
+    $('#eClean').onclick=()=>$$('#exp [data-inc]').forEach(x=>{x.checked=false});
+    $('#eGo').onclick=()=>{st.docTitle=$('#eTitle').value.trim();if(tg)st.wantToc=ck.checked;save();const inc={};$$('#exp [data-inc]').forEach(x=>{inc[x.dataset.inc]=x.checked});prefs.expInc=inc;savePrefs();done({title:st.docTitle,toc:ck.checked&&!!tg,inc})};
     m.onkeydown=e=>{if(e.key==='Escape')done(null);if(e.key==='Enter'&&e.target.id==='eTitle')$('#eGo').click()};
     setTimeout(()=>$('#eTitle').focus(),30);
   });
@@ -4772,7 +4776,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='05 Nov 18:26';   // build label, so you can check both devices have the same version
+const APPV='05 Nov 21:01';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
