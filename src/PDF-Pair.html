@@ -556,6 +556,8 @@ select.tin{appearance:auto}
 .mdo{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;cursor:pointer;text-align:left;width:100%}.mdo.on{border-color:#2f6fe0;background:#eef4ff}
 .mdo b{flex:1;font-size:14px}.mdo small{color:var(--mut);font-size:12px;text-align:right}
 @media (max-width:760px){#mockPanel{left:8px;right:8px;width:auto;top:auto;height:46%;bottom:8px}}
+#dkCard{position:absolute;z-index:66;top:14px;left:50%;transform:translateX(-50%);width:min(560px,calc(100% - 24px));background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 14px 34px rgba(0,0,0,.22);padding:14px 16px}#dkCard[hidden]{display:none}
+#dkCard .dkt{font-weight:600;font-size:14px;margin-bottom:8px;word-break:break-all}.dkr{display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:8px}#dkCard .acts{margin-top:10px}.shh .btn{padding:4px 10px;font-size:12px}.shget.busy{opacity:.7}
 .shw{font-size:13px}.shg{margin:0 24px 18px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel)}
 .shh{display:flex;align-items:baseline;gap:10px;padding:10px 14px;background:var(--ground-2)}.shh b{flex:1}.shh span{font-size:12px;color:var(--mut)}
 .shr{display:flex;align-items:center;gap:10px;padding:8px 14px;border-top:1px solid var(--line);font-size:13.5px}.shr .nm{flex:1;min-width:0}.shr .mb{font-size:12px;color:var(--mut);white-space:nowrap}
@@ -717,6 +719,7 @@ select.tin{appearance:auto}
   </main>
 
   <div id="mockBar" hidden><span class="mt"></span><span class="mc">3:00:00</span><button id="mockFin">Finish</button></div>
+  <div id="dkCard" hidden role="dialog" aria-label="Downloaded PDF"><div class="dkt"></div><div class="dkr"><input id="dkName" class="tin" placeholder="Set name"><select id="dkSub" class="tin"></select><select id="dkType" class="tin"><option value="mod">Module / chapter</option><option value="rtp">RTP</option><option value="mtp">MTP</option><option value="pyq">Past papers</option><option value="mcq">MCQ booklet</option><option value="oth">Other</option><option value="con">Concept book</option></select></div><div class="acts"><button class="btn ghost" id="dkSkip">Skip</button><button class="btn" id="dkAdd">Add to library</button></div></div>
   <div id="ibCard" hidden role="alertdialog" aria-label="New marks from Claude"><div class="ibt"></div><div class="ibs"></div><div class="ibn"></div><div class="acts"><button class="btn ghost" id="ibIgnore">Ignore</button><button class="btn" id="ibApply">Apply ▶</button></div></div>
   <div id="ibDlg" hidden><div class="card" role="dialog" aria-labelledby="ibT"><h1 id="ibT">📥 Claude inbox</h1>
     <div class="ibOff"><p class="sub">Send a PDF to Claude in the chat. Claude marks it and puts the stickers in your inbox; this app picks them up on the laptop and the phone and asks before adding anything. Everything is locked with your own code.</p>
@@ -2255,7 +2258,9 @@ function renderShelfLib(){
   $('#libTitle').textContent='ICAI shelf · '+libSub;$('#rvAll').hidden=true;$('#rvTopic').hidden=true;
   $('#libMeta').textContent=paper?paper.label+(d.updated?' · list updated '+d.updated:''):'';
   const f=$('#libFlt');f.innerHTML='';
-  if(SH_CAN){const w=document.createElement('button');w.className='btn ghost shw';
+  const isD=!!window.ppDesktop;
+  if(isD){const o=document.createElement('button');o.className='btn ghost shw';o.textContent='🌐 Open ICAI site';o.title='Open icai.org in the built-in browser; PDFs you download there come straight in';o.onclick=()=>window.ppDesktop.openBrowser(paper&&paper.page||'https://www.icai.org/');f.append(o)}
+  if(SH_CAN&&!isD){const w=document.createElement('button');w.className='btn ghost shw';
     if(SH.dir&&SH.dirOk){w.textContent='📂 Watching “'+SH.dir.name+'” ✓';w.title='Downloads that land in this folder are added by themselves. Click to pick a different folder';w.onclick=shelfWatch}
     else if(SH.dir){w.textContent='📂 Resume watching “'+SH.dir.name+'”';w.onclick=async()=>{if(await shelfPerm(true)){SH.dirOk=true;shelfScan();renderLib()}}}
     else{w.textContent='📂 Watch my downloads folder';w.onclick=shelfWatch}
@@ -2268,10 +2273,12 @@ function renderShelfLib(){
   for(const g of paper.groups){
     const c=document.createElement('div');c.className='shg';const have=g.items.filter(shelfHave).length;
     c.innerHTML='<div class="shh"><b></b><span></span></div>';$('b',c).textContent=g.title;$('span',c).textContent=have+' of '+g.items.length+' in library';
+    if(isD&&have<g.items.length){const ga=document.createElement('button');ga.className='btn shget';ga.textContent='⤓ Get all';ga.onclick=async()=>{ga.disabled=true;const todo=g.items.filter(x=>!shelfHave(x));let n=0;for(const x of todo){ga.textContent='⏳ '+(n+1)+' of '+todo.length;if(await dkGet(x))n++}toast('📚 Added '+n+' file'+(n===1?'':'s')+' to '+libSub);renderLib();try{ibCheck()}catch(e){}};$('.shh',c).append(ga)}
     for(const it of g.items){const s=shelfHave(it),r=document.createElement('div');r.className='shr'+(s?' have':'');
       r.innerHTML='<span class="nm"></span><span class="mb"></span><span class="st"></span>';$('.nm',r).textContent=it.name;$('.mb',r).textContent=(it.size/1048576).toFixed(1)+' MB';
       const stc=$('.st',r);
       if(s){stc.innerHTML='<button class="lnk">✓ Open</button>'+(ready.has(it.size)?' <span class="rd">✨ marks ready</span>':'');$('button',stc).onclick=async()=>{closeLib(true);stopRv();await openSet(s.id)}}
+      else if(isD){const b=document.createElement('button');b.className='btn shget';b.textContent='⤓ Get';b.onclick=async()=>{if(await dkGet(it,b)){toast('📚 Added '+it.name);renderLib();try{ibCheck()}catch(e){}}};stc.append(b);if(ready.has(it.size)){const z=document.createElement('span');z.className='rd';z.textContent=' ✨ marks ready';stc.append(z)}}
       else{const b=document.createElement('a');b.className='btn shget';b.href=it.url;b.target='_blank';b.rel='noopener';
         b.textContent=SH.pending.has(it.id)?'⏳ Waiting…':'⤓ Get';b.title=SH.dir&&SH.dirOk?'Download; it is added when it lands in “'+SH.dir.name+'”':'Download, then press “Add downloaded files” (or watch your downloads folder)';
         b.addEventListener('click',()=>{SH.pending.add(it.id);b.textContent='⏳ Waiting…'});stc.append(b);if(ready.has(it.size)){const z=document.createElement('span');z.className='rd';z.textContent=' ✨ marks ready';stc.append(z)}}
@@ -2284,6 +2291,46 @@ $('#libBody').addEventListener('drop',e=>{if(libView!=='i')return;e.preventDefau
 (async()=>{if(SH_CAN){const d=await idbGet('shelfDir');if(d){SH.dir=d;SH.dirOk=await shelfPerm(false)}}})();
 setInterval(()=>{if(SH.dir&&document.visibilityState==='visible')shelfScan()},3000);
 window.__ppShelf={SH,shelfTake,shelfItems,renderShelfLib};
+
+/* 🖥 Desktop app (Electron): built-in browser; PDFs downloaded there come straight into the library */
+const DESK=!!window.ppDesktop;
+const DK={q:[]};
+function dkShow(){const f=DK.q[0],c=$('#dkCard');if(!f){c.hidden=true;return}
+  $('.dkt',c).textContent='📄 Downloaded: '+f.name+' ('+(f.size/1048576).toFixed(1)+' MB)'+(DK.q.length>1?' · 1 of '+DK.q.length:'');
+  const sub=$('#dkSub');sub.innerHTML='';subjects().forEach(x=>{const o=document.createElement('option');o.textContent=x;sub.append(o)});sub.value=libSub&&subjects().includes(libSub)?libSub:(curSet()?curSet().subject:subjects()[0]);
+  $('#dkName').value=f.name.replace(/\.pdf$/i,'').replace(/^\d+bos[-_a-z0-9]*?-(?=[a-z])/i,'');
+  $('#dkType').value=/rtp/i.test(f.name)?'rtp':/mtp/i.test(f.name)?'mtp':'mod';c.hidden=false;$('#dkName').focus();
+}
+async function dkTake(f){
+  const file=new File([f.data],f.name,{type:'application/pdf'});
+  try{await shelfLoad()}catch(e){}
+  const it=shelfMatch(file);
+  if(it){if(await shelfAdd(file,it))renderLibIfOpen();else toast(it.name+' is already in your library');try{ibCheck()}catch(e){}return}
+  if(LIB.sets.some(s=>(s.files.q||[]).some(x=>x.size===file.size&&x.name===file.name))){toast(file.name+' is already in your library');return}
+  DK.q.push(Object.assign({},f,{file}));dkShow();
+}
+function renderLibIfOpen(){if(!$('#lib').hidden)renderLib()}
+async function dkAdd(){const f=DK.q[0];if(!f)return;
+  const name=$('#dkName').value.trim()||f.name.replace(/\.pdf$/i,''),sub=$('#dkSub').value||'General',type=$('#dkType').value;
+  const id=uid();await idbPut('blob:'+id,f.file);const ref={id,name:f.file.name,size:f.file.size};
+  const set={id:uid(),name,subject:sub,type,key:keyOf(ref,ref),files:{q:[ref],a:[ref]},same:true,at:Date.now(),src:f.url||''};
+  LIB.sets.push(set);if(!LIB.subjects.includes(sub))LIB.subjects.push(sub);saveLib();DK.q.shift();dkShow();renderLibIfOpen();
+  toast('Added '+name+' to '+sub);
+}
+async function dkGet(it,btn){
+  it=shelfItems().find(x=>x.id===it.id)||Object.assign({sub:libSub},it);
+  if(btn){btn.textContent='⏳ Getting…';btn.classList.add('busy')}
+  try{const f=await window.ppDesktop.fetchPdf(it.url);const file=new File([f.data],it.file,{type:'application/pdf'});await shelfAdd(file,it,true);return true}
+  catch(e){toast('Could not get '+it.name+': '+(e.message||e));if(btn){btn.textContent='⤓ Get';btn.classList.remove('busy')}return false}
+}
+if(DESK){
+  window.ppDesktop.onFile(f=>dkTake(f));
+  $('#dkAdd').addEventListener('click',dkAdd);
+  $('#dkSkip').addEventListener('click',()=>{DK.q.shift();dkShow()});
+  $('#dkName').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter')dkAdd()});
+  const b=document.createElement('button');b.className='b';b.id='bBrowse';b.title='Built-in browser: PDFs you download there come straight into your library';b.innerHTML='<span class="mi">🌐</span><span>Browser</span>';
+  b.addEventListener('click',()=>window.ppDesktop.openBrowser());$('#morePop').prepend(b);
+}
 
 /* compact toolbar: colours and less-used buttons tucked into small menus */
 (function(){

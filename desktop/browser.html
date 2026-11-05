@@ -1,0 +1,21 @@
+<!doctype html><html><head><meta charset="utf-8"><title>PDF Pair · Browser</title><style>
+body{margin:0;font:14px system-ui,Segoe UI,sans-serif;background:#fff}
+#t{height:48px;display:flex;align-items:center;gap:6px;padding:0 10px;border-bottom:1px solid #ddd;background:#f6f7f9;box-sizing:border-box}
+button{border:0;background:transparent;font-size:17px;width:34px;height:32px;border-radius:8px;cursor:pointer}button:hover{background:#e6e8ec}button:disabled{opacity:.35}
+#u{flex:1;height:32px;border:1px solid #d5d8de;border-radius:16px;padding:0 14px;font:inherit;background:#fff}
+.q{display:flex;gap:4px}.q button{width:auto;padding:0 10px;font-size:13px;background:#fff;border:1px solid #d5d8de}
+#m{font-size:12.5px;color:#23784a;max-width:300px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app{width:auto;padding:0 12px;font-size:13px;background:#1f2328;color:#fff}#app:hover{background:#000}
+</style></head><body><div id="t">
+<button id="b" title="Back">←</button><button id="f" title="Forward">→</button><button id="r" title="Reload">⟳</button>
+<input id="u" spellcheck="false" placeholder="Type a web address or search">
+<div class="q"><button data-u="https://www.icai.org/post/sm-final-p3-may2026" title="Audit study material">ICAI Audit</button><button data-u="https://boslive.icai.org/education_content_rtp.php?c=Final" title="RTPs">RTP</button><button data-u="https://boslive.icai.org/" title="BOS Knowledge Portal">BOS</button></div>
+<span id="m"></span><button id="app" title="Back to PDF Pair">◧ PDF Pair</button></div>
+<script>
+const $=s=>document.querySelector(s);
+$('#b').onclick=()=>br.cmd('back');$('#f').onclick=()=>br.cmd('fwd');$('#r').onclick=()=>br.cmd('reload');$('#app').onclick=()=>br.cmd('app');
+$('#u').addEventListener('keydown',e=>{if(e.key==='Enter')br.go($('#u').value)});
+document.querySelectorAll('[data-u]').forEach(b=>b.onclick=()=>br.go(b.dataset.u));
+br.onState(s=>{if(document.activeElement!==$('#u'))$('#u').value=s.url;$('#b').disabled=!s.back;$('#f').disabled=!s.fwd;document.title=(s.title||'Browser')+' · PDF Pair';$('#r').textContent=s.loading?'✕':'⟳'});
+let mt=0;br.onMsg(m=>{$('#m').textContent=m;clearTimeout(mt);mt=setTimeout(()=>{$('#m').textContent=''},8000)});
+</script></body></html>
