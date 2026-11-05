@@ -1,0 +1,11 @@
+const {chromium}=require('playwright');
+(async()=>{const b=await chromium.launch({args:['--no-proxy-server']});const ctx=await b.newContext({viewport:{width:1300,height:860},acceptDownloads:true});const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));p.on('console',m=>{if(m.type()==='error')errs.push('c:'+m.text())});
+await p.route('https://cdnjs.cloudflare.com/**',r=>{const u=r.request().url();const f=u.includes('qrcode')?'node_modules/qrcode-generator/qrcode.js':u.includes('jszip')?'node_modules/jszip/dist/jszip.min.js':u.includes('pdf-lib')?'node_modules/pdf-lib/dist/pdf-lib.js':'node_modules/pdfjs-dist/build/'+(u.endsWith('worker.min.js')?'pdf.worker.min.js':'pdf.min.js');r.fulfill({path:f,contentType:'application/javascript'})});
+await p.route('https://cdn.jsdelivr.net/**',r=>r.fulfill({path:'node_modules/@cantoo/pdf-lib/dist/pdf-lib.min.js',contentType:'application/javascript',headers:{'access-control-allow-origin':'*'}}));
+await p.route('https://fonts.**',r=>r.fulfill({body:'',contentType:'text/css'}));
+await p.goto('http://127.0.0.1:9300/app.html');await p.waitForTimeout(1500);
+await p.setInputFiles('#fq',process.env.F||'/home/claude/mtp/q1.pdf');await p.click('#oGo');await p.waitForTimeout(3000);
+await p.evaluate(async()=>{const L=__ppLib.LIB;const s=L.sets[0];s.type='con';s.files.a=[];s.same=false;localStorage.setItem('pp:lib',JSON.stringify(L));await __ppLib.openSet(s.id);document.querySelector('#lib').hidden=true});await p.waitForTimeout(2500);
+await p.evaluate(()=>{const st=__ppTest.getSt();st.topics=[{id:'t1',page:2,x:.1,y:.2,ch:'Bank audit',tp:'Intro'}];st.hl.q.push({page:1,x1:.1,y1:.5,x2:.6,y2:.5,t:.012,c:0});st.bm.q=[3];__ppTest.save();__ppTest.renderAll()});
+for(const mode of ['all','clean']){const dp=p.waitForEvent('download',{timeout:15000}).catch(()=>null);await p.evaluate(()=>document.querySelector('#bSave').click());await p.waitForTimeout(400);if(mode==='clean')await p.click('#eClean');await p.click('#eGo');const d=await dp;if(d){await d.saveAs('/tmp/claude-0/exp-'+mode+'.pdf')}console.log(mode,d?d.suggestedFilename():'NO DOWNLOAD',await p.textContent('#toast'))}
+console.log(errs.join('\n').slice(0,2000));await b.close()})();

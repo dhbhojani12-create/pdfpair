@@ -2920,6 +2920,18 @@ async function openFiles(qs,as,k){
 /* ---------- export: one PDF with stickers, highlights, clickable links and bookmarks ---------- */
 let exporting=false;
 $('#bSave').addEventListener('click',exportPdf);
+/* pdf-lib cannot read encrypted PDFs (ICAI files are AES-encrypted with an empty open-password), so those are decrypted first with @cantoo/pdf-lib (loaded only when needed) */
+const PLAIN=new Map();let CANTOO=null;
+async function plLoad(bytes,k){
+  const {PDFDocument}=PDFLib;if(k&&PLAIN.has(k))return PDFDocument.load(PLAIN.get(k),{ignoreEncryption:true});
+  const u8=bytes instanceof Uint8Array?bytes:new Uint8Array(bytes);
+  let enc=false;try{const d=await PDFDocument.load(u8);return d}catch(e){if(/encrypt/i.test(e.message||''))enc=true;else throw e}
+  if(!CANTOO){toast('This PDF is locked by its publisher. Unlocking it for saving…');
+    const r=await fetch('https://cdn.jsdelivr.net/npm/@cantoo/pdf-lib@2.11.1/dist/pdf-lib.min.js').catch(()=>null);if(!r||!r.ok)throw new Error('this PDF is locked; connect to the internet once so it can be unlocked');
+    const code=await r.text();const module={exports:{}};new Function('module','exports','define',code)(module,module.exports,undefined);CANTOO=module.exports}
+  let plain;try{const d=await CANTOO.PDFDocument.load(u8,{password:''});plain=await d.save({useObjectStreams:false})}catch(e){throw new Error('this PDF has a password, so it cannot be saved again ('+(e.message||e)+')')}
+  if(k){PLAIN.set(k,plain);if(PLAIN.size>6)PLAIN.delete(PLAIN.keys().next().value)}
+  return PDFDocument.load(plain,{ignoreEncryption:true})}
 async function exportPdf(){
   if(exporting)return;
   if(!window.PDFLib){toast('The PDF writer could not load. Check your internet connection and reload.');return}
@@ -2936,7 +2948,7 @@ async function exportPdf(){
       if(s==='a'&&cs&&cs.same&&recs.q.length){base.a=base.q;count.a=count.q;continue}
       base[s]=out.getPageCount();
       for(const rec of recs[s]){
-        const src=await PDFDocument.load(await rec.blob.arrayBuffer(),{ignoreEncryption:true});
+        const src=await plLoad(await rec.blob.arrayBuffer(),rec.id||rec.name+'|'+rec.size);
         const pages=await out.copyPages(src,src.getPageIndices());
         pages.forEach(p=>out.addPage(p));count[s]+=pages.length;
       }
@@ -3606,7 +3618,7 @@ async function ptBuild(pages){
     if(S.kind==='img'){let im=imgs.get(pp.s);if(!im){im=S.png?await out.embedPng(S.bytes):await out.embedJpg(S.bytes);imgs.set(pp.s,im)}
       let pw,ph,dw,dh;if(PT.imgFit==='a4'){[pw,ph]=im.width>im.height?[842,595]:[595,842];const k=Math.min((pw-48)/im.width,(ph-48)/im.height);dw=im.width*k;dh=im.height*k}else{dw=pw=im.width*.75;dh=ph=im.height*.75}
       const pg=out.addPage([pw,ph]);pg.drawImage(im,{x:(pw-dw)/2,y:(ph-dh)/2,width:dw,height:dh});if(pp.rot)pg.setRotation(degrees(pp.rot));continue}
-    let L=libs.get(pp.s);if(!L){L=await PDFDocument.load(S.bytes,{ignoreEncryption:true});libs.set(pp.s,L)}
+    let L=libs.get(pp.s);if(!L){L=await plLoad(S.bytes,S.fid||S);libs.set(pp.s,L)}
     const [cp]=await out.copyPages(L,[pp.pi-1]);if(pp.rot)cp.setRotation(degrees(((cp.getRotation().angle||0)+pp.rot)%360));out.addPage(cp)}
   return out.save()}
 function ptOutPages(){return PT.onlySel?PT.pages.filter(x=>PT.sel.has(x.id)):PT.pages}
@@ -3726,7 +3738,7 @@ async function ptSplit(){
   f.addEventListener('input',upd);f.addEventListener('keydown',e=>e.stopPropagation());upd()}
 async function ptSplitOut(how,name,sub){
   const S=PT.srcs[0],parts=PT.split.parts;if(!parts.length){toast('Nothing to split yet');return}
-  const {PDFDocument}=PDFLib;const L=await PDFDocument.load(S.bytes,{ignoreEncryption:true});
+  const {PDFDocument}=PDFLib;const L=await plLoad(S.bytes,S.fid||S);
   const pn=(x,i)=>ptSafe(name+' - '+(x.t?String(i+1).padStart(2,'0')+' '+x.t:'part '+(i+1)+' (p'+x.a+(x.b>x.a?'-'+x.b:'')+')'));
   const files=[];
   for(let i=0;i<parts.length;i++){const x=parts[i];ptBusy('Making part '+(i+1)+' of '+parts.length+'…');const out=await PDFDocument.create();
@@ -3781,7 +3793,7 @@ function ptNum(){
     const tx=o.pos[1]==='c'?(c.width-tw)/2:o.pos[1]==='r'?c.width-m-tw:m,ty=o.pos[0]==='b'?c.height-m*.8:m*.8+o.size*k;x.fillText(t,tx,ty)};
   f.addEventListener('input',upd);f.addEventListener('keydown',e=>e.stopPropagation());upd()}
 async function ptNumBuild(){
-  const S=PT.srcs[0],o=PT.num;const {PDFDocument,StandardFonts,rgb,degrees}=PDFLib;const L=await PDFDocument.load(S.bytes,{ignoreEncryption:true});const font=await L.embedFont(StandardFonts.Helvetica);
+  const S=PT.srcs[0],o=PT.num;const {PDFDocument,StandardFonts,rgb,degrees}=PDFLib;const L=await plLoad(S.bytes,S.fid||S);const font=await L.embedFont(StandardFonts.Helvetica);
   const pages=L.getPages(),N=pages.length-o.skip;
   pages.forEach((page,i)=>{if(i<o.skip)return;const t=ptNumText(i-o.skip,N,o);const b=page.getCropBox();const rot=((page.getRotation().angle%360)+360)%360;const vw=rot%180?b.height:b.width,vh=rot%180?b.width:b.height;
     const tw=font.widthOfTextAtSize(t,o.size),m=28;const vx=o.pos[1]==='c'?(vw-tw)/2:o.pos[1]==='r'?vw-m-tw:m,vy=o.pos[0]==='b'?vh-m*.8:m*.8+o.size;   // viewer coords from top-left
