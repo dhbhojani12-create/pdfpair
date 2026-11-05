@@ -60,6 +60,13 @@ How Claude delivers marks straight into the app, instead of restore files.
 - **Package (inside):** `{setKey, qSize (size of the question PDF, used when the key does not match), setName, note, stickers{q,a}, names, meta}`, numbers from 1. The app shows a card "📥 New marks from Claude: <set> · N stickers", then Apply / Ignore. Apply opens that set, adds stickers after its highest number, skips any within 3% of an existing sticker on the same page, and one Ctrl+Z undoes it. Applied or ignored ids go in `prefs.ibDone`. If the set isn't on that device, Apply is disabled.
 - **To send (Claude):** get the code from Darshan in chat (never commit it), build marks.json (set key from his backup .json), run `python3 tools/inbox_send.py CODE marks.json`, then commit and push `inbox/`. Items older than 45 days are pruned on each send. Test: `tests/ib.js`.
 
+## 🖥 Desktop app for Windows (built 5 Nov 2026)
+
+`desktop/` is an Electron app (main.js, preload.js, browser.html, bpreload.js). It loads the live site (GitHub Pages, so web updates reach it; the service worker gives offline) and adds a **built-in browser** window (🌐 Browser in ⋯ More, 🌐 Open ICAI site on the shelf). In that browser, PDFs are forced to download (Content-Disposition: attachment), saved to temp, then sent to the app (`window.ppDesktop.onFile`): ICAI shelf files are filed automatically, other PDFs show a card asking name / subject / type. Shelf **⤓ Get** and **⤓ Get all** download directly in the desktop app (`ppDesktop.fetchPdf`, no CORS limits). Its library is separate from Chrome's (Backup → Restore once).
+
+- **Package (no installer):** unzip the Electron win32-x64 release (v33.2.0 from GitHub), rename `electron.exe` to `PDF Pair.exe`, delete `resources/default_app.asar`, copy `desktop/*` into `resources/app/`, zip the folder. Not code-signed, so SmartScreen shows "More info → Run anyway" once. Only `desktop/` changes need a new zip.
+- **Test:** `tests/desktop.js` (Linux Electron under `xvfb-run`; env `PP_URL` points at the local mock, `PP_TEST=1` uses the agent proxy and ignores its certificate).
+
 ## 📚 ICAI shelf (built 5 Nov 2026)
 
 Library → 📚 ICAI tab (per subject). Lists official ICAI PDFs from `shelf.json` in this repo (read from raw.githubusercontent.com, cached in `localStorage['shelf:data']`). Darshan chose **one set per chapter** (not whole modules). So far: **Audit** (Paper 3 study material Aug 2025 reprint, 20 chapter/unit files, + RTPs May 24 – Nov 26).
