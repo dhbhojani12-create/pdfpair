@@ -778,6 +778,29 @@ select.tin{appearance:auto}
 #lecPop .lt em{position:absolute;left:0;bottom:0;height:3px;background:#ff0033}
 #lecPop .li b{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:300px}#lecPop .li small{color:var(--mut);font-size:12px}
 #lecPop .le{color:var(--mut);font-size:12.5px;padding:4px 10px 8px}
+#lecPop .lt img{width:100%;height:100%;object-fit:cover;display:block}#lecPop .lx{min-width:0;flex:1}#lecPop .li small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#lecPop .lbk{margin:6px 10px 4px;color:var(--mut);font:600 12.5px var(--sans)}#lecPop .lbk:hover{color:var(--ink)}
+#lp{position:fixed;z-index:57;right:16px;bottom:78px;width:320px;aspect-ratio:16/9;background:#000;border-radius:12px;overflow:hidden;box-shadow:0 12px 34px rgba(0,0,0,.35);user-select:none}
+#lp.off{left:-10000px!important;right:auto!important;top:0!important;bottom:auto!important;width:320px!important;pointer-events:none;box-shadow:none}
+#lp .lpv,#lp .lpv iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+#lp.drg .lpv{pointer-events:none}
+#lp .lpt,#lp .lpb{position:absolute;left:0;right:0;opacity:0;transition:opacity .18s;color:#fff;font:12px var(--sans);pointer-events:none}
+#lp.hov .lpt,#lp.hov .lpb,#lp.paused .lpt,#lp.paused .lpb,#lp.drg .lpt{opacity:1;pointer-events:auto}
+#lp .lpt{top:0;display:flex;align-items:center;gap:2px;padding:4px 4px 10px 10px;background:linear-gradient(rgba(0,0,0,.72),transparent);cursor:grab}
+#lp.drg .lpt{cursor:grabbing}
+#lp .lpn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+#lp button,#lpA button{color:#fff;border-radius:7px;padding:3px 6px;font:600 12px var(--sans);white-space:nowrap}#lp button:hover,#lpA button:hover{background:rgba(255,255,255,.18)}
+#lp .lpb{bottom:0;padding:12px 8px 4px;background:linear-gradient(transparent,rgba(0,0,0,.78))}
+#lp .lprow{display:flex;align-items:center;gap:2px}#lp .lptm{margin-left:auto;font-variant-numeric:tabular-nums;opacity:.9;padding-right:4px}
+#lp .lps,#lpA .lps{width:100%;height:4px;accent-color:#ff0033;margin:0;cursor:pointer}
+#lp .lppp{font-size:14px;min-width:30px}
+#lp .lprs{position:absolute;left:0;top:0;width:14px;height:14px;cursor:nwse-resize;z-index:2}
+#lp .lpmsg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:16px;text-align:center;color:#fff;font:13px var(--sans);background:#111;z-index:1}
+#lp .lpmsg[hidden]{display:none}#lp .lpmsg .lpob{background:#ff0033;padding:6px 12px}
+#lpA{position:fixed;z-index:57;right:16px;bottom:78px;display:flex;align-items:center;gap:3px;max-width:min(560px,calc(100vw - 32px));background:#4338ca;color:#fff;border-radius:12px;padding:5px 6px 5px 10px;box-shadow:0 10px 28px rgba(49,46,129,.35);font:12px var(--sans)}
+#lpA[hidden]{display:none}#lpA .lpn{flex:1 1 120px;min-width:0;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;margin:0 4px}
+#lpA .lps{flex:1 1 90px;min-width:60px;width:auto}#lpA .lptm{font-variant-numeric:tabular-nums;white-space:nowrap;padding:0 4px}#lpA .lppp{font-size:14px;min-width:30px}
+@media (max-width:600px){#lpA .lpn{display:none}#lp{width:240px}}
 #dkVid svg{width:22px;height:22px;fill:none;stroke:#fff;stroke-width:2}
 #dkVid .vd{position:absolute;right:3px;top:3px;width:9px;height:9px;border-radius:50%;background:#8b5cf6;box-shadow:0 0 0 2px #1b1e23}
 #vidPop{position:absolute;z-index:36;display:flex;align-items:center;gap:5px;height:52px;padding:0 6px 0 12px;border-radius:26px;background:linear-gradient(135deg,#312e81,#6d28d9);color:#fff;box-shadow:0 8px 22px rgba(20,10,80,.4);font:600 12.5px var(--sans);touch-action:manipulation}
@@ -952,7 +975,7 @@ select.tin{appearance:auto}
     <button class="b" id="bSave" title="Save one linked PDF with stickers, highlights and bookmarks"><svg viewBox="0 0 24 24"><path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/></svg><span>Save PDF</span></button>
     <button class="b" id="bLink" title="Link your phone as a touch highlighter"><span style="font-size:15px">📱</span><span id="bLinkT">Link phone</span></button>
     <button class="b" id="bOpen" title="Library: your sets and subject-wise revision (L)"><svg viewBox="0 0 24 24"><path d="M4 5h4v14H4zM10 5h4v14h-4z"/><path d="M15.2 6.2l3.6-1 3.3 12.9-3.6 1z"/></svg><span>Library</span></button>
-  <button class="b" id="bMore" title="More: Library, Backup, Save PDF, Phone, Quiz" aria-label="More">⋯<i class="mdot" id="moreDot" hidden></i></button><div id="morePop" hidden></div>
+  <button class="b" id="bLec" hidden title="Lecture: pick a lecture, it plays in the corner (Alt+Y)">▶ <span>Lecture</span></button><button class="b" id="bMore" title="More: Library, Backup, Save PDF, Phone, Quiz" aria-label="More">⋯<i class="mdot" id="moreDot" hidden></i></button><div id="morePop" hidden></div>
   </div>
 
   <div id="pt" hidden><div class="ptw">
@@ -2645,7 +2668,7 @@ const wfmt=t=>{t=Math.max(0,Math.floor(t||0));const h=Math.floor(t/3600),m=Math.
 function showWeb(n,anchor){const p=$('#webPop'),L=(st.links||{})[n]||[],W=(st.wnotes||{})[n]||[];p.innerHTML='<h4></h4>';$('h4',p).textContent=label(n);
   const add=(icon,main,sub,go,rm)=>{const r=document.createElement('div');r.className='wpi';r.innerHTML='<span></span><div class="tx"><span></span><small></small></div>'+(go?'<button class="go">'+go[0]+'</button>':'')+'<button class="rm" title="Remove">×</button>';
     r.firstChild.textContent=icon;$('.tx span',r).textContent=main;$('.tx small',r).textContent=sub;if(go)$('.go',r).onclick=go[1];$('.rm',r).onclick=()=>{pushUndo();rm();save();renderAll();showWeb(n,anchor)};p.append(r)};
-  L.forEach((o,i)=>add('▶',(o.t!=null?wfmt(o.t)+' · ':'')+(o.title||o.u),new Date(o.at||Date.now()).toLocaleDateString(),[o.t!=null?'▶ Play':'Open',()=>{if(window.ppDesktop)window.ppDesktop.openLecture(o.u);else window.open(o.u,'_blank')}],()=>L.splice(i,1)));
+  L.forEach((o,i)=>add('▶',(o.t!=null?wfmt(o.t)+' · ':'')+(o.title||o.u),new Date(o.at||Date.now()).toLocaleDateString(),[o.t!=null?'▶ Play':'Open',()=>{if(window.__ppLec&&window.__ppLec.ytId(o.u)){$('#webPop').hidden=true;window.__ppLec.lpOpen(o.u,o.t);return}if(window.ppDesktop)window.ppDesktop.openLecture(o.u);else window.open(o.u,'_blank')}],()=>L.splice(i,1)));
   W.forEach((o,i)=>add('🗒',o.text||'(moment)',(o.title||'')+(o.t!=null?' · '+wfmt(o.t):''),o.u?['Open',()=>{if(window.ppDesktop)window.ppDesktop.openLecture(o.u);else window.open(o.u,'_blank')}]:null,()=>W.splice(i,1)));
   if(!L.length&&!W.length){p.hidden=true;return}
   const r=anchor.getBoundingClientRect(),a=$('#app').getBoundingClientRect();p.style.left=Math.min(r.left-a.left,a.width-370)+'px';p.style.top=Math.min(r.bottom-a.top+6,a.height-300)+'px';p.hidden=false}
@@ -3933,7 +3956,124 @@ $('#vidSheet textarea').addEventListener('keydown',e=>e.stopPropagation());
 window.addEventListener('pointerdown',e=>{if(!$('#vidPop').hidden&&!e.target.closest('#vidPop,#dkVid'))$('#vidPop').hidden=true},true);
 window.__ppVid={PHV,phVid,vRemoteCmd,VR,prefs,linkStart,setActive:n=>setActive(n)};
 
-/* ▶ Lectures + 📱 mini window removed (5 Nov 2026, Darshan) */
+/* ▶ Lecture player inside PDF Pair (6 Nov 2026): pick from a list, plays in a small corner video (B) or listen-only bar (C). Never opens the browser. */
+const LP={p:null,id:null,list:null,mode:prefs.lpMode||'v',api:null,last:0,hideT:0,rate:prefs.lpRate||1};
+const ytId=u=>{u=String(u||'').trim();if(/^[\w-]{11}$/.test(u))return u;try{const x=new URL(u);const h=x.hostname.replace(/^(www|m|music)\./,'');
+  if(h==='youtu.be')return (x.pathname.slice(1).match(/^[\w-]{11}/)||[])[0]||null;
+  if(/(^|\.)youtube(-nocookie)?\.com$/.test(h)){const v=x.searchParams.get('v');if(v&&/^[\w-]{11}$/.test(v))return v;const m=x.pathname.match(/^\/(shorts|live|embed|v)\/([\w-]{11})/);if(m)return m[2]}}catch(e){}return null};
+const ytList=u=>{try{const x=new URL(String(u));return /youtube\.com$/.test(x.hostname)?x.searchParams.get('list'):null}catch(e){return null}};
+const ytT=u=>{try{const x=new URL(String(u));const t=x.searchParams.get('t')||x.searchParams.get('start');if(!t)return 0;const m=String(t).match(/^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s?)?$/);return m?(+m[1]||0)*3600+(+m[2]||0)*60+(+m[3]||0):0}catch(e){return 0}};
+const lpPos=()=>{try{return JSON.parse(localStorage.getItem('pp:lec')||'{}')}catch(e){return {}}};
+function lpSavePos(force){const p=LP.p;if(!p||!LP.id||!p.getCurrentTime)return;const now=Date.now();if(!force&&now-LP.last<5000)return;LP.last=now;
+  try{const P=lpPos(),t=p.getCurrentTime()||0,d=p.getDuration()||0,title=(p.getVideoData&&p.getVideoData().title)||(P[LP.id]||{}).title||'';if(t<3&&!P[LP.id])return;
+    P[LP.id]={t,d,title,at:now};const ks=Object.keys(P).sort((a,b)=>P[b].at-P[a].at);ks.slice(40).forEach(k=>delete P[k]);localStorage.setItem('pp:lec',JSON.stringify(P))}catch(e){}}
+function ytApi(){if(LP.api)return LP.api;LP.api=new Promise((ok,no)=>{if(window.YT&&YT.Player)return ok(YT);const prev=window.onYouTubeIframeAPIReady;
+  window.onYouTubeIframeAPIReady=()=>{try{prev&&prev()}catch(e){}ok(YT)};const s=document.createElement('script');s.src='https://www.youtube.com/iframe_api';s.onerror=()=>{LP.api=null;no(new Error('offline'))};document.head.append(s);
+  setTimeout(()=>{if(!(window.YT&&YT.Player)){LP.api=null;no(new Error('timeout'))}},15000)});return LP.api}
+const lpFmt=t=>{t=Math.max(0,Math.floor(t||0));const h=Math.floor(t/3600),m=Math.floor(t%3600/60),s=t%60;return (h?h+':'+String(m).padStart(2,'0'):m)+':'+String(s).padStart(2,'0')};
+function lpBuild(){if($('#lp'))return;
+  const w=document.createElement('div');w.id='lp';w.innerHTML='<div class="lpv"><div id="lpYT"></div></div><div class="lpmsg" hidden></div>'+
+   '<div class="lpt"><span class="lpn"></span><button data-l="link" title="Link this moment to the open question">📌</button><button data-l="aud" title="Listen only (hide the video)">🎧</button><button data-l="x" title="Close">✕</button></div>'+
+   '<div class="lpb"><input class="lps" type="range" min="0" max="1000" value="0" aria-label="Position"><div class="lprow"><button data-l="b10" title="Back 10 s (Alt+J)">⟲10</button><button data-l="pp" class="lppp" title="Play / pause (Alt+K)">▶</button><button data-l="f10" title="Forward 10 s (Alt+L)">10⟳</button><button data-l="rate" class="lprt" title="Speed">1×</button><span class="lptm"></span></div></div><i class="lprs" title="Drag to resize"></i>';
+  document.body.append(w);
+  const a=document.createElement('div');a.id='lpA';a.hidden=true;a.innerHTML='<span class="lpai">🎧</span><span class="lpn"></span><button data-l="b10" title="Back 10 s (Alt+J)">⟲10</button><button data-l="pp" class="lppp" title="Play / pause (Alt+K)">▶</button><button data-l="f10" title="Forward 10 s (Alt+L)">10⟳</button><input class="lps" type="range" min="0" max="1000" value="0" aria-label="Position"><span class="lptm"></span><button data-l="rate" class="lprt" title="Speed">1×</button><button data-l="link" title="Link this moment to the open question">📌</button><button data-l="vid" title="Show the video">▣</button><button data-l="x" title="Close">✕</button>';
+  document.body.append(a);
+  const P0=prefs.lpBox||{};if(P0.w)w.style.width=Math.max(220,Math.min(720,P0.w))+'px';if(P0.r!=null){w.style.right=P0.r+'px';w.style.bottom=P0.b+'px'}
+  const click=e=>{const b=e.target.closest('[data-l]');if(!b)return;e.stopPropagation();lpAct(b.dataset.l)};w.addEventListener('click',click);a.addEventListener('click',click);
+  [w,a].forEach(el=>{const s=$('.lps',el);s.addEventListener('input',()=>{LP.drag=true;const d=LP.p&&LP.p.getDuration?LP.p.getDuration():0;$('.lptm',el).textContent=lpFmt(s.value/1000*d)+' / '+lpFmt(d)});
+    s.addEventListener('change',()=>{LP.drag=false;const d=LP.p&&LP.p.getDuration?LP.p.getDuration():0;if(d)LP.p.seekTo(s.value/1000*d,true);lpTick()})});
+  // controls show when the pointer comes in, hide after a moment so YouTube's own buttons (Skip ad) stay reachable
+  const show=()=>{w.classList.add('hov');clearTimeout(LP.hideT);LP.hideT=setTimeout(()=>{if(!w.matches('.lpt:hover,.lpb:hover')&&!$('.lpt',w).matches(':hover')&&!$('.lpb',w).matches(':hover'))w.classList.remove('hov')},2500)};
+  w.addEventListener('mouseenter',show);w.addEventListener('mouseleave',()=>{clearTimeout(LP.hideT);w.classList.remove('hov')});$('.lpt',w).addEventListener('mousemove',show);$('.lpb',w).addEventListener('mousemove',show);
+  // move by the top strip, resize by the corner; the box stays anchored to the bottom-right
+  const drag=(el,fn)=>el.addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;e.preventDefault();el.setPointerCapture(e.pointerId);w.classList.add('drg');
+    const r0=w.getBoundingClientRect(),x0=e.clientX,y0=e.clientY;const mv=ev=>fn(r0,ev.clientX-x0,ev.clientY-y0);
+    const up=()=>{el.removeEventListener('pointermove',mv);el.removeEventListener('pointerup',up);el.removeEventListener('pointercancel',up);w.classList.remove('drg');
+      const r=w.getBoundingClientRect();prefs.lpBox={w:Math.round(r.width),r:Math.round(innerWidth-r.right),b:Math.round(innerHeight-r.bottom)};savePrefsSoon()};
+    el.addEventListener('pointermove',mv);el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up)});
+  drag($('.lpt',w),(r0,dx,dy)=>{const R=Math.max(0,Math.min(innerWidth-r0.width,innerWidth-r0.right-dx)),B=Math.max(0,Math.min(innerHeight-r0.height,innerHeight-r0.bottom-dy));w.style.right=R+'px';w.style.bottom=B+'px'});
+  drag($('.lprs',w),(r0,dx)=>{w.style.width=Math.max(220,Math.min(Math.min(720,r0.right-8),r0.width-dx))+'px'});
+  // clicking the video gives focus to YouTube; hand it back so PDF Pair's keys keep working
+  window.addEventListener('blur',()=>setTimeout(()=>{const f=$('#lp iframe');if(f&&document.activeElement===f){f.blur();window.focus()}},0));
+  setInterval(lpTick,500);
+}
+function lpShowMode(){const w=$('#lp'),a=$('#lpA');if(!w)return;const on=!!LP.id||!!LP.list;w.classList.toggle('off',!on||LP.mode==='a');a.hidden=!on||LP.mode!=='a'}
+function lpTick(){const p=LP.p;if(!p||!p.getPlayerState)return;const st0=p.getPlayerState(),t=p.getCurrentTime()||0,d=p.getDuration()||0;
+  const title=(p.getVideoData&&p.getVideoData().title)||'';if(p.getVideoData&&p.getVideoData().video_id)LP.id=p.getVideoData().video_id;
+  ['#lp','#lpA'].forEach(s=>{const el=$(s);if(!el)return;$('.lppp',el).textContent=st0===1||st0===3?'⏸':'▶';$('.lpn',el).textContent=title;$('.lpn',el).title=title;
+    if(!LP.drag){$('.lptm',el).textContent=lpFmt(t)+' / '+lpFmt(d);$('.lps',el).value=d?Math.round(t/d*1000):0}$('.lprt',el).textContent=(p.getPlaybackRate?p.getPlaybackRate():1)+'×'});
+  $('#lp').classList.toggle('paused',st0===2||st0===5||st0===0);if(st0===1)lpSavePos();}
+async function lpOpen(u,t){const id=ytId(u),list=ytList(u);if(!id&&!list){toast('That is not a YouTube lecture link');return}
+  $('#lecPop').hidden=true;lpBuild();const P=lpPos();let start=t!=null?t:(ytT(u)||(id&&P[id]&&P[id].d&&P[id].t<P[id].d-20?P[id].t:0));start=Math.max(0,Math.floor(start||0));
+  lpSavePos(true);LP.id=id;LP.list=list&&!id?list:null;$('#lp .lpmsg').hidden=true;lpShowMode();
+  if(LP.p&&LP.p.loadVideoById){if(id)LP.p.loadVideoById({videoId:id,startSeconds:start});else LP.p.loadPlaylist({list,listType:'playlist'});return}
+  let Y;try{Y=await ytApi()}catch(e){toast('Could not reach YouTube. Check the internet and try again');LP.id=null;LP.list=null;lpShowMode();return}
+  const pv={autoplay:1,controls:0,rel:0,modestbranding:1,iv_load_policy:3,playsinline:1,fs:0,disablekb:1,start};if(location.protocol.startsWith('http'))pv.origin=location.origin;
+  if(!id){pv.listType='playlist';pv.list=list}
+  LP.p=new Y.Player('lpYT',{width:'100%',height:'100%',videoId:id||undefined,playerVars:pv,events:{
+    onReady:e=>{try{e.target.setPlaybackRate(LP.rate||1);e.target.playVideo()}catch(x){}lpTick()},
+    onStateChange:e=>{if(e.data===1){try{if(e.target.getPlaybackRate()!==LP.rate)e.target.setPlaybackRate(LP.rate)}catch(x){}}if(e.data===2||e.data===0)lpSavePos(true);lpTick()},
+    onError:e=>{const m=$('#lp .lpmsg');const can=window.ppDesktop&&window.ppDesktop.openLecture;const url='https://www.youtube.com/watch?v='+LP.id;
+      m.innerHTML='<div>'+(e.data===150||e.data===101||e.data===153?'This channel does not allow its videos to play inside other apps.':e.data===100?'This video is not available (removed or private).':'This video could not play here.')+'</div><button class="lpob">Open on YouTube</button>';
+      $('.lpob',m).onclick=()=>{if(can)window.ppDesktop.openLecture(url);else window.open(url,'_blank')};m.hidden=false;if(LP.mode==='a'){LP.mode='v';lpShowMode()}}}})}
+function lpAct(k){const p=LP.p;const ok=p&&p.getPlayerState;
+  if(k==='x'){lpSavePos(true);try{p&&p.stopVideo()}catch(e){}LP.id=null;LP.list=null;lpShowMode();return}
+  if(k==='aud'||k==='vid'){LP.mode=k==='aud'?'a':'v';prefs.lpMode=LP.mode;savePrefsSoon();lpShowMode();return}
+  if(!ok)return;const t=p.getCurrentTime()||0,d=p.getDuration()||1e9;
+  if(k==='pp'){p.getPlayerState()===1?p.pauseVideo():p.playVideo()}
+  if(k==='b10')p.seekTo(Math.max(0,t-10),true);if(k==='f10')p.seekTo(Math.min(d-1,t+10),true);
+  if(k==='rate'){const R=[1,1.25,1.5,1.75,2,0.75];const r=R[(R.indexOf(p.getPlaybackRate())+1)%R.length];p.setPlaybackRate(r);LP.rate=r;prefs.lpRate=r;savePrefsSoon()}
+  if(k==='link'){const c=curSet();if(!c||isCset()){toast('Open a question set first');return}if(!activeN){toast('Click a question first (its sticker or its row)');return}
+    pushUndo();st.links=st.links||{};(st.links[activeN]=st.links[activeN]||[]).push({u:'https://www.youtube.com/watch?v='+LP.id,t:Math.floor(t),title:String((p.getVideoData&&p.getVideoData().title)||'').slice(0,200),at:Date.now()});save();renderAll();toast('📌 '+lpFmt(t)+' linked to '+label(activeN))}
+  setTimeout(lpTick,150)}
+// 🔍 search (desktop app only: it can read YouTube's results page without opening the browser)
+function ytParse(html){const i=html.indexOf('ytInitialData');if(i<0)return [];let s=html.indexOf('{',i),dep=0,inS=false,esc=false,e=-1;
+  for(let k=s;k<html.length;k++){const c=html[k];if(inS){if(esc)esc=false;else if(c==='\\')esc=true;else if(c==='"')inS=false;continue}if(c==='"')inS=true;else if(c==='{')dep++;else if(c==='}'){dep--;if(!dep){e=k;break}}}
+  if(e<0)return [];let J;try{J=JSON.parse(html.slice(s,e+1))}catch(x){return []}const out=[],seen=new Set();
+  const txt=o=>!o?'':o.simpleText||(o.runs||[]).map(r=>r.text).join('');
+  (function walk(o){if(!o||typeof o!=='object'||out.length>=12)return;if(Array.isArray(o)){o.forEach(walk);return}
+    const v=o.videoRenderer;if(v&&v.videoId&&!seen.has(v.videoId)){seen.add(v.videoId);out.push({id:v.videoId,title:txt(v.title),len:txt(v.lengthText),ch:txt(v.ownerText||v.longBylineText),when:txt(v.publishedTimeText)})}
+    for(const k in o)if(k!=='videoRenderer')walk(o[k])})(J);return out}
+async function ytSearch(q){const r=await window.ppDesktop.fetchPdf('https://www.youtube.com/results?search_query='+encodeURIComponent(q)+'&sp=EgIQAQ%253D%253D&hl=en');
+  return ytParse(new TextDecoder().decode(r.data))}
+const LECSRCH=!!(window.ppDesktop&&window.ppDesktop.fetchPdf);
+async function lecOpen(){const P0=$('#lecPop');if(!P0.hidden){P0.hidden=true;return}
+  let L={recent:[],courses:[]};if(window.ppDesktop&&window.ppDesktop.lectures){try{L=await window.ppDesktop.lectures()||L}catch(e){}}
+  P0.innerHTML='<div class="ls">🔍<input id="lecQ" placeholder="'+(LECSRCH?'Search lectures or paste a link':'Paste a YouTube lecture link')+'" spellcheck="false" autocomplete="off"><span>Enter</span></div><div class="lres"></div>';
+  const R=$('.lres',P0);
+  const sec=(t,to)=>{const d=document.createElement('div');d.className='lh';d.textContent=t;(to||R).append(d)};
+  const row=(id,icon,title,sub,go,prog,to)=>{const b=document.createElement('button');b.className='li';b.innerHTML='<span class="lt"></span><span class="lx"><b></b><small></small></span>';
+    const T=$('.lt',b);if(id){const im=new Image();im.alt='';im.src='https://i.ytimg.com/vi/'+id+'/mqdefault.jpg';im.onerror=()=>{im.remove();T.prepend(icon)};T.append(im)}else T.textContent=icon;
+    if(prog!=null){const em=document.createElement('em');em.style.width=Math.round(Math.min(1,prog)*100)+'%';T.append(em)}
+    $('b',b).textContent=title;$('small',b).textContent=sub;b.onclick=go;(to||R).append(b)};
+  const ago=t=>{const d=Math.round((Date.now()-t)/86400000);return d<=0?'today':d===1?'yesterday':d+' days ago'};
+  const home=()=>{R.innerHTML='';const P=lpPos(),seen=new Set(),rec=[];
+    Object.entries(P).forEach(([id,o])=>{if(o&&o.d>0&&o.t<o.d-20)rec.push({id,t:o.t,d:o.d,title:o.title,at:o.at})});
+    (L.recent||[]).forEach(o=>{const id=ytId(o.u);if(id&&!P[id])rec.push({id,t:o.t,d:o.d,title:o.title,at:o.at})});
+    rec.sort((a,b)=>(b.at||0)-(a.at||0));const top=rec.filter(o=>!seen.has(o.id)&&seen.add(o.id)).slice(0,4);
+    if(top.length){sec('Continue watching');top.forEach(o=>row(o.id,'▶',o.title||'Lecture',lpFmt(o.t)+' of '+lpFmt(o.d)+' · '+ago(o.at),()=>lpOpen(o.id,o.t),o.d?o.t/o.d:null))}
+    const lk=(activeN&&st.links&&st.links[activeN]||[]).filter(o=>ytId(o.u));
+    if(lk.length){sec('Linked to this question ('+label(activeN)+')');lk.slice(-4).reverse().forEach(o=>row(ytId(o.u),'📌',o.title||'Lecture',o.t!=null?'from '+lpFmt(o.t):'',()=>lpOpen(o.u,o.t||0)))}
+    if((L.courses||[]).length){sec('My courses');L.courses.forEach(c=>row(ytId(c.u),'🎓',c.name,'Next: '+(c.title||'lecture'),()=>lpOpen(c.u,c.t||0)))}
+    if(!R.children.length){const e=document.createElement('div');e.className='le';e.textContent=LECSRCH?'Search for a lecture above. Lectures you watch will show here so you can continue in one tap.':'Paste a YouTube link above (from WhatsApp, Telegram or YouTube). Lectures you watch will show here so you can continue in one tap.';R.append(e)}};
+  home();
+  const inp=$('#lecQ');inp.addEventListener('keydown',async e=>{e.stopPropagation();if(e.key==='Escape'){P0.hidden=true;return}if(e.key!=='Enter')return;const q=inp.value.trim();
+    if(!q){home();return}if(ytId(q)||ytList(q)){lpOpen(q);return}
+    if(!LECSRCH){toast('Paste a YouTube link here (search works in the desktop app)');return}
+    R.innerHTML='<div class="le">Searching…</div>';let res=[];try{res=await ytSearch(q)}catch(x){}
+    R.innerHTML='';if(!res.length){const d=document.createElement('div');d.className='le';d.textContent='No lectures found. Try other words, or paste a link.';R.append(d);return}
+    sec('Results for “'+q+'”');res.forEach(o=>row(o.id,'▶',o.title||'Lecture',[o.ch,o.len,o.when].filter(Boolean).join(' · '),()=>lpOpen(o.id)));
+    const bk=document.createElement('button');bk.className='lbk';bk.textContent='← Back';bk.onclick=()=>{inp.value='';home()};R.append(bk)});
+  inp.addEventListener('input',()=>{if(!inp.value.trim())home()});
+  const b=$('#bLec').getBoundingClientRect();P0.hidden=false;const h=P0.offsetHeight,w=P0.offsetWidth;
+  P0.style.left=Math.max(10,Math.min(innerWidth-w-10,b.right-w))+'px';P0.style.top=Math.max(10,b.top-h-10)+'px';inp.focus()}
+$('#bLec').hidden=false;$('#bLec').addEventListener('click',e=>{e.stopPropagation();lecOpen()});
+document.addEventListener('pointerdown',e=>{const P0=$('#lecPop');if(!P0.hidden&&!e.target.closest('#lecPop,#bLec'))P0.hidden=true},true);
+window.addEventListener('keydown',e=>{if(!e.altKey||e.ctrlKey||e.metaKey)return;const c=e.code;
+  if(c==='KeyY'){e.preventDefault();e.stopImmediatePropagation();lecOpen();return}
+  if(!LP.p||(!LP.id&&!LP.list))return;const k=c==='KeyJ'?'b10':c==='KeyL'?'f10':c==='KeyK'?'pp':null;if(!k)return;e.preventDefault();e.stopImmediatePropagation();lpAct(k)},true);
+window.addEventListener('pagehide',()=>lpSavePos(true));
+window.__ppLec={LP,ytId,ytParse,lpOpen,lpAct,lecOpen};
 window.__ppFind={FX,fxSearch,fxOpen,fxOcr,ocrPage,showSetDialog,CAP,capTake};
 window.__ppTest={due,autoRun,AB,bkAction,allNums,save,renderAll,key:()=>key,getSt:()=>st,sharedDoc:()=>!!P.q.docs[0]&&P.q.docs[0]===P.a.docs[0],openDocs:()=>DOCS.size};
 // make a set from a question/answer pair that has no set yet (old saved pair, or an old backup)
@@ -4804,7 +4944,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='05 Nov 17:18';   // build label, so you can check both devices have the same version
+const APPV='05 Nov 17:36';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
