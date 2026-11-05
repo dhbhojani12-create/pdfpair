@@ -1,6 +1,6 @@
 const {contextBridge,ipcRenderer}=require('electron');
 contextBridge.exposeInMainWorld('ppDesktop',{
-  version:'2.1.0',
+  version:'2.2.0',
   openBrowser:u=>ipcRenderer.send('pp-browser',u),
   fetchPdf:u=>ipcRenderer.invoke('pp-fetch',u),
   onFile:cb=>ipcRenderer.on('pp-file',(e,f)=>cb(f)),

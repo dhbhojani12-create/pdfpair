@@ -1,5 +1,5 @@
 // PDF Pair desktop: the same web app (from GitHub Pages) plus a built-in browser whose downloads go straight into the library
-const {app,BrowserWindow,WebContentsView,ipcMain,session,net,shell,Menu,dialog}=require('electron');
+const {app,BrowserWindow,WebContentsView,ipcMain,session,net,shell,Menu,dialog,screen}=require('electron');
 const path=require('path'),fs=require('fs'),os=require('os');
 const APP_URL=process.env.PP_URL||'https://dhbhojani12-create.github.io/pdfpair/';
 if(process.env.PP_TEST){app.commandLine.appendSwitch('ignore-certificate-errors');if(process.env.HTTPS_PROXY){app.commandLine.appendSwitch('proxy-server',process.env.HTTPS_PROXY.replace(/^https?:\/\//,'').replace(/\/$/,''));app.commandLine.appendSwitch('proxy-bypass-list','127.0.0.1;localhost')}}
@@ -63,7 +63,7 @@ let rightInset=0,splitId=null,splitRatio=.5,lastActive=null;
 function layoutBrowser(){if(!bwin||bwin.isDestroyed())return;const [w,h]=bwin.getContentSize();const tp=fsMode?0:top,W=Math.max(200,w-(fsMode?0:rightInset)),H=Math.max(0,h-tp);
   if(splitId!=null&&(splitId===active||!tabs.some(t=>t.id===splitId&&alive(t))))splitId=null;
   const L=splitId!=null?Math.round(W*splitRatio)-3:W;
-  for(const t of tabs.filter(x=>x&&x.view)){
+  for(const t of tabs.filter(x=>x&&x.view&&x.id!==miniId)){
     if(t.id===active)t.view.setBounds({x:0,y:tp,width:L,height:H});
     else if(t.id===splitId)t.view.setBounds({x:L+6,y:tp,width:W-L-6,height:H});
     else t.view.setBounds({x:0,y:tp,width:W,height:H});
@@ -104,6 +104,63 @@ function openBrowser(url){
   bwin.on('closed',()=>{bwin=null;tabs=[];active=null});
 }
 
+
+// ---- 📱 mini window: the video's tab moves into a small always-on-top window (same signed-in session). Video only while playing, phone-size page when paused
+let miniWin=null,miniId=null,miniMode='full',miniForce=false,miniSize=1,miniTimer=0,miniWasP=null;
+const MINI_BAR=34,MINI_W=[300,340,420];
+const MINI_SEL="const v=[...document.querySelectorAll('video')].filter(x=>x.duration>0).sort((a,b)=>(a.paused-b.paused)||(b.duration-a.duration))[0];";
+const MINI_CSS="html.ppminiv,html.ppminiv body{overflow:hidden!important;background:#000!important}html.ppminiv .html5-video-player,html.ppminiv video.ppmv{position:fixed!important;left:0!important;top:0!important;width:100vw!important;height:100vh!important;z-index:2147483646!important;background:#000!important;margin:0!important;transform:none!important}html.ppminiv .html5-video-player video{width:100vw!important;height:100vh!important;left:0!important;top:0!important;object-fit:contain!important}html.ppminiv ytd-app #masthead-container,html.ppminiv #masthead-container{visibility:hidden!important}";
+function miniTab(){return tabById(miniId)}
+async function miniRun(js){const t=miniTab();if(!t)return null;try{return await t.view.webContents.executeJavaScript(js,true)}catch(e){return null}}
+async function miniState(){return miniRun("(()=>{"+MINI_SEL+"if(!v)return {none:1,title:document.title};return {p:v.paused,t:v.currentTime,d:v.duration,r:v.playbackRate,vw:v.videoWidth,vh:v.videoHeight,u:location.href,title:document.title.replace(/^\\(\\d+\\)\\s*/,'').replace(/ - YouTube$/,'')}})()")}
+function miniLayout(){if(!miniWin||miniWin.isDestroyed())return;const t=miniTab();if(!t)return;const [w,h]=miniWin.getContentSize();t.view.setBounds({x:0,y:MINI_BAR,width:w,height:Math.max(0,h-MINI_BAR)});t.view.setVisible(true)}
+function miniResize(mode,ar){if(!miniWin||miniWin.isDestroyed())return;const b=miniWin.getBounds();const W=MINI_W[miniSize];
+  const H=mode==='vid'?Math.round(W*(ar||9/16))+MINI_BAR:Math.round(W*16/9*1.05);
+  const wa=screen.getDisplayMatching(b).workArea;let x=b.x+b.width-W,y=b.y+b.height-H;   // keep the bottom-right corner where it is
+  x=Math.max(wa.x,Math.min(x,wa.x+wa.width-W));y=Math.max(wa.y,Math.min(y,wa.y+wa.height-H));miniWin.setBounds({x,y,width:W,height:H});miniLayout()}
+async function miniSetMode(mode,ar){miniMode=mode;await miniRun("(()=>{let st=document.getElementById('ppminicss');if(!st){st=document.createElement('style');st.id='ppminicss';st.textContent="+JSON.stringify(MINI_CSS)+";document.documentElement.appendChild(st)}"+MINI_SEL+"document.querySelectorAll('video.ppmv').forEach(x=>x.classList.remove('ppmv'));if(v&&!v.closest('.html5-video-player'))v.classList.add('ppmv');document.documentElement.classList.toggle('ppminiv',"+(mode==='vid')+");window.dispatchEvent(new Event('resize'));return 1})()");miniResize(mode,ar)}
+async function miniWatch(){if(!miniTab()){miniEnd(false,true);return}const s=await miniState();if(!s||s.none)return;const ar=s.vw&&s.vh?s.vh/s.vw:9/16;
+  if(miniWasP!==null&&miniWasP!==s.p&&!s.p)miniForce=false;   // a new "play" ends a manual full view
+  miniWasP=s.p;const want=(!s.p&&!miniForce)?'vid':'full';if(want!==miniMode)miniSetMode(want,ar)}
+async function miniStart(t){if(!t||!alive(t)||!bwin||bwin.isDestroyed())return;if(miniWin&&!miniWin.isDestroyed()){if(miniId===t.id){miniWin.show();return}await miniEnd(false)}
+  await pipRun(t,PIP_EXIT);if(pipOwner===t.id)pipOwner=null;
+  miniId=t.id;miniForce=false;miniWasP=null;miniMode='full';
+  const wa=screen.getDisplayMatching(bwin.getBounds()).workArea,W=MINI_W[miniSize],H=Math.round(W*16/9*1.05);
+  miniWin=new BrowserWindow({width:W,height:H,x:wa.x+wa.width-W-16,y:wa.y+wa.height-H-16,frame:false,alwaysOnTop:true,resizable:true,minimizable:false,maximizable:false,fullscreenable:false,skipTaskbar:false,title:'Lecture',backgroundColor:'#0f0f0f',
+    webPreferences:{nodeIntegration:true,contextIsolation:false,sandbox:false}});
+  miniWin.setAlwaysOnTop(true,'floating');miniWin.loadFile(path.join(__dirname,'mini.html'));
+  try{bwin.contentView.removeChildView(t.view)}catch(e){}miniWin.contentView.addChildView(t.view);
+  if(active===t.id){const o=tabs.find(x=>x.id!==t.id&&alive(x));if(o)active=o.id;else{newTab('https://www.google.com/');}}
+  layoutBrowser();state();miniLayout();
+  miniWin.on('resize',miniLayout);
+  miniWin.on('moved',()=>{if(!miniWin||miniWin.isDestroyed())return;const b=miniWin.getBounds(),wa=screen.getDisplayMatching(b).workArea,S=60;let {x,y}=b;   // snap to corners/edges
+    if(Math.abs(x-wa.x)<S)x=wa.x+8;if(Math.abs(wa.x+wa.width-(x+b.width))<S)x=wa.x+wa.width-b.width-8;if(Math.abs(y-wa.y)<S)y=wa.y+8;if(Math.abs(wa.y+wa.height-(y+b.height))<S)y=wa.y+wa.height-b.height-8;
+    if(x!==b.x||y!==b.y)miniWin.setPosition(x,y)});
+  miniWin.on('closed',()=>{if(miniId!=null)miniEnd(false,true,true);miniWin=null});
+  clearInterval(miniTimer);miniTimer=setInterval(miniWatch,700);tell('📱 Lecture moved to the mini window (Alt+P brings it back)')}
+async function miniEnd(show,pause,closed){const t=miniTab();const id=miniId;miniId=null;clearInterval(miniTimer);miniTimer=0;
+  if(t&&alive(t)){try{await t.view.webContents.executeJavaScript("(()=>{document.documentElement.classList.remove('ppminiv');"+(pause?MINI_SEL+"if(v)v.pause();":"")+"window.dispatchEvent(new Event('resize'));return 1})()",true)}catch(e){}
+    try{if(miniWin&&!miniWin.isDestroyed())miniWin.contentView.removeChildView(t.view)}catch(e){}
+    if(bwin&&!bwin.isDestroyed()){bwin.contentView.addChildView(t.view);if(show){lastActive=active;active=id}layoutBrowser();state();if(show){bwin.show();bwin.focus()}}}
+  if(!closed&&miniWin&&!miniWin.isDestroyed()){const w=miniWin;miniWin=null;w.destroy()}}
+async function miniToggle(){if(miniId!=null){miniEnd(true);return}const c=cur();
+  const t=tabById(pipOwner)||(c&&(await pipRun(c,"(()=>!!document.querySelector('video'))()"))===true?c:null);if(!t){tell('No video on this page');return}miniStart(t)}
+ipcMain.on('br-mini',()=>miniToggle());
+ipcMain.handle('mini-state',async()=>{const s=await miniState();return s?Object.assign(s,{mode:miniMode}):null});
+ipcMain.handle('mini-cmd',async(e,c)=>{const t=miniTab();if(!t)return null;
+  const act={play:'v.paused?v.play():v.pause()',back10:'v.currentTime=Math.max(0,v.currentTime-10)',fwd10:'v.currentTime=Math.min(v.duration||1e9,v.currentTime+10)',rate:'v.playbackRate=({1:1.25,1.25:1.5,1.5:1.75,1.75:2,2:0.75,0.75:1})[v.playbackRate]||1'}[c];
+  if(act){await miniRun("(()=>{"+MINI_SEL+"if(v){"+act+"}return 1})()");return {}}
+  if(c==='mode'){miniForce=miniMode==='vid';const s=await miniState();await miniSetMode(miniMode==='vid'?'full':'vid',s&&s.vw?s.vh/s.vw:9/16);if(miniMode==='vid')miniForce=false;return {}}
+  if(c==='size'){miniSize=(miniSize+1)%3;const s=await miniState();miniResize(miniMode,s&&s.vw?s.vh/s.vw:9/16);return {msg:['Small','Medium','Large'][miniSize]}}
+  if(c==='back'){miniEnd(true);return {}}
+  if(c==='close'){miniEnd(false,true);return {}}
+  const s=await miniState();if(!s||s.none)return {msg:'No video here'};
+  if(c==='link'){if(!win||win.isDestroyed())return {msg:'Open PDF Pair first'};let r=null;try{r=await win.webContents.executeJavaScript('window.__ppDesk?__ppDesk.link('+JSON.stringify({u:s.u,t:s.t,title:s.title})+'):{error:"Open PDF Pair first"}',true)}catch(err){}
+    return {msg:r&&r.ok?'📌 Linked to '+r.label:(r&&r.error)||'Could not link'}}
+  if(c==='cap'){const rect=await miniRun("(()=>{"+MINI_SEL+"if(!v)return null;const r=v.getBoundingClientRect();return {x:Math.max(0,Math.round(r.left)),y:Math.max(0,Math.round(r.top)),width:Math.round(Math.min(r.width,innerWidth)),height:Math.round(Math.min(r.height,innerHeight))}})()");
+    try{const img=await t.view.webContents.capturePage(rect&&rect.width>10?rect:undefined);const sz=img.getSize();if(win&&!win.isDestroyed())win.webContents.send('pp-cap',{data:img.toDataURL(),w:sz.width,h:sz.height,url:s.u,title:s.title});return {msg:'📸 In PDF Pair’s Captures tray'}}catch(err){return {msg:'Could not capture'}}}
+  return {}});
+
 // ---- picture-in-picture: the playing video floats on top; it comes back when you return to its tab
 const PIP_TOGGLE="(async()=>{const ms=(v)=>{try{const S=navigator.mediaSession;S.setActionHandler('seekbackward',()=>{v.currentTime=Math.max(0,v.currentTime-10)});S.setActionHandler('seekforward',()=>{v.currentTime=Math.min(v.duration||1e9,v.currentTime+10)})}catch(e){}};try{if(document.pictureInPictureElement){await document.exitPictureInPicture();return 'off'}const v=[...document.querySelectorAll('video')].filter(x=>x.readyState>0).sort((a,b)=>b.clientWidth*b.clientHeight-a.clientWidth*a.clientHeight)[0];if(!v)return 'none';v.disablePictureInPicture=false;ms(v);await v.requestPictureInPicture();return 'on'}catch(e){return 'err:'+e.message}})()";
 const PIP_AUTO="(async()=>{const ms=(v)=>{try{const S=navigator.mediaSession;S.setActionHandler('seekbackward',()=>{v.currentTime=Math.max(0,v.currentTime-10)});S.setActionHandler('seekforward',()=>{v.currentTime=Math.min(v.duration||1e9,v.currentTime+10)})}catch(e){}};try{if(document.pictureInPictureElement)return 'on';const v=[...document.querySelectorAll('video')].find(x=>!x.paused&&!x.ended&&x.readyState>2&&x.clientWidth>200);if(!v)return 'none';v.disablePictureInPicture=false;ms(v);await v.requestPictureInPicture();return 'on'}catch(e){return 'err'}})()";
@@ -111,13 +168,13 @@ const PIP_EXIT="(async()=>{try{if(document.pictureInPictureElement){await docume
 let pipOwner=null;
 const tabById=id=>tabs.find(t=>t.id===id&&alive(t));
 async function pipRun(t,js){if(!t||!alive(t))return 'none';try{return await t.view.webContents.executeJavaScript(js,true)}catch(e){return 'err'}}
-async function pipAuto(t){const r=await pipRun(t,PIP_AUTO);if(r==='on'){pipOwner=t.id;tell('▣ Video popped out. Come back to the tab to bring it back')}}
+async function pipAuto(t){if(t&&t.id===miniId)return;const r=await pipRun(t,PIP_AUTO);if(r==='on'){pipOwner=t.id;tell('▣ Video popped out. Come back to the tab to bring it back')}}
 async function pipBack(t){if(t&&pipOwner===t.id){const r=await pipRun(t,PIP_EXIT);if(r==='off'||r==='none')pipOwner=null}}
-async function pipToggle(){const t=cur();const r=await pipRun(t,PIP_TOGGLE);if(r==='on'){pipOwner=t.id;tell('▣ Video popped out (Alt+P to bring it back)')}else if(r==='off'){pipOwner=null}else tell(r==='none'?'No video on this page':'Could not pop out this video')}
+async function pipToggle(){const t=cur();const r=await pipRun(t,PIP_TOGGLE);if(r==='on'){pipOwner=t.id;tell('▣ Video popped out')}else if(r==='off'){pipOwner=null}else tell(r==='none'?'No video on this page':'Could not pop out this video')}
 function fwdKeys(e,i){if(i.type!=='keyDown'||!bwin||bwin.isDestroyed())return;const k=(i.key||'').toLowerCase();
   const want=(i.control&&['k','.','t','w','l','tab','h'].includes(k))||(i.alt&&!i.control&&['h','m','s'].includes(k));
   if(want){e.preventDefault();bwin.webContents.send('br-key',{key:i.key,ctrl:i.control,alt:i.alt,shift:i.shift});if(k==='l'||k==='k')bwin.webContents.focus()}}
-function pipKeys(e,i){if(i.type==='keyDown'&&i.alt&&!i.control&&(i.key==='p'||i.key==='P')){e.preventDefault();pipToggle()}}
+function pipKeys(e,i){if(i.type==='keyDown'&&i.alt&&!i.control&&(i.key==='p'||i.key==='P')){e.preventDefault();miniToggle()}}
 
 // ---- 🛡 shield: ads/trackers blocked (Ghostery engine + EasyList, EasyPrivacy, uBlock filters), known phishing/malware sites warned
 const SH={blocker:null,bad:new Set(),allowBad:new Set(),count:new Map(),ready:false};
@@ -228,12 +285,12 @@ async function readBm(){try{return JSON.parse(fs.readFileSync(BMF(),'utf8'))}cat
 ipcMain.handle('bm-get',()=>readBm());
 ipcMain.on('bm-set',(e,o)=>{try{fs.writeFileSync(BMF(),JSON.stringify(o))}catch(err){}});
 ipcMain.on('br-top',(e,px)=>{top=Math.max(40,Math.min(240,+px||112));layoutBrowser()});
-ipcMain.on('br-tab',(e,a)=>{if(!bwin)return;if(a.op==='new'){const prev=cur();lastActive=prev&&prev.id;newTab(a.url);if(!splitId)pipAuto(prev)}if(a.op==='close')closeTab(a.id);if(a.op==='switch'&&tabs.some(t=>t.id===a.id)&&a.id!==active){const prev=cur();if(a.id===splitId)splitId=active;lastActive=active;active=a.id;layoutBrowser();state();if(!splitId||prev.id!==splitId)pipAuto(prev);pipBack(cur())}});
+ipcMain.on('br-tab',(e,a)=>{if(!bwin)return;if(a.op==='new'){const prev=cur();lastActive=prev&&prev.id;newTab(a.url);if(!splitId)pipAuto(prev)}if(a.op==='close'){if(a.id===miniId)miniEnd(false,true);closeTab(a.id)}if(a.op==='switch'&&a.id===miniId){miniEnd(true);return}if(a.op==='switch'&&tabs.some(t=>t.id===a.id)&&a.id!==active){const prev=cur();if(a.id===splitId)splitId=active;lastActive=active;active=a.id;layoutBrowser();state();if(!splitId||prev.id!==splitId)pipAuto(prev);pipBack(cur())}});
 ipcMain.on('br-go',(e,u)=>{const c=cur();if(!c)return;let url=String(u||'').trim();if(!url)return;
   if(!/^[a-z]+:\/\//i.test(url))url=/\s/.test(url)||!/\./.test(url)?'https://www.google.com/search?q='+encodeURIComponent(url):'https://'+url;c.view.webContents.loadURL(url)});
 ipcMain.on('br-cmd',(e,cmd)=>{if(cmd==='app'&&win){pipAuto(cur());win.show();win.focus();return}if(cmd==='pip'){pipToggle();return}const c=cur();if(!c)return;const wc=c.view.webContents;
   if(cmd==='back'&&wc.navigationHistory.canGoBack())wc.navigationHistory.goBack();if(cmd==='fwd'&&wc.navigationHistory.canGoForward())wc.navigationHistory.goForward();if(cmd==='reload')wc.reload();if(cmd==='stop')wc.stop();if(cmd==='ext')shell.openExternal(wc.getURL())});
-ipcMain.handle('pp-video',async(e,js)=>{const t=tabById(pipOwner)||cur();if(!t||!alive(t))return null;try{return await t.view.webContents.executeJavaScript(String(js),true)}catch(err){return null}});
+ipcMain.handle('pp-video',async(e,js)=>{const t=tabById(miniId)||tabById(pipOwner)||cur();if(!t||!alive(t))return null;try{return await t.view.webContents.executeJavaScript(String(js),true)}catch(err){return null}});
 ipcMain.on('pp-browser-show',()=>{if(bwin&&!bwin.isDestroyed()){bwin.show();bwin.focus()}});
 ipcMain.handle('br-run',async(e,js)=>{const c=cur();if(!c)return null;try{return await c.view.webContents.executeJavaScript(String(js),true)}catch(err){return {error:String(err.message||err)}}});
 ipcMain.on('br-cover',(e,on)=>{covered=!!on;layoutBrowser()});
