@@ -20,7 +20,7 @@ function createMain(){
   load();
   win.webContents.setWindowOpenHandler(({url})=>{openBrowser(url);return {action:'deny'}});
   win.webContents.on('will-navigate',(e,url)=>{if(!url.startsWith(APP_ORIGIN)&&!url.startsWith('file:')){e.preventDefault();openBrowser(url)}});
-  win.webContents.on('before-input-event',(e,i)=>{if(i.type==='keyDown'&&i.key==='F12')win.webContents.toggleDevTools();if(i.type==='keyDown'&&(i.key==='F5'||(i.control&&i.key.toLowerCase()==='r'&&i.shift)))win.webContents.reload()});
+  win.webContents.on('before-input-event',(e,i)=>{if(i.type==='keyDown'&&i.key==='F11'){e.preventDefault();win.setFullScreen(!win.isFullScreen())}if(i.type==='keyDown'&&i.key==='F12')win.webContents.toggleDevTools();if(i.type==='keyDown'&&(i.key==='F5'||(i.control&&i.key.toLowerCase()==='r'&&i.shift)))win.webContents.reload()});
   win.on('closed',()=>{win=null;if(bwin&&!bwin.isDestroyed())bwin.close()});
 }
 
@@ -58,7 +58,11 @@ const BR_URL=process.env.PP_BR_URL||APP_URL.replace(/[^/]*$/,'')+'desktop/browse
 let top=112,tabs=[],active=null,nextId=1;
 const BMF=()=>path.join(app.getPath('userData'),'bookmarks.json');
 function cur(){return tabs.find(t=>t.id===active)}
-function layoutBrowser(){if(!bwin||bwin.isDestroyed())return;const [w,h]=bwin.getContentSize();for(const t of tabs.filter(x=>x&&x.view)){t.view.setBounds({x:0,y:top,width:w,height:Math.max(0,h-top)});t.view.setVisible(t.id===active&&!covered)}}
+let fsMode=false;
+function setFs(on){if(!bwin||bwin.isDestroyed())return;fsMode=!!on;bwin.setFullScreen(fsMode);setTimeout(layoutBrowser,50);setTimeout(layoutBrowser,400)}
+function fsKeys(e,i){if(i.type!=='keyDown')return;if(i.key==='F11'){e.preventDefault();setFs(!fsMode)}else if(i.key==='Escape'&&fsMode&&!htmlFs)setFs(false)}
+let htmlFs=false;
+function layoutBrowser(){if(!bwin||bwin.isDestroyed())return;const [w,h]=bwin.getContentSize();const tp=fsMode?0:top;for(const t of tabs.filter(x=>x&&x.view)){t.view.setBounds({x:0,y:tp,width:w,height:Math.max(0,h-tp)});t.view.setVisible(t.id===active&&!covered)}}
 let covered=false;
 const alive=t=>t&&t.view&&t.view.webContents&&!t.view.webContents.isDestroyed();
 function state(){try{if(!bwin||bwin.isDestroyed())return;tabs=tabs.filter(alive);if(!tabs.some(t=>t.id===active)&&tabs.length)active=tabs[tabs.length-1].id;const c=cur(),wc=c&&c.view.webContents;
@@ -68,6 +72,7 @@ function newTab(url){
   const ses=session.fromPartition('persist:browser');
   const v=new WebContentsView({webPreferences:{session:ses,contextIsolation:true,sandbox:true}});
   const t={id:nextId++,view:v};tabs.push(t);bwin.contentView.addChildView(v);
+  v.webContents.on('enter-html-full-screen',()=>{htmlFs=true;setFs(true)});v.webContents.on('leave-html-full-screen',()=>{htmlFs=false;setFs(false)});v.webContents.on('before-input-event',fsKeys);
   const wc=v.webContents;['did-navigate','did-navigate-in-page','page-title-updated','did-start-loading','did-stop-loading'].forEach(ev=>wc.on(ev,state));
   wc.setWindowOpenHandler(({url,disposition})=>{
     if(disposition==='new-window'||/accounts\.google\.com|appleid\.apple\.com|login\.microsoftonline|oauth|auth/i.test(url))
@@ -89,7 +94,7 @@ function openBrowser(url){
   bwin.webContents.on('did-finish-load',async()=>{if(fell)return;try{if(!(await bwin.webContents.executeJavaScript("!!document.getElementById('chrome')&&typeof br==='object'")))local()}catch(e){local()}});
   bwin.loadURL(BR_URL+'?v='+Date.now()).catch(()=>{});
   tabs=[];active=null;newTab(url||'https://www.icai.org/');
-  bwin.on('resize',layoutBrowser);bwin.webContents.on('did-finish-load',state);
+  bwin.on('resize',layoutBrowser);bwin.on('leave-full-screen',()=>{fsMode=false;layoutBrowser()});bwin.webContents.on('before-input-event',fsKeys);bwin.webContents.on('did-finish-load',state);
   bwin.on('closed',()=>{bwin=null;tabs=[];active=null});
 }
 async function readBm(){try{return JSON.parse(fs.readFileSync(BMF(),'utf8'))}catch(e){}
