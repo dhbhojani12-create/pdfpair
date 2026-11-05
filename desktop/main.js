@@ -164,7 +164,11 @@ function shield(ses){
   (async()=>{await Promise.all([loadBad(),loadAds()]);
     if(SH.blocker){
       if(!ses.registerPreloadScript){ses.registerPreloadScript=o=>{const f=o.filePath.replace(/index\.js$/,'index.cjs');ses.setPreloads([...ses.getPreloads(),f]);return f};ses.unregisterPreloadScript=id=>ses.setPreloads(ses.getPreloads().filter(x=>x!==id))}   // Electron 33
-      try{SH.blocker.enableBlockingInSession(ses)}catch(e){console.error('adblock enable',e)}hook()}   // Ghostery adds its page script; our hooks wrap its request filtering
+      try{SH.blocker.enableBlockingInSession(ses)}catch(e){console.error('adblock enable',e)}
+      // page scripts and element hiding also respect "allow ads on this site" (YouTube's own pages break with them)
+      const CH='@ghostery/adblocker/inject-cosmetic-filters';try{ipcMain.removeHandler(CH)}catch(e){}
+      ipcMain.handle(CH,(event,url,msg)=>{let top='';try{top=hostOf(event.sender.getURL())}catch(e){}if(siteOff(top)||siteOff(hostOf(url)))return;return SH.blocker.onInjectCosmeticFilters(event,url,msg)});
+      hook()}   // Ghostery adds its page script; our hooks wrap its request filtering
     SH.ready=true;bump()})();
 }
 let bumpT=null;function bump(){if(bumpT)return;bumpT=setTimeout(()=>{bumpT=null;state()},400)}

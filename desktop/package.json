@@ -1,1 +1,1 @@
-{"name":"pdf-pair","productName":"PDF Pair","version":"2.0.0","description":"PDF Pair desktop","main":"main.js","author":"Darshan","dependencies":{"@ghostery/adblocker-electron":"^2.20.3"}}
+{"name":"pdf-pair","productName":"PDF Pair","version":"2.0.1","description":"PDF Pair desktop","main":"main.js","author":"Darshan","dependencies":{"@ghostery/adblocker-electron":"^2.20.3"}}
