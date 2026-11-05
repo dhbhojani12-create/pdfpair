@@ -1,4 +1,4 @@
-const V='pdfpair-93129e34';
+const V='pdfpair-ad099b70';
 const SHELL=['./','index.html','manifest.webmanifest','lib/pdf.min.js','lib/pdf.worker.min.js','lib/pdf-lib.min.js','lib/jszip.min.js','lib/qrcode.min.js','icons/icon-192.png','icons/icon-512.png','icons/apple-180.png'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(V).then(c=>c.addAll(SHELL))));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==V).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
@@ -13,6 +13,7 @@ self.addEventListener('fetch',e=>{
       return back()})().catch(back));return}
   if(r.method!=='GET')return;
   const u=new URL(r.url);
+  if(u.origin===location.origin&&r.mode==='navigate'&&!/\/(index\.html)?$/.test(u.pathname))return;   // other pages (e.g. rtp.html): plain network, never stored as the app
   if(u.origin===location.origin&&r.mode==='navigate'){ // newest page when online, saved copy when offline
     e.respondWith(Promise.race([fetch(r,{cache:'no-store'}).then(x=>{if(x.ok){const c=x.clone();caches.open(V).then(k=>k.put('index.html',c))}return x}),new Promise((_,no)=>setTimeout(no,4000))]).catch(()=>caches.match('index.html')));return}
   if(u.origin===location.origin){e.respondWith(caches.match(r,{ignoreSearch:true}).then(m=>m||fetch(r)));return}

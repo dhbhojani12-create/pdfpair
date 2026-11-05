@@ -69,6 +69,10 @@ How Claude delivers marks straight into the app, instead of restore files.
 - **Package (no installer):** unzip the Electron win32-x64 release (v33.2.0 from GitHub), rename `electron.exe` to `PDF Pair.exe`, delete `resources/default_app.asar`, copy `desktop/*` into `resources/app/`, zip the folder. Not code-signed, so SmartScreen shows "More info → Run anyway" once. Only `desktop/` changes need a new zip.
 - **Test:** `tests/desktop.js` (Linux Electron under `xvfb-run`; env `PP_URL` points at the local mock, `PP_TEST=1` uses the agent proxy and ignores its certificate).
 
+## 📑 RTPs by subject page (5 Nov 2026)
+
+`rtp.html` (served at https://dhbhojani12-create.github.io/pdfpair/rtp.html): ICAI Final RTPs from every attempt, grouped by paper (FR, AFM, Audit, DT, IDT, IBS) plus group-wise PDFs, with corrigenda under their paper. Rebuild with `python3 tools/rtp_page.py` when a new attempt is added to `YEARS`. All paper RTPs are also in `shelf.json`, so in the desktop browser a click files them as "RTP <attempt>" in the right subject (new subjects are created). `sw.js` skips same-origin pages other than the app itself, so opening rtp.html never replaces the cached app.
+
 ## 📚 ICAI shelf (built 5 Nov 2026)
 
 Library → 📚 ICAI tab (per subject). Lists official ICAI PDFs from `shelf.json` in this repo (read from raw.githubusercontent.com, cached in `localStorage['shelf:data']`). Darshan chose **one set per chapter** (not whole modules). So far: **Audit** (Paper 3 study material Aug 2025 reprint, 20 chapter/unit files, + RTPs May 24 – Nov 26).

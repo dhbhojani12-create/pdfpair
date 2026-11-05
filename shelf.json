@@ -242,6 +242,352 @@
     }
    ],
    "page": "https://www.icai.org/post/sm-final-p3-may2026"
+  },
+  "FR": {
+   "label": "Final · FR",
+   "groups": [
+    {
+     "title": "RTPs (Revision Test Papers)",
+     "items": [
+      {
+       "id": "93963bos-aps6169-rtp-nov2026-ch1",
+       "name": "RTP Nov 2026",
+       "file": "93963bos-aps6169-rtp-nov2026-ch1.pdf",
+       "url": "https://resource.cdn.icai.org/93963bos-aps6169-rtp-nov2026-ch1.pdf",
+       "size": 519534,
+       "type": "rtp"
+      },
+      {
+       "id": "91035bos-aps4369-final-may2026-p1",
+       "name": "RTP May 2026",
+       "file": "91035bos-aps4369-final-may2026-p1.pdf",
+       "url": "https://resource.cdn.icai.org/91035bos-aps4369-final-may2026-p1.pdf",
+       "size": 462131,
+       "type": "rtp"
+      },
+      {
+       "id": "88979bos-aps2822-p1",
+       "name": "RTP Jan 2026",
+       "file": "88979bos-aps2822-p1.pdf",
+       "url": "https://resource.cdn.icai.org/88979bos-aps2822-p1.pdf",
+       "size": 389399,
+       "type": "rtp"
+      },
+      {
+       "id": "86597bos-aps1177-g1-p1",
+       "name": "RTP Sep 2025",
+       "file": "86597bos-aps1177-g1-p1.pdf",
+       "url": "https://resource.cdn.icai.org/86597bos-aps1177-g1-p1.pdf",
+       "size": 467961,
+       "type": "rtp"
+      },
+      {
+       "id": "84615bos68187-p1",
+       "name": "RTP May 2025",
+       "file": "84615bos68187-p1.pdf",
+       "url": "https://resource.cdn.icai.org/84615bos68187-p1.pdf",
+       "size": 489037,
+       "type": "rtp"
+      },
+      {
+       "id": "81747bos65928-p1",
+       "name": "RTP Nov 2024",
+       "file": "81747bos65928-p1.pdf",
+       "url": "https://resource.cdn.icai.org/81747bos65928-p1.pdf",
+       "size": 435897,
+       "type": "rtp"
+      },
+      {
+       "id": "78736bos63028-p1",
+       "name": "RTP May 2024",
+       "file": "78736bos63028-p1.pdf",
+       "url": "https://resource.cdn.icai.org/78736bos63028-p1.pdf",
+       "size": 514278,
+       "type": "rtp"
+      }
+     ]
+    }
+   ]
+  },
+  "AFM": {
+   "label": "Final · AFM",
+   "groups": [
+    {
+     "title": "RTPs (Revision Test Papers)",
+     "items": [
+      {
+       "id": "93964bos-aps6169-rtp-nov2026-ch2",
+       "name": "RTP Nov 2026",
+       "file": "93964bos-aps6169-rtp-nov2026-ch2.pdf",
+       "url": "https://resource.cdn.icai.org/93964bos-aps6169-rtp-nov2026-ch2.pdf",
+       "size": 420933,
+       "type": "rtp"
+      },
+      {
+       "id": "94274bos-aps6169-rtp-nov2026-ch2-corrign",
+       "name": "Corrigendum · Nov 2026",
+       "file": "94274bos-aps6169-rtp-nov2026-ch2-corrign.pdf",
+       "url": "https://resource.cdn.icai.org/94274bos-aps6169-rtp-nov2026-ch2-corrign.pdf",
+       "size": 216915,
+       "type": "rtp"
+      },
+      {
+       "id": "91030bos-aps4369-final-may2026-p2",
+       "name": "RTP May 2026",
+       "file": "91030bos-aps4369-final-may2026-p2.pdf",
+       "url": "https://resource.cdn.icai.org/91030bos-aps4369-final-may2026-p2.pdf",
+       "size": 403296,
+       "type": "rtp"
+      },
+      {
+       "id": "88980bos-aps2822-p2",
+       "name": "RTP Jan 2026",
+       "file": "88980bos-aps2822-p2.pdf",
+       "url": "https://resource.cdn.icai.org/88980bos-aps2822-p2.pdf",
+       "size": 433327,
+       "type": "rtp"
+      },
+      {
+       "id": "86598bos-aps1177-g1-p2",
+       "name": "RTP Sep 2025",
+       "file": "86598bos-aps1177-g1-p2.pdf",
+       "url": "https://resource.cdn.icai.org/86598bos-aps1177-g1-p2.pdf",
+       "size": 599073,
+       "type": "rtp"
+      },
+      {
+       "id": "84616bos68187-p2",
+       "name": "RTP May 2025",
+       "file": "84616bos68187-p2.pdf",
+       "url": "https://resource.cdn.icai.org/84616bos68187-p2.pdf",
+       "size": 549613,
+       "type": "rtp"
+      },
+      {
+       "id": "81748bos65928-p2",
+       "name": "RTP Nov 2024",
+       "file": "81748bos65928-p2.pdf",
+       "url": "https://resource.cdn.icai.org/81748bos65928-p2.pdf",
+       "size": 361171,
+       "type": "rtp"
+      },
+      {
+       "id": "78737bos63028-p2",
+       "name": "RTP May 2024",
+       "file": "78737bos63028-p2.pdf",
+       "url": "https://resource.cdn.icai.org/78737bos63028-p2.pdf",
+       "size": 568579,
+       "type": "rtp"
+      }
+     ]
+    }
+   ]
+  },
+  "DT": {
+   "label": "Final · DT",
+   "groups": [
+    {
+     "title": "RTPs (Revision Test Papers)",
+     "items": [
+      {
+       "id": "93966bos-aps6169-rtp-nov2026-ch4",
+       "name": "RTP Nov 2026",
+       "file": "93966bos-aps6169-rtp-nov2026-ch4.pdf",
+       "url": "https://resource.cdn.icai.org/93966bos-aps6169-rtp-nov2026-ch4.pdf",
+       "size": 440275,
+       "type": "rtp"
+      },
+      {
+       "id": "91033bos-aps4369-final-may2026-p4",
+       "name": "RTP May 2026",
+       "file": "91033bos-aps4369-final-may2026-p4.pdf",
+       "url": "https://resource.cdn.icai.org/91033bos-aps4369-final-may2026-p4.pdf",
+       "size": 482525,
+       "type": "rtp"
+      },
+      {
+       "id": "88982bos-aps2822-p4",
+       "name": "RTP Jan 2026",
+       "file": "88982bos-aps2822-p4.pdf",
+       "url": "https://resource.cdn.icai.org/88982bos-aps2822-p4.pdf",
+       "size": 1075004,
+       "type": "rtp"
+      },
+      {
+       "id": "86600bos-aps1177-g2-p4",
+       "name": "RTP Sep 2025",
+       "file": "86600bos-aps1177-g2-p4.pdf",
+       "url": "https://resource.cdn.icai.org/86600bos-aps1177-g2-p4.pdf",
+       "size": 352464,
+       "type": "rtp"
+      },
+      {
+       "id": "84621bos68187-p4",
+       "name": "RTP May 2025",
+       "file": "84621bos68187-p4.pdf",
+       "url": "https://resource.cdn.icai.org/84621bos68187-p4.pdf",
+       "size": 470357,
+       "type": "rtp"
+      },
+      {
+       "id": "81750bos65928-p4",
+       "name": "RTP Nov 2024",
+       "file": "81750bos65928-p4.pdf",
+       "url": "https://resource.cdn.icai.org/81750bos65928-p4.pdf",
+       "size": 476746,
+       "type": "rtp"
+      },
+      {
+       "id": "78738bos63028-p4",
+       "name": "RTP May 2024",
+       "file": "78738bos63028-p4.pdf",
+       "url": "https://resource.cdn.icai.org/78738bos63028-p4.pdf",
+       "size": 481395,
+       "type": "rtp"
+      }
+     ]
+    }
+   ]
+  },
+  "IDT": {
+   "label": "Final · IDT",
+   "groups": [
+    {
+     "title": "RTPs (Revision Test Papers)",
+     "items": [
+      {
+       "id": "93967bos-aps6169-rtp-nov2026-ch5",
+       "name": "RTP Nov 2026",
+       "file": "93967bos-aps6169-rtp-nov2026-ch5.pdf",
+       "url": "https://resource.cdn.icai.org/93967bos-aps6169-rtp-nov2026-ch5.pdf",
+       "size": 381869,
+       "type": "rtp"
+      },
+      {
+       "id": "91040bos-aps4369-final-may2026-p5",
+       "name": "RTP May 2026",
+       "file": "91040bos-aps4369-final-may2026-p5.pdf",
+       "url": "https://resource.cdn.icai.org/91040bos-aps4369-final-may2026-p5.pdf",
+       "size": 495525,
+       "type": "rtp"
+      },
+      {
+       "id": "88983bos-aps2822-p5",
+       "name": "RTP Jan 2026",
+       "file": "88983bos-aps2822-p5.pdf",
+       "url": "https://resource.cdn.icai.org/88983bos-aps2822-p5.pdf",
+       "size": 385180,
+       "type": "rtp"
+      },
+      {
+       "id": "86601bos-aps1177-g2-p5",
+       "name": "RTP Sep 2025",
+       "file": "86601bos-aps1177-g2-p5.pdf",
+       "url": "https://resource.cdn.icai.org/86601bos-aps1177-g2-p5.pdf",
+       "size": 443614,
+       "type": "rtp"
+      },
+      {
+       "id": "84618bos68187-p5",
+       "name": "RTP May 2025",
+       "file": "84618bos68187-p5.pdf",
+       "url": "https://resource.cdn.icai.org/84618bos68187-p5.pdf",
+       "size": 344228,
+       "type": "rtp"
+      },
+      {
+       "id": "82282bos66359",
+       "name": "Corrigendum · Nov 2024",
+       "file": "82282bos66359.pdf",
+       "url": "https://resource.cdn.icai.org/82282bos66359.pdf",
+       "size": 136741,
+       "type": "rtp"
+      },
+      {
+       "id": "81752bos65928-p5",
+       "name": "RTP Nov 2024",
+       "file": "81752bos65928-p5.pdf",
+       "url": "https://resource.cdn.icai.org/81752bos65928-p5.pdf",
+       "size": 371369,
+       "type": "rtp"
+      },
+      {
+       "id": "78739bos63028-p5",
+       "name": "RTP May 2024",
+       "file": "78739bos63028-p5.pdf",
+       "url": "https://resource.cdn.icai.org/78739bos63028-p5.pdf",
+       "size": 406944,
+       "type": "rtp"
+      }
+     ]
+    }
+   ]
+  },
+  "IBS": {
+   "label": "Final · IBS",
+   "groups": [
+    {
+     "title": "RTPs (Revision Test Papers)",
+     "items": [
+      {
+       "id": "93968bos-aps6169-rtp-nov2026-ch6",
+       "name": "RTP Nov 2026",
+       "file": "93968bos-aps6169-rtp-nov2026-ch6.pdf",
+       "url": "https://resource.cdn.icai.org/93968bos-aps6169-rtp-nov2026-ch6.pdf",
+       "size": 697597,
+       "type": "rtp"
+      },
+      {
+       "id": "91038bos-aps4369-final-may2026-p6",
+       "name": "RTP May 2026",
+       "file": "91038bos-aps4369-final-may2026-p6.pdf",
+       "url": "https://resource.cdn.icai.org/91038bos-aps4369-final-may2026-p6.pdf",
+       "size": 1290379,
+       "type": "rtp"
+      },
+      {
+       "id": "88984bos-aps2822-p6",
+       "name": "RTP Jan 2026",
+       "file": "88984bos-aps2822-p6.pdf",
+       "url": "https://resource.cdn.icai.org/88984bos-aps2822-p6.pdf",
+       "size": 1422145,
+       "type": "rtp"
+      },
+      {
+       "id": "86602bos-aps1177-g2-p6",
+       "name": "RTP Sep 2025",
+       "file": "86602bos-aps1177-g2-p6.pdf",
+       "url": "https://resource.cdn.icai.org/86602bos-aps1177-g2-p6.pdf",
+       "size": 738831,
+       "type": "rtp"
+      },
+      {
+       "id": "84619bos68187-p6",
+       "name": "RTP May 2025",
+       "file": "84619bos68187-p6.pdf",
+       "url": "https://resource.cdn.icai.org/84619bos68187-p6.pdf",
+       "size": 922327,
+       "type": "rtp"
+      },
+      {
+       "id": "81751bos65928-p6",
+       "name": "RTP Nov 2024",
+       "file": "81751bos65928-p6.pdf",
+       "url": "https://resource.cdn.icai.org/81751bos65928-p6.pdf",
+       "size": 939231,
+       "type": "rtp"
+      },
+      {
+       "id": "78740bos63028-p6",
+       "name": "RTP May 2024",
+       "file": "78740bos63028-p6.pdf",
+       "url": "https://resource.cdn.icai.org/78740bos63028-p6.pdf",
+       "size": 472040,
+       "type": "rtp"
+      }
+     ]
+    }
+   ]
   }
  }
 }
