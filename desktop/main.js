@@ -108,7 +108,8 @@ function openBrowser(url,hidden){
 // ---- 📱 mini window: the video's tab moves into a small always-on-top window (same signed-in session). Video only while playing, phone-size page when paused
 let miniWin=null,miniId=null,miniMode='full',miniForce=false,miniSize=1,miniTimer=0,miniWasP=null,miniW=null,miniBusy=0,miniWant=null,miniWantN=0;
 const MINI_BAR=34,MINI_W=[300,340,420];
-const MINI_SEL="const v=[...document.querySelectorAll('video')].filter(x=>x.duration>0).sort((a,b)=>(a.paused-b.paused)||(b.duration-a.duration))[0];";
+// only the page's real video: on YouTube just watch/live/shorts pages (search results and home play muted previews on hover), elsewhere a big video
+const MINI_SEL="const yt=/(^|\\.)youtube\\.com$/.test(location.hostname);const v=(yt&&!/^\\/(watch|live|shorts|embed)/.test(location.pathname))?null:[...document.querySelectorAll('video')].filter(x=>x.duration>0&&!x.closest('#inline-preview-player,ytd-video-preview,#video-preview')&&(document.documentElement.classList.contains('ppminiv')||x.getBoundingClientRect().width>=Math.min(innerWidth*0.5,300))).sort((a,b)=>(a.paused-b.paused)||(b.duration-a.duration))[0];";
 const MINI_CSS="html.ppminiv,html.ppminiv body{overflow:hidden!important;background:#000!important}html.ppminiv .html5-video-player,html.ppminiv video.ppmv{position:fixed!important;left:0!important;top:0!important;width:100vw!important;height:100vh!important;z-index:2147483646!important;background:#000!important;margin:0!important;transform:none!important}html.ppminiv .html5-video-player video{width:100vw!important;height:100vh!important;left:0!important;top:0!important;object-fit:contain!important}html.ppminiv ytd-app #masthead-container,html.ppminiv #masthead-container{visibility:hidden!important}";
 function miniTab(){return tabById(miniId)}
 async function miniRun(js){const t=miniTab();if(!t)return null;try{return await t.view.webContents.executeJavaScript(js,true)}catch(e){return null}}

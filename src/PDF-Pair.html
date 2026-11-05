@@ -3872,7 +3872,7 @@ capRender();
 
 /* 🎬 phone remote for the lecture playing in the laptop's browser (desktop app). Laptop publishes rooms/<room>/vid; phone sends cmd {op:'vid',a,v} */
 let lkVid=null;
-const VSEL="const v=document.pictureInPictureElement||[...document.querySelectorAll('video')].filter(x=>x.duration>0).sort((a,b)=>(a.paused-b.paused)||(b.duration-a.duration))[0];if(!v)return null;";
+const VSEL="const yt=/(^|\\.)youtube\\.com$/.test(location.hostname);const v=document.pictureInPictureElement||((yt&&!/^\\/(watch|live|shorts|embed)/.test(location.pathname))?null:[...document.querySelectorAll('video')].filter(x=>x.duration>0&&!x.closest('#inline-preview-player,ytd-video-preview,#video-preview')).sort((a,b)=>(a.paused-b.paused)||(b.duration-a.duration))[0]);if(!v)return null;";
 const VJS2="(()=>{"+VSEL+"return {p:v.paused,t:v.currentTime,d:v.duration||0,r:v.playbackRate,vol:v.volume,m:v.muted,u:location.href,title:document.title.replace(/^\\(\\d+\\)\\s*/,'').replace(/ - YouTube$/,'')}})()";
 const VR={last:'',at:0,s:null};
 async function vRemoteTick(){if(!DESK||!window.ppDesktop.video||SY.role()!=='laptop'||!syncOk())return;let s=null;try{s=await window.ppDesktop.video(VJS2)}catch(e){}
