@@ -2330,8 +2330,6 @@ if(DESK){
   $('#dkName').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter')dkAdd()});
   const b=document.createElement('button');b.className='b';b.id='bBrowse';b.title='Built-in browser: PDFs you download there come straight into your library';b.innerHTML='<span class="mi">🌐</span><span>Browser</span>';
   b.addEventListener('click',()=>window.ppDesktop.openBrowser());$('#morePop').prepend(b);
-  const lb=document.createElement('button');lb.className='addset';lb.id='libBrowse';lb.textContent='🌐 Open browser';lb.title='Built-in browser with your bookmarks: PDFs you download there come straight into your library';lb.addEventListener('click',()=>window.ppDesktop.openBrowser());$('#addSet').before(lb);
-  const rb=document.createElement('button');rb.className='addset';rb.id='libRtp';rb.textContent='📑 RTPs by subject';rb.title='Every ICAI Final RTP, grouped by subject; click one and it comes into your library';rb.addEventListener('click',()=>window.ppDesktop.openBrowser('https://dhbhojani12-create.github.io/pdfpair/rtp.html'));$('#addSet').before(rb);
 }
 
 /* compact toolbar: colours and less-used buttons tucked into small menus */
