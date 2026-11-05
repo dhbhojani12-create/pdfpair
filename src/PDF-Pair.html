@@ -161,7 +161,7 @@ body.t-erase .star:hover{opacity:.5}
 .qn.zero{background:#fdf0dc;color:#9a5a00}
 .stc{flex:none;font:600 11px var(--mono);color:#b88400;white-space:nowrap}
 .tbs .sbadge{font:600 10px var(--mono);background:#fff7d6;color:#8a6500;border:1px solid #e6cf74;border-radius:9px;padding:1px 5px;height:19px;display:flex;align-items:center}
-body.t-hl .ov{cursor:text;touch-action:none}
+body.t-hl .ov{cursor:var(--hlcur,text);touch-action:none}
 
 /* toolbar */
 #bar{position:absolute;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:30;display:flex;align-items:center;gap:3px;background:var(--bar);color:var(--bar-fg);padding:5px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.28);max-width:calc(100% - 32px);overflow-x:auto;scrollbar-width:none}
@@ -2377,7 +2377,10 @@ if(window.ppDesktop&&window.ppDesktop.video){
   document.addEventListener('pointerdown',e=>{if(!e.target.closest('#morePop,#bMore,#colPop,#bCol'))closeAll()});
   setInterval(updMoreDot,1500);setTimeout(()=>{updColDot();updMoreDot()},300);
 })();
-function updColDot(){try{$('#colDot').style.background=['#ffd400','#5ad66d','#ff6fa5'][prefs.color]||'#ffd400'}catch(e){}}
+function hlCursor(){const c=['#ffd400','#5ad66d','#ff6fa5'][prefs.color]||'#ffd400';
+  const svg='<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28"><g transform="rotate(45 14 14)"><rect x="10" y="1" width="8" height="15" rx="2" fill="#2b2f36" stroke="#fff" stroke-width="1.2"/><rect x="10.5" y="11" width="7" height="3" fill="'+c+'"/><path d="M10.5 16h7l-1.6 5h-3.8z" fill="#55595f" stroke="#fff" stroke-width="1"/><path d="M12.3 21h3.4l-.5 3h-2.4z" fill="'+c+'" stroke="#2b2f36" stroke-width=".6"/></g></svg>';
+  document.body.style.setProperty('--hlcur','url("data:image/svg+xml,'+encodeURIComponent(svg)+'") 7 21, text')}
+function updColDot(){try{$('#colDot').style.background=['#ffd400','#5ad66d','#ff6fa5'][prefs.color]||'#ffd400'}catch(e){}try{hlCursor()}catch(e){}}
 function updMoreDot(){try{const d=$('#moreDot');const linked=$('#bLink').classList.contains('on'),bk=!$('#bkDot').hidden;d.hidden=!(linked||bk);d.classList.toggle('warn',bk&&!linked);
   $('#bMore').title='More: Library, Backup, Save PDF, Phone'+(linked?' (phone linked)':'')+(bk?' · a backup is due':'')}catch(e){}}
 
