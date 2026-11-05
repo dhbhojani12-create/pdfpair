@@ -765,6 +765,19 @@ select.tin{appearance:auto}
 #app.cset #dock .qo2{display:none}#app.phone:not(.cset) #dock .co2{display:none}
 #dock.drag{transition:none;opacity:.85}
 @media (max-height:520px){#dock button{width:36px;height:36px;font-size:16px}#dock{gap:2px;padding:3px}}
+#bLec{color:#fff;background:linear-gradient(135deg,#dc2626,#ef4444);border-radius:9px;padding:0 10px;font-weight:700;gap:5px}#bLec[hidden]{display:none}
+#lecPop{position:fixed;z-index:58;width:min(400px,calc(100vw - 20px));max-height:min(70vh,560px);overflow:auto;background:var(--panel);color:var(--ink);border-radius:16px;box-shadow:0 18px 50px rgba(0,0,0,.3);padding:8px;font:13.5px var(--sans)}
+#lecPop[hidden]{display:none}
+#lecPop .ls{display:flex;align-items:center;gap:8px;margin:2px 2px 6px;border:1.5px solid var(--line);border-radius:12px;padding:0 10px}
+#lecPop .ls input{flex:1;border:0;outline:0;background:transparent;font:14px var(--sans);color:var(--ink);height:38px}
+#lecPop .ls span{font-size:11px;color:var(--mut);border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+#lecPop .lh{font:700 11px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--mut);padding:8px 10px 4px}
+#lecPop .li{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;cursor:pointer;width:100%;text-align:left;color:inherit}
+#lecPop .li:hover{background:var(--hover)}
+#lecPop .lt{width:56px;height:32px;border-radius:6px;flex:none;background:linear-gradient(135deg,#312e81,#7c3aed);position:relative;overflow:hidden;color:#fff;display:grid;place-items:center;font-size:13px}
+#lecPop .lt em{position:absolute;left:0;bottom:0;height:3px;background:#ff0033}
+#lecPop .li b{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:300px}#lecPop .li small{color:var(--mut);font-size:12px}
+#lecPop .le{color:var(--mut);font-size:12.5px;padding:4px 10px 8px}
 #dkVid svg{width:22px;height:22px;fill:none;stroke:#fff;stroke-width:2}
 #dkVid .vd{position:absolute;right:3px;top:3px;width:9px;height:9px;border-radius:50%;background:#8b5cf6;box-shadow:0 0 0 2px #1b1e23}
 #vidPop{position:absolute;z-index:36;display:flex;align-items:center;gap:5px;height:52px;padding:0 6px 0 12px;border-radius:26px;background:linear-gradient(135deg,#312e81,#6d28d9);color:#fff;box-shadow:0 8px 22px rgba(20,10,80,.4);font:600 12.5px var(--sans);touch-action:manipulation}
@@ -939,7 +952,7 @@ select.tin{appearance:auto}
     <button class="b" id="bSave" title="Save one linked PDF with stickers, highlights and bookmarks"><svg viewBox="0 0 24 24"><path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/></svg><span>Save PDF</span></button>
     <button class="b" id="bLink" title="Link your phone as a touch highlighter"><span style="font-size:15px">📱</span><span id="bLinkT">Link phone</span></button>
     <button class="b" id="bOpen" title="Library: your sets and subject-wise revision (L)"><svg viewBox="0 0 24 24"><path d="M4 5h4v14H4zM10 5h4v14h-4z"/><path d="M15.2 6.2l3.6-1 3.3 12.9-3.6 1z"/></svg><span>Library</span></button>
-  <button class="b" id="bMore" title="More: Library, Backup, Save PDF, Phone, Quiz" aria-label="More">⋯<i class="mdot" id="moreDot" hidden></i></button><div id="morePop" hidden></div>
+  <button class="b" id="bLec" hidden title="Lectures: search YouTube or continue, plays in the mini window (Alt+Y)">▶ <span>Lectures</span></button><button class="b" id="bMore" title="More: Library, Backup, Save PDF, Phone, Quiz" aria-label="More">⋯<i class="mdot" id="moreDot" hidden></i></button><div id="morePop" hidden></div>
   </div>
 
   <div id="pt" hidden><div class="ptw">
@@ -952,6 +965,7 @@ select.tin{appearance:auto}
   </div></div>
   <div id="capTray" hidden><div class="ch"><b>📸 Captures</b><button id="capAdd" title="Add a picture from your computer (or paste one with Ctrl+V)">＋ Picture</button><button id="capX" title="Hide (your captures stay here)">✕</button></div>
     <div class="hint" id="capHint">Click a capture, then click on a page to put it there.</div><div class="cg" id="capGrid"></div></div>
+  <div id="lecPop" hidden></div>
   <div id="fbar" hidden role="search"><div class="fbr"><span aria-hidden="true">🔎</span><input id="fxQ" placeholder="Search in this PDF" autocomplete="off" spellcheck="false"><span id="fxN"></span>
     <button id="fxUp" title="Previous (Shift+Enter)">↑</button><button id="fxDn" title="Next (Enter)">↓</button>
     <div class="fsc"><button data-s="pdf" class="on" title="Search the PDFs open now">This PDF</button><button data-s="lib" title="Search every PDF in your library">Library</button></div>
@@ -3918,6 +3932,30 @@ function phvAct(a){if(a==='b10')phvCmd('seek',-10);else if(a==='f10')phvCmd('see
 $('#vidSheet textarea').addEventListener('keydown',e=>e.stopPropagation());
 window.addEventListener('pointerdown',e=>{if(!$('#vidPop').hidden&&!e.target.closest('#vidPop,#dkVid'))$('#vidPop').hidden=true},true);
 window.__ppVid={PHV,phVid,vRemoteCmd,VR,prefs,linkStart,setActive:n=>setActive(n)};
+
+/* ▶ Lectures (desktop app): search YouTube / continue / linked / courses, played straight in the 📱 mini window */
+const LECOK=!!(window.ppDesktop&&window.ppDesktop.openMini&&window.ppDesktop.lectures);
+const ytAt=(u,t)=>{try{const x=new URL(u);const v=/youtu\.be$/.test(x.hostname)?x.pathname.slice(1):x.searchParams.get('v');if(v)return 'https://www.youtube.com/watch?v='+v+(t>15?'&t='+Math.floor(t)+'s':'')}catch(e){}return u};
+function lecPlay(u){$('#lecPop').hidden=true;window.ppDesktop.openMini(u);toast('▶ Opening in the mini window…')}
+async function lecOpen(){const P0=$('#lecPop');if(!P0.hidden){P0.hidden=true;return}if(!LECOK)return;
+  let L={recent:[],courses:[]};try{L=await window.ppDesktop.lectures()||L}catch(e){}
+  P0.innerHTML='<div class="ls">🔍<input placeholder="Search YouTube…" spellcheck="false"><span>Enter</span></div>';
+  const sec=t=>{const d=document.createElement('div');d.className='lh';d.textContent=t;P0.append(d)};
+  const row=(thumb,title,sub,u,prog)=>{const b=document.createElement('button');b.className='li';b.innerHTML='<span class="lt"></span><span><b></b><small></small></span>';
+    $('.lt',b).innerHTML=thumb+(prog!=null?'<em style="width:'+Math.round(prog*100)+'%"></em>':'');$('b',b).textContent=title;$('small',b).textContent=sub;b.onclick=()=>lecPlay(u);P0.append(b)};
+  const ago=t=>{const d=Math.round((Date.now()-t)/86400000);return d<=0?'today':d===1?'yesterday':d+' days ago'};
+  if(L.recent.length){sec('Continue watching');L.recent.forEach(r=>row('▶',r.title||'Lecture',vfmt(r.t)+' of '+vfmt(r.d)+' · '+ago(r.at),ytAt(r.u,r.t),r.d?r.t/r.d:null))}
+  const lk=activeN&&st.links&&st.links[activeN]||[];
+  if(lk.length){sec('Linked to this question ('+label(activeN)+')');lk.slice(-4).reverse().forEach(o=>row('📌',o.title||'Lecture',o.t!=null?'from '+vfmt(o.t):'',ytAt(o.u,o.t||0)))}
+  if(L.courses.length){sec('My courses');L.courses.forEach(c=>row('🎓',c.name,'Next: '+(c.title||'lecture'),ytAt(c.u,c.t||0)))}
+  sec('YouTube');row('▶','Open YouTube','Your subscriptions and history (signed in)','https://www.youtube.com/');
+  if(!L.recent.length&&!lk.length&&!L.courses.length){const e=document.createElement('div');e.className='le';e.textContent='Lectures you watch will show here to continue in one click.';P0.append(e)}
+  const inp=$('input',P0);inp.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape')P0.hidden=true;if(e.key==='Enter'&&inp.value.trim())lecPlay('https://www.youtube.com/results?search_query='+encodeURIComponent(inp.value.trim()))});
+  const b=$('#bLec').getBoundingClientRect();P0.hidden=false;const h=P0.offsetHeight,w=P0.offsetWidth;
+  P0.style.left=Math.max(10,Math.min(innerWidth-w-10,b.right-w))+'px';P0.style.top=Math.max(10,b.top-h-10)+'px';inp.focus()}
+if(LECOK){$('#bLec').hidden=false;$('#bLec').addEventListener('click',e=>{e.stopPropagation();lecOpen()});
+  document.addEventListener('keydown',e=>{if(e.altKey&&!e.ctrlKey&&(e.key==='y'||e.key==='Y')){e.preventDefault();lecOpen()}},true);
+  document.addEventListener('pointerdown',e=>{const P0=$('#lecPop');if(!P0.hidden&&!e.target.closest('#lecPop,#bLec'))P0.hidden=true},true)}
 window.__ppFind={FX,fxSearch,fxOpen,fxOcr,ocrPage,showSetDialog,CAP,capTake};
 window.__ppTest={due,autoRun,AB,bkAction,allNums,save,renderAll,key:()=>key,getSt:()=>st,sharedDoc:()=>!!P.q.docs[0]&&P.q.docs[0]===P.a.docs[0],openDocs:()=>DOCS.size};
 // make a set from a question/answer pair that has no set yet (old saved pair, or an old backup)
@@ -4788,7 +4826,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='05 Nov 21:09';   // build label, so you can check both devices have the same version
+const APPV='05 Nov 21:58';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)

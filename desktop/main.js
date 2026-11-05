@@ -90,10 +90,10 @@ function newTab(url){
 function closeTab(id){const k=tabs.findIndex(t=>t.id===id);if(k<0)return;const t=tabs[k];tabs.splice(k,1);try{bwin.contentView.removeChildView(t.view)}catch(e){}try{t.view.webContents.close()}catch(e){}
   if(!tabs.length){newTab('https://www.google.com/');return}if(active===id)active=(tabs[k]||tabs[k-1]).id;layoutBrowser();state()}
 let sesReady=false;
-function openBrowser(url){
-  if(bwin&&!bwin.isDestroyed()){if(url)newTab(url);bwin.show();bwin.focus();return}
+function openBrowser(url,hidden){
+  if(bwin&&!bwin.isDestroyed()){if(url)newTab(url);if(!hidden){bwin.show();bwin.focus()}return}
   if(!sesReady){setupBrowserSession(session.fromPartition('persist:browser'));sesReady=true}
-  bwin=new BrowserWindow({width:1280,height:880,title:'PDF Pair · Browser',backgroundColor:'#ffffff',
+  bwin=new BrowserWindow({width:1280,height:880,show:!hidden,title:'PDF Pair · Browser',backgroundColor:'#ffffff',
     webPreferences:{preload:path.join(__dirname,'bpreload.js'),contextIsolation:true,sandbox:false}});
   let fell=false;const local=()=>{if(!fell){fell=true;bwin.loadFile(path.join(__dirname,'browser.html'))}};
   bwin.webContents.on('did-fail-load',(e,code,desc,u,main)=>{if(main)local()});bwin.webContents.on('did-navigate',(e,u,code)=>{if(code>=400)local()});
@@ -146,6 +146,16 @@ async function miniEnd(show,pause,closed){const t=miniTab();const id=miniId;mini
 async function miniToggle(){if(miniId!=null){miniEnd(true);return}const c=cur();
   const t=tabById(pipOwner)||(c&&(await pipRun(c,"(()=>!!document.querySelector('video'))()"))===true?c:null);if(!t){tell('No video on this page');return}miniStart(t)}
 ipcMain.on('br-mini',()=>miniToggle());
+// ▶ Lectures (from PDF Pair): open a page straight in the mini window, without showing the browser
+ipcMain.on('mini-open',async(e,u)=>{u=String(u||'');if(!/^https?:\/\//.test(u))return;
+  if(miniId!=null&&miniTab()&&miniWin&&!miniWin.isDestroyed()){miniForce=false;miniWasP=null;miniTab().view.webContents.loadURL(u);if(miniMode==='vid')await miniSetMode('full');miniWin.show();return}
+  const had=!!(bwin&&!bwin.isDestroyed());openBrowser(had?null:u,true);let t;
+  if(had){t=newTab(u)}else t=cur();setTimeout(()=>miniStart(t),300)});
+ipcMain.handle('lec-list',()=>{const P=kvGet('pos')||{},C=kvGet('courses')||[];
+  const recent=Object.entries(P).filter(([k,o])=>/^yt:/.test(k)&&o&&o.u&&o.d>0&&o.t<o.d-20).sort((a,b)=>(b[1].at||0)-(a[1].at||0)).slice(0,4).map(([k,o])=>({u:o.u,t:o.t,d:o.d,title:o.title||'',at:o.at||0}));
+  const vid=u=>{try{const x=new URL(u);if(/youtu\.be$/.test(x.hostname))return x.pathname.slice(1);return x.searchParams.get('v')}catch(e){return null}};
+  const courses=C.map(c=>{const items=c.items||[];const nx=items.find(it=>{const p=P['yt:'+vid(it.u)];return !p||!p.d||p.max<p.d*.9});if(!nx)return null;const p=P['yt:'+vid(nx.u)]||{};return {name:c.name,subject:c.subject||'',u:nx.u,title:nx.title||'',t:p.t||0}}).filter(Boolean);
+  return {recent,courses}});
 ipcMain.handle('mini-state',async()=>{const s=await miniState();return s?Object.assign(s,{mode:miniMode}):null});
 ipcMain.handle('mini-cmd',async(e,c)=>{const t=miniTab();if(!t)return null;
   const act={play:'v.paused?v.play():v.pause()',back10:'v.currentTime=Math.max(0,v.currentTime-10)',fwd10:'v.currentTime=Math.min(v.duration||1e9,v.currentTime+10)',rate:'v.playbackRate=({1:1.25,1.25:1.5,1.5:1.75,1.75:2,2:0.75,0.75:1})[v.playbackRate]||1'}[c];

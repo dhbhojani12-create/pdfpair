@@ -4,6 +4,7 @@ contextBridge.exposeInMainWorld('ppDesktop',{
   openBrowser:u=>ipcRenderer.send('pp-browser',u),
   fetchPdf:u=>ipcRenderer.invoke('pp-fetch',u),
   onFile:cb=>ipcRenderer.on('pp-file',(e,f)=>cb(f)),
+  lectures:()=>ipcRenderer.invoke('lec-list'),openMini:u=>ipcRenderer.send('mini-open',u),
   onCapture:cb=>ipcRenderer.on('pp-cap',(e,o)=>cb(o)),
   video:js=>ipcRenderer.invoke('pp-video',js),showBrowser:()=>ipcRenderer.send('pp-browser-show'),
   track:(sub,mins)=>ipcRenderer.send('stats-add',sub,mins||1,'read'),openLecture:u=>ipcRenderer.send('pp-browser',u),
