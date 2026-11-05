@@ -16,8 +16,10 @@ const {ipcRenderer}=require('electron');
 document.getElementById('bar').addEventListener('click',async e=>{const b=e.target.closest('[data-c]');if(!b)return;const r=await ipcRenderer.invoke('mini-cmd',b.dataset.c);if(r&&r.msg)say(r.msg);tick()});
 let mt=0;function say(m){const x=document.getElementById('msg');x.textContent=m;x.style.display='block';clearTimeout(mt);mt=setTimeout(()=>{x.style.display='none'},3500)}
 ipcRenderer.on('mini-msg',(e,m)=>say(m));
-async function tick(){const s=await ipcRenderer.invoke('mini-state');if(!s)return;document.getElementById('t').textContent=s.title||'Lecture';document.title=s.title||'Lecture';
-  document.getElementById('pp').textContent=s.p?'▶':'⏸';document.getElementById('rt').textContent=(s.r===1?'1':s.r)+'×';document.getElementById('md').textContent=s.mode==='vid'?'⌄':'⌃';
+const VB=['back10','play','fwd10','rate','link','cap','mode'];
+async function tick(){const s=await ipcRenderer.invoke('mini-state');if(!s)return;document.getElementById('t').textContent=(s.title||'Lecture').replace(/ - YouTube$/,'');document.title=s.title||'Lecture';
+  const nv=!!s.none||s.r==null;VB.forEach(c=>{const b=document.querySelector('[data-c="'+c+'"]');if(b)b.style.display=nv?'none':''});if(nv)return;
+  document.getElementById('pp').textContent=s.p?'▶':'⏸';document.getElementById('rt').textContent=(s.r===1||s.r==null?'1':s.r)+'×';document.getElementById('md').textContent=s.mode==='vid'?'⌄':'⌃';
   document.getElementById('md').title=s.mode==='vid'?'Show the full page (Up next, chapters)':'Video only'}
 setInterval(tick,800);tick();
 </script></body></html>
