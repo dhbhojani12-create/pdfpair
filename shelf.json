@@ -1,0 +1,246 @@
+{
+ "updated": "5 Nov 2026",
+ "papers": {
+  "Audit": {
+   "label": "Final Paper 3 · Advanced Auditing, Assurance and Professional Ethics (study material Aug 2025 reprint, applicable Nov 2026)",
+   "groups": [
+    {
+     "title": "Study material · Module 1",
+     "items": [
+      {
+       "id": "87904bos-aps2168-ch1",
+       "name": "Ch 1 Quality Control",
+       "file": "87904bos-aps2168-ch1.pdf",
+       "url": "https://resource.cdn.icai.org/87904bos-aps2168-ch1.pdf",
+       "size": 1113129,
+       "type": "mod"
+      },
+      {
+       "id": "87905bos-aps2168-ch2",
+       "name": "Ch 2 General Auditing Principles and Auditors Responsibilities",
+       "file": "87905bos-aps2168-ch2.pdf",
+       "url": "https://resource.cdn.icai.org/87905bos-aps2168-ch2.pdf",
+       "size": 1260740,
+       "type": "mod"
+      },
+      {
+       "id": "87906bos-aps2168-ch3",
+       "name": "Ch 3 Audit Planning, Strategy and Execution",
+       "file": "87906bos-aps2168-ch3.pdf",
+       "url": "https://resource.cdn.icai.org/87906bos-aps2168-ch3.pdf",
+       "size": 1522342,
+       "type": "mod"
+      },
+      {
+       "id": "87907bos-aps2168-ch4",
+       "name": "Ch 4 Materiality, Risk Assessment and Internal Control",
+       "file": "87907bos-aps2168-ch4.pdf",
+       "url": "https://resource.cdn.icai.org/87907bos-aps2168-ch4.pdf",
+       "size": 1965374,
+       "type": "mod"
+      },
+      {
+       "id": "87908bos-aps2168-ch5",
+       "name": "Ch 5 Audit Evidence",
+       "file": "87908bos-aps2168-ch5.pdf",
+       "url": "https://resource.cdn.icai.org/87908bos-aps2168-ch5.pdf",
+       "size": 1180507,
+       "type": "mod"
+      },
+      {
+       "id": "87909bos-aps2168-ch6",
+       "name": "Ch 6 Completion and Review",
+       "file": "87909bos-aps2168-ch6.pdf",
+       "url": "https://resource.cdn.icai.org/87909bos-aps2168-ch6.pdf",
+       "size": 1352690,
+       "type": "mod"
+      },
+      {
+       "id": "87910bos-aps2168-ch7",
+       "name": "Ch 7 Reporting",
+       "file": "87910bos-aps2168-ch7.pdf",
+       "url": "https://resource.cdn.icai.org/87910bos-aps2168-ch7.pdf",
+       "size": 3135401,
+       "type": "mod"
+      }
+     ]
+    },
+    {
+     "title": "Study material · Module 2",
+     "items": [
+      {
+       "id": "87914bos-aps2168-ch8",
+       "name": "Ch 8 Specialised Areas",
+       "file": "87914bos-aps2168-ch8.pdf",
+       "url": "https://resource.cdn.icai.org/87914bos-aps2168-ch8.pdf",
+       "size": 1297542,
+       "type": "mod"
+      },
+      {
+       "id": "87915bos-aps2168-ch9",
+       "name": "Ch 9 Related Services",
+       "file": "87915bos-aps2168-ch9.pdf",
+       "url": "https://resource.cdn.icai.org/87915bos-aps2168-ch9.pdf",
+       "size": 1023448,
+       "type": "mod"
+      },
+      {
+       "id": "87916bos-aps2168-ch10",
+       "name": "Ch 10 Review of Financial Information",
+       "file": "87916bos-aps2168-ch10.pdf",
+       "url": "https://resource.cdn.icai.org/87916bos-aps2168-ch10.pdf",
+       "size": 1142154,
+       "type": "mod"
+      },
+      {
+       "id": "87917bos-aps2168-ch11",
+       "name": "Ch 11 Prospective Financial Information and Other Assurance Services",
+       "file": "87917bos-aps2168-ch11.pdf",
+       "url": "https://resource.cdn.icai.org/87917bos-aps2168-ch11.pdf",
+       "size": 1188010,
+       "type": "mod"
+      },
+      {
+       "id": "87918bos-aps2168-ch12",
+       "name": "Ch 12 Digital Auditing & Assurance",
+       "file": "87918bos-aps2168-ch12.pdf",
+       "url": "https://resource.cdn.icai.org/87918bos-aps2168-ch12.pdf",
+       "size": 1701764,
+       "type": "mod"
+      },
+      {
+       "id": "87919bos-aps2168-ch13",
+       "name": "Ch 13 Group Audits",
+       "file": "87919bos-aps2168-ch13.pdf",
+       "url": "https://resource.cdn.icai.org/87919bos-aps2168-ch13.pdf",
+       "size": 1106851,
+       "type": "mod"
+      },
+      {
+       "id": "87920bos-aps2168-ch14u1",
+       "name": "Ch 14 Audit of Banks (Unit 1)",
+       "file": "87920bos-aps2168-ch14u1.pdf",
+       "url": "https://resource.cdn.icai.org/87920bos-aps2168-ch14u1.pdf",
+       "size": 1548400,
+       "type": "mod"
+      },
+      {
+       "id": "87921bos-aps2168-ch14u2",
+       "name": "Ch 14 Audit of NBFCs (Unit 2)",
+       "file": "87921bos-aps2168-ch14u2.pdf",
+       "url": "https://resource.cdn.icai.org/87921bos-aps2168-ch14u2.pdf",
+       "size": 1381733,
+       "type": "mod"
+      }
+     ]
+    },
+    {
+     "title": "Study material · Module 3",
+     "items": [
+      {
+       "id": "87922bos-aps2168-ch15",
+       "name": "Ch 15 Audit of Public Sector Undertakings",
+       "file": "87922bos-aps2168-ch15.pdf",
+       "url": "https://resource.cdn.icai.org/87922bos-aps2168-ch15.pdf",
+       "size": 1549646,
+       "type": "mod"
+      },
+      {
+       "id": "87923bos-aps2168-ch16",
+       "name": "Ch 16 Internal Audit",
+       "file": "87923bos-aps2168-ch16.pdf",
+       "url": "https://resource.cdn.icai.org/87923bos-aps2168-ch16.pdf",
+       "size": 1470586,
+       "type": "mod"
+      },
+      {
+       "id": "87924bos-aps2168-ch17",
+       "name": "Ch 17 Due Diligence, Investigation & Forensic Accounting",
+       "file": "87924bos-aps2168-ch17.pdf",
+       "url": "https://resource.cdn.icai.org/87924bos-aps2168-ch17.pdf",
+       "size": 2371471,
+       "type": "mod"
+      },
+      {
+       "id": "87925bos-aps2168-ch18",
+       "name": "Ch 18 SDG & ESG Assurance",
+       "file": "87925bos-aps2168-ch18.pdf",
+       "url": "https://resource.cdn.icai.org/87925bos-aps2168-ch18.pdf",
+       "size": 1291490,
+       "type": "mod"
+      },
+      {
+       "id": "87926bos-aps2168-ch19",
+       "name": "Ch 19 Professional Ethics & Liabilities of Auditors",
+       "file": "87926bos-aps2168-ch19.pdf",
+       "url": "https://resource.cdn.icai.org/87926bos-aps2168-ch19.pdf",
+       "size": 2465583,
+       "type": "mod"
+      }
+     ]
+    },
+    {
+     "title": "RTPs (Revision Test Papers)",
+     "items": [
+      {
+       "id": "93965bos-aps6169-rtp-nov2026-ch3",
+       "name": "RTP Nov 2026",
+       "file": "93965bos-aps6169-rtp-nov2026-ch3.pdf",
+       "url": "https://resource.cdn.icai.org/93965bos-aps6169-rtp-nov2026-ch3.pdf",
+       "size": 411850,
+       "type": "rtp"
+      },
+      {
+       "id": "91039bos-aps4369-final-may2026-p3",
+       "name": "RTP May 2026",
+       "file": "91039bos-aps4369-final-may2026-p3.pdf",
+       "url": "https://resource.cdn.icai.org/91039bos-aps4369-final-may2026-p3.pdf",
+       "size": 387235,
+       "type": "rtp"
+      },
+      {
+       "id": "88981bos-aps2822-p3",
+       "name": "RTP Jan 2026",
+       "file": "88981bos-aps2822-p3.pdf",
+       "url": "https://resource.cdn.icai.org/88981bos-aps2822-p3.pdf",
+       "size": 336374,
+       "type": "rtp"
+      },
+      {
+       "id": "86599bos-aps1177-g1-p3",
+       "name": "RTP Sep 2025",
+       "file": "86599bos-aps1177-g1-p3.pdf",
+       "url": "https://resource.cdn.icai.org/86599bos-aps1177-g1-p3.pdf",
+       "size": 291942,
+       "type": "rtp"
+      },
+      {
+       "id": "84617bos68187-p3",
+       "name": "RTP May 2025",
+       "file": "84617bos68187-p3.pdf",
+       "url": "https://resource.cdn.icai.org/84617bos68187-p3.pdf",
+       "size": 372396,
+       "type": "rtp"
+      },
+      {
+       "id": "81749bos65928-p3",
+       "name": "RTP Nov 2024",
+       "file": "81749bos65928-p3.pdf",
+       "url": "https://resource.cdn.icai.org/81749bos65928-p3.pdf",
+       "size": 378951,
+       "type": "rtp"
+      },
+      {
+       "id": "78898bos63053a",
+       "name": "RTP May 2024",
+       "file": "78898bos63053a.pdf",
+       "url": "https://resource.cdn.icai.org/78898bos63053a.pdf",
+       "size": 331518,
+       "type": "rtp"
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

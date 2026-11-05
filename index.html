@@ -564,6 +564,10 @@ select.tin{appearance:auto}
 .mdo{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;cursor:pointer;text-align:left;width:100%}.mdo.on{border-color:#2f6fe0;background:#eef4ff}
 .mdo b{flex:1;font-size:14px}.mdo small{color:var(--mut);font-size:12px;text-align:right}
 @media (max-width:760px){#mockPanel{left:8px;right:8px;width:auto;top:auto;height:46%;bottom:8px}}
+.shw{font-size:13px}.shg{margin:0 24px 18px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel)}
+.shh{display:flex;align-items:baseline;gap:10px;padding:10px 14px;background:var(--ground-2)}.shh b{flex:1}.shh span{font-size:12px;color:var(--mut)}
+.shr{display:flex;align-items:center;gap:10px;padding:8px 14px;border-top:1px solid var(--line);font-size:13.5px}.shr .nm{flex:1;min-width:0}.shr .mb{font-size:12px;color:var(--mut);white-space:nowrap}
+.shr .st{min-width:120px;text-align:right;white-space:nowrap}.shr.have .nm{color:var(--mut)}.shget{display:inline-block;padding:5px 12px;font-size:12.5px;text-decoration:none}.shr .rd{font-size:12px;color:#7b5cff}.shr .lnk{margin:0;font-size:13px}
 #ibDlg{position:fixed;inset:0;z-index:70;background:rgba(15,17,21,.45);display:grid;place-items:center;padding:16px}#ibDlg[hidden]{display:none}
 #ibDlg .card{background:var(--panel);border-radius:16px;padding:22px 24px;width:min(460px,100%);max-height:calc(100vh - 32px);overflow:auto;box-shadow:0 20px 50px rgba(0,0,0,.25)}#ibDlg h1{font-size:20px;margin:0 0 4px}
 #ibCode{display:block;font:600 22px var(--mono);letter-spacing:1px;text-align:center;background:var(--ground-2);border-radius:10px;padding:12px;margin:4px 0 10px;user-select:all}
@@ -813,7 +817,7 @@ select.tin{appearance:auto}
       <button class="addset phlk2" id="libLink">📱 Link to laptop</button>
     </aside>
     <section class="lmain">
-      <div class="ltop"><h1 id="libTitle">Revise</h1><div class="tseg" id="libView"><button data-v="q">Questions</button><button data-v="c">Concepts</button><button data-v="m">Most asked</button><button data-v="d">Last-day</button></div><span class="lmeta" id="libMeta"></span><span class="sp"></span><button class="btn" id="rvAll">▶ Revise all</button><button class="btn ghost" id="mtBtn" title="Write a paper under a timer, then check it">⏱ Mock test</button><button class="btn ghost" id="rvTopic" title="Topic by topic: the concept first, then all its questions" hidden>▶ Concept first</button></div>
+      <div class="ltop"><h1 id="libTitle">Revise</h1><div class="tseg" id="libView"><button data-v="q">Questions</button><button data-v="c">Concepts</button><button data-v="m">Most asked</button><button data-v="d">Last-day</button><button data-v="i" title="Official ICAI study material and RTPs">📚 ICAI</button></div><span class="lmeta" id="libMeta"></span><span class="sp"></span><button class="btn" id="rvAll">▶ Revise all</button><button class="btn ghost" id="mtBtn" title="Write a paper under a timer, then check it">⏱ Mock test</button><button class="btn ghost" id="rvTopic" title="Topic by topic: the concept first, then all its questions" hidden>▶ Concept first</button></div>
       <div class="flt" id="libFlt"></div>
       <div class="lbody" id="libBody"></div>
     </section>
@@ -1999,6 +2003,7 @@ function renderLib(){
   if(libView==='c'){renderConLib(sets);return}
   if(libView==='m'){renderMostLib(sets);return}
   if(libView==='d'){renderDeckLib(sets);return}
+  if(libView==='i'){try{renderShelfLib()}catch(e){setTimeout(renderLib,100)}return}
   const all=qRows(libSub);
   const q=libQ.trim().toLowerCase();
   const rows=all.filter(r=>libTypes.has(r.set.type)&&(libStat==='all'||libStat==='noq'||(libStat==='amd'?r.amd:libStat==='star'?r.stars>0:libStat==='not'?r.rev!=='done':r.rev==='again'))&&(!q||(r.name+' '+r.ch+' '+r.tp+' '+r.set.name+' '+r.n).toLowerCase().includes(q)));
@@ -2206,6 +2211,87 @@ setTimeout(()=>ibCheck(),4000);
 setInterval(()=>{if(document.visibilityState==='visible')ibCheck()},5*60e3);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&Date.now()-IB.last>60e3)ibCheck()});
 $('#bInbox').addEventListener('click',openInbox);
+
+/* 📚 ICAI shelf: official ICAI PDFs, one click to download; the app picks the file up from a watched folder (or a pick / drop) and files it as its own set */
+const SH_CAN=(()=>{try{return window.self===window.top&&'showDirectoryPicker' in window}catch(e){return false}})();
+const SHELF_URL='https://raw.githubusercontent.com/dhbhojani12-create/pdfpair/main/shelf.json';
+const SH={data:LS.get('shelf:data'),dir:null,dirOk:false,pending:new Set(),busy:false,loaded:false};
+async function shelfLoad(force){
+  if(SH.loaded&&!force)return;SH.loaded=true;
+  try{const r=await fetch(SHELF_URL+'?t='+Date.now(),{cache:'no-store'});if(r.ok){SH.data=await r.json();LS.set('shelf:data',SH.data)}}catch(e){}
+  if(libView==='i'&&!$('#lib').hidden)renderShelfLib();
+}
+function shelfItems(){const out=[];const d=SH.data;if(!d)return out;for(const sub in d.papers)for(const g of d.papers[sub].groups)for(const it of g.items)out.push(Object.assign({sub,group:g.title},it));return out}
+const shelfBase=n=>String(n||'').toLowerCase().replace(/\s*\(\d+\)(?=\.pdf$)/,'');
+function shelfMatch(f){const n=shelfBase(f.name),c=shelfItems().filter(it=>it.size===f.size);return c.find(it=>n===it.file.toLowerCase())||c[0]||null}
+function shelfHave(it){return LIB.sets.find(s=>s.icai===it.id||(s.files.q||[]).some(f=>f.size===it.size))||null}
+async function shelfAdd(file,it,quiet){
+  if(shelfHave(it))return false;
+  const id=uid();await idbPut('blob:'+id,file);const ref={id,name:file.name,size:file.size};
+  const set={id:uid(),name:it.name,subject:it.sub,type:it.type||'mod',key:keyOf(ref,ref),files:{q:[ref],a:[ref]},same:true,at:Date.now(),icai:it.id};
+  LIB.sets.push(set);if(!LIB.subjects.includes(it.sub))LIB.subjects.push(it.sub);saveLib();SH.pending.delete(it.id);
+  if(!quiet)toast('📚 Added '+it.name+' to '+it.sub);
+  return true;
+}
+async function shelfTake(files){let n=0,skip=0,unk=0;
+  for(const f of files){if(!/\.pdf$/i.test(f.name)){continue}const it=shelfMatch(f);if(!it){unk++;continue}if(await shelfAdd(f,it,true))n++;else skip++}
+  toast(n?'📚 Added '+n+' file'+(n>1?'s':'')+' to your library'+(skip?' ('+skip+' already there)':''):skip?'Those are already in your library':unk?'Not an ICAI shelf file (or a different edition)':'No PDFs there');
+  if(n){renderLib();try{ibCheck()}catch(e){}}
+  return n;
+}
+async function shelfPerm(ask){if(!SH.dir)return false;try{if((await SH.dir.queryPermission({mode:'read'}))==='granted')return true;if(ask)return (await SH.dir.requestPermission({mode:'read'}))==='granted'}catch(e){}return false}
+async function shelfScan(){
+  if(!SH.dir||SH.busy)return;SH.busy=true;
+  try{if(!(SH.dirOk=await shelfPerm(false)))return;const items=shelfItems();if(!items.length)return;let n=0;
+    for await(const h of SH.dir.values()){if(h.kind!=='file'||!/\.pdf$/i.test(h.name))continue;
+      const base=shelfBase(h.name);const cand=items.filter(it=>!shelfHave(it)&&(base===it.file.toLowerCase()||SH.pending.has(it.id)));if(!cand.length)continue;
+      const f=await h.getFile();const it=cand.find(x=>x.size===f.size);if(it&&await shelfAdd(f,it))n++}
+    if(n){if(!$('#lib').hidden)renderLib();try{ibCheck()}catch(e){}}
+  }catch(e){}finally{SH.busy=false}
+}
+async function shelfWatch(){
+  try{const d=await window.showDirectoryPicker({id:'pdfpair-icai',mode:'read',startIn:'downloads'});SH.dir=d;await idbPut('shelfDir',d);SH.dirOk=true;toast('📂 Watching “'+d.name+'”. Files you download from the shelf are added by themselves');shelfScan();renderLib()}
+  catch(e){if(e&&e.name==='AbortError')return;toast('Chrome did not allow that folder. Make a folder inside Downloads (for example “ICAI”), set Chrome to save downloads there, and pick it')}
+}
+async function shelfPick(){
+  try{if(window.showOpenFilePicker){const hs=await window.showOpenFilePicker({multiple:true,startIn:'downloads',types:[{description:'PDF',accept:{'application/pdf':['.pdf']}}]});await shelfTake(await Promise.all(hs.map(h=>h.getFile())));return}}catch(e){if(e&&e.name==='AbortError')return}
+  const i=document.createElement('input');i.type='file';i.accept='application/pdf';i.multiple=true;i.onchange=()=>shelfTake([...i.files]);i.click();
+}
+function renderShelfLib(){
+  shelfLoad();
+  const d=SH.data,paper=d&&d.papers&&d.papers[libSub];
+  $('#libTitle').textContent='ICAI shelf · '+libSub;$('#rvAll').hidden=true;$('#rvTopic').hidden=true;
+  $('#libMeta').textContent=paper?paper.label+(d.updated?' · list updated '+d.updated:''):'';
+  const f=$('#libFlt');f.innerHTML='';
+  if(SH_CAN){const w=document.createElement('button');w.className='btn ghost shw';
+    if(SH.dir&&SH.dirOk){w.textContent='📂 Watching “'+SH.dir.name+'” ✓';w.title='Downloads that land in this folder are added by themselves. Click to pick a different folder';w.onclick=shelfWatch}
+    else if(SH.dir){w.textContent='📂 Resume watching “'+SH.dir.name+'”';w.onclick=async()=>{if(await shelfPerm(true)){SH.dirOk=true;shelfScan();renderLib()}}}
+    else{w.textContent='📂 Watch my downloads folder';w.onclick=shelfWatch}
+    f.append(w)}
+  const a=document.createElement('button');a.className='btn ghost shw';a.textContent='⤓ Add downloaded files';a.title='Pick the ICAI PDFs you downloaded; they are put in the right place';a.onclick=shelfPick;f.append(a);
+  const body=$('#libBody');body.innerHTML='';
+  if(!d){body.innerHTML='<div class="lempty">Loading the ICAI list… (needs the internet the first time)</div>';return}
+  if(!paper){body.innerHTML='<div class="lempty">The shelf has <b>'+Object.keys(d.papers).map(esc).join(', ')+'</b> so far. Pick that subject on the left.<br>Ask Claude to add '+esc(libSub)+'.</div>';return}
+  const ready=new Set((IB.q||[]).map(p=>p.qSize).filter(Boolean));
+  for(const g of paper.groups){
+    const c=document.createElement('div');c.className='shg';const have=g.items.filter(shelfHave).length;
+    c.innerHTML='<div class="shh"><b></b><span></span></div>';$('b',c).textContent=g.title;$('span',c).textContent=have+' of '+g.items.length+' in library';
+    for(const it of g.items){const s=shelfHave(it),r=document.createElement('div');r.className='shr'+(s?' have':'');
+      r.innerHTML='<span class="nm"></span><span class="mb"></span><span class="st"></span>';$('.nm',r).textContent=it.name;$('.mb',r).textContent=(it.size/1048576).toFixed(1)+' MB';
+      const stc=$('.st',r);
+      if(s){stc.innerHTML='<button class="lnk">✓ Open</button>'+(ready.has(it.size)?' <span class="rd">✨ marks ready</span>':'');$('button',stc).onclick=async()=>{closeLib(true);stopRv();await openSet(s.id)}}
+      else{const b=document.createElement('a');b.className='btn shget';b.href=it.url;b.target='_blank';b.rel='noopener';
+        b.textContent=SH.pending.has(it.id)?'⏳ Waiting…':'⤓ Get';b.title=SH.dir&&SH.dirOk?'Download; it is added when it lands in “'+SH.dir.name+'”':'Download, then press “Add downloaded files” (or watch your downloads folder)';
+        b.addEventListener('click',()=>{SH.pending.add(it.id);b.textContent='⏳ Waiting…'});stc.append(b);if(ready.has(it.size)){const z=document.createElement('span');z.className='rd';z.textContent=' ✨ marks ready';stc.append(z)}}
+      c.append(r)}
+    body.append(c)}
+}
+// drop ICAI PDFs anywhere on the shelf
+$('#libBody').addEventListener('dragover',e=>{if(libView==='i'){e.preventDefault()}});
+$('#libBody').addEventListener('drop',e=>{if(libView!=='i')return;e.preventDefault();shelfTake([...(e.dataTransfer.files||[])])});
+(async()=>{if(SH_CAN){const d=await idbGet('shelfDir');if(d){SH.dir=d;SH.dirOk=await shelfPerm(false)}}})();
+setInterval(()=>{if(SH.dir&&document.visibilityState==='visible')shelfScan()},3000);
+window.__ppShelf={SH,shelfTake,shelfItems,renderShelfLib};
 
 /* compact toolbar: colours and less-used buttons tucked into small menus */
 (function(){
@@ -3730,7 +3816,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='05 Nov 08:06';   // build label, so you can check both devices have the same version
+const APPV='05 Nov 08:53';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
