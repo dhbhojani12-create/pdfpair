@@ -776,6 +776,10 @@ select.tin{appearance:auto}
 #lp.off{left:-10000px!important;right:auto!important;top:0!important;bottom:auto!important;width:320px!important;pointer-events:none;box-shadow:none}
 #lp .lpv,#lp .lpv iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 #lp.drg .lpv{pointer-events:none}
+#lp .lpc{position:absolute;inset:0;cursor:pointer;display:grid;place-items:center;transition:background .15s}
+#lp .lpc i{font-style:normal;color:#fff;font-size:22px;width:52px;height:52px;border-radius:50%;background:rgba(0,0,0,.55);display:none;place-items:center;padding-left:4px}
+#lp.paused .lpc{background:rgba(10,10,14,.6);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}#lp.paused .lpc i{display:grid}
+#lp.thru .lpc{display:none}
 #lp .lpt,#lp .lpb{position:absolute;left:0;right:0;opacity:0;transition:opacity .18s;color:#fff;font:12px var(--sans);pointer-events:none}
 #lp.hov .lpt,#lp.hov .lpb,#lp.paused .lpt,#lp.paused .lpb,#lp.drg .lpt{opacity:1;pointer-events:auto}
 #lp .lpt{top:0;display:flex;align-items:center;gap:2px;padding:4px 4px 10px 10px;background:linear-gradient(rgba(0,0,0,.72),transparent);cursor:grab}
@@ -3964,8 +3968,8 @@ function ytApi(){if(LP.api)return LP.api;LP.api=new Promise((ok,no)=>{if(window.
   setTimeout(()=>{if(!(window.YT&&YT.Player)){LP.api=null;no(new Error('timeout'))}},15000)});return LP.api}
 const lpFmt=t=>{t=Math.max(0,Math.floor(t||0));const h=Math.floor(t/3600),m=Math.floor(t%3600/60),s=t%60;return (h?h+':'+String(m).padStart(2,'0'):m)+':'+String(s).padStart(2,'0')};
 function lpBuild(){if($('#lp'))return;
-  const w=document.createElement('div');w.id='lp';w.innerHTML='<div class="lpv"><div id="lpYT"></div></div><div class="lpmsg" hidden></div>'+
-   '<div class="lpt"><span class="lpn"></span><button data-l="link" title="Link this moment to the open question">📌</button><button data-l="aud" title="Listen only (hide the video)">🎧</button><button data-l="x" title="Close">✕</button></div>'+
+  const w=document.createElement('div');w.id='lp';w.innerHTML='<div class="lpv"><div id="lpYT"></div></div><div class="lpc" data-l="pp" title="Play / pause"><i>▶</i></div><div class="lpmsg" hidden></div>'+
+   '<div class="lpt"><span class="lpn"></span><button data-l="thru" title="Click the video itself for 20 seconds (for YouTube Skip ad)">👆</button><button data-l="link" title="Link this moment to the open question">📌</button><button data-l="aud" title="Listen only (hide the video)">🎧</button><button data-l="x" title="Close">✕</button></div>'+
    '<div class="lpb"><input class="lps" type="range" min="0" max="1000" value="0" aria-label="Position"><div class="lprow"><button data-l="b10" title="Back 10 s (Alt+J)">⟲10</button><button data-l="pp" class="lppp" title="Play / pause (Alt+K)">▶</button><button data-l="f10" title="Forward 10 s (Alt+L)">10⟳</button><button data-l="rate" class="lprt" title="Speed">1×</button><span class="lptm"></span></div></div><i class="lprs" title="Drag to resize"></i>';
   document.body.append(w);
   const a=document.createElement('div');a.id='lpA';a.hidden=true;a.innerHTML='<span class="lpai">🎧</span><span class="lpn"></span><button data-l="b10" title="Back 10 s (Alt+J)">⟲10</button><button data-l="pp" class="lppp" title="Play / pause (Alt+K)">▶</button><button data-l="f10" title="Forward 10 s (Alt+L)">10⟳</button><input class="lps" type="range" min="0" max="1000" value="0" aria-label="Position"><span class="lptm"></span><button data-l="rate" class="lprt" title="Speed">1×</button><button data-l="link" title="Link this moment to the open question">📌</button><button data-l="vid" title="Show the video">▣</button><button data-l="x" title="Close">✕</button>';
@@ -3974,9 +3978,8 @@ function lpBuild(){if($('#lp'))return;
   const click=e=>{const b=e.target.closest('[data-l]');if(!b)return;e.stopPropagation();lpAct(b.dataset.l)};w.addEventListener('click',click);a.addEventListener('click',click);
   [w,a].forEach(el=>{const s=$('.lps',el);s.addEventListener('input',()=>{LP.drag=true;const d=LP.p&&LP.p.getDuration?LP.p.getDuration():0;$('.lptm',el).textContent=lpFmt(s.value/1000*d)+' / '+lpFmt(d)});
     s.addEventListener('change',()=>{LP.drag=false;const d=LP.p&&LP.p.getDuration?LP.p.getDuration():0;if(d)LP.p.seekTo(s.value/1000*d,true);lpTick()})});
-  // controls show when the pointer comes in, hide after a moment so YouTube's own buttons (Skip ad) stay reachable
-  const show=()=>{w.classList.add('hov');clearTimeout(LP.hideT);LP.hideT=setTimeout(()=>{if(!w.matches('.lpt:hover,.lpb:hover')&&!$('.lpt',w).matches(':hover')&&!$('.lpb',w).matches(':hover'))w.classList.remove('hov')},2500)};
-  w.addEventListener('mouseenter',show);w.addEventListener('mouseleave',()=>{clearTimeout(LP.hideT);w.classList.remove('hov')});$('.lpt',w).addEventListener('mousemove',show);$('.lpb',w).addEventListener('mousemove',show);
+  // a clean layer covers the video, so YouTube never sees the mouse and never shows its own buttons; ours show while the pointer is on the box
+  w.addEventListener('mouseenter',()=>w.classList.add('hov'));w.addEventListener('mouseleave',()=>w.classList.remove('hov'));
   // move by the top strip, resize by the corner; the box stays anchored to the bottom-right
   const drag=(el,fn)=>el.addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;e.preventDefault();el.setPointerCapture(e.pointerId);w.classList.add('drg');
     const r0=w.getBoundingClientRect(),x0=e.clientX,y0=e.clientY;const mv=ev=>fn(r0,ev.clientX-x0,ev.clientY-y0);
@@ -3994,7 +3997,7 @@ function lpTick(){const p=LP.p;if(!p||!p.getPlayerState)return;const st0=p.getPl
   const title=(p.getVideoData&&p.getVideoData().title)||'';if(p.getVideoData&&p.getVideoData().video_id)LP.id=p.getVideoData().video_id;
   ['#lp','#lpA'].forEach(s=>{const el=$(s);if(!el)return;$('.lppp',el).textContent=st0===1||st0===3?'⏸':'▶';$('.lpn',el).textContent=title;$('.lpn',el).title=title;
     if(!LP.drag){$('.lptm',el).textContent=lpFmt(t)+' / '+lpFmt(d);$('.lps',el).value=d?Math.round(t/d*1000):0}$('.lprt',el).textContent=(p.getPlaybackRate?p.getPlaybackRate():1)+'×'});
-  $('#lp').classList.toggle('paused',st0===2||st0===5||st0===0);if(st0===1)lpSavePos();}
+  $('#lp').classList.toggle('paused',st0===2||st0===5||st0===0||st0===-1);if(st0===1)lpSavePos();}
 async function lpOpen(u,t){const id=ytId(u),list=ytList(u);if(!id&&!list){toast('That is not a YouTube lecture link');return}
   $('#lecPop').hidden=true;lpBuild();const P=lpPos();let start=t!=null?t:(ytT(u)||(id&&P[id]&&P[id].d&&P[id].t<P[id].d-20?P[id].t:0));start=Math.max(0,Math.floor(start||0));
   lpSavePos(true);LP.id=id;LP.list=list&&!id?list:null;$('#lp .lpmsg').hidden=true;lpShowMode();
@@ -4010,6 +4013,7 @@ async function lpOpen(u,t){const id=ytId(u),list=ytList(u);if(!id&&!list){toast(
       $('.lpob',m).onclick=()=>{if(can)window.ppDesktop.openLecture(url);else window.open(url,'_blank')};m.hidden=false;if(LP.mode==='a'){LP.mode='v';lpShowMode()}}}})}
 function lpAct(k){const p=LP.p;const ok=p&&p.getPlayerState;
   if(k==='x'){lpSavePos(true);try{p&&p.stopVideo()}catch(e){}LP.id=null;LP.list=null;lpShowMode();return}
+  if(k==='thru'){const w=$('#lp');w.classList.add('thru');toast('You can click the video for 20 seconds (for Skip ad)');clearTimeout(LP.thruT);LP.thruT=setTimeout(()=>w.classList.remove('thru'),20000);return}
   if(k==='aud'||k==='vid'){LP.mode=k==='aud'?'a':'v';prefs.lpMode=LP.mode;savePrefsSoon();lpShowMode();return}
   if(!ok)return;const t=p.getCurrentTime()||0,d=p.getDuration()||1e9;
   if(k==='pp'){p.getPlayerState()===1?p.pauseVideo():p.playVideo()}
