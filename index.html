@@ -952,7 +952,7 @@ select.tin{appearance:auto}
     <button class="b" id="bSave" title="Save one linked PDF with stickers, highlights and bookmarks"><svg viewBox="0 0 24 24"><path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/></svg><span>Save PDF</span></button>
     <button class="b" id="bLink" title="Link your phone as a touch highlighter"><span style="font-size:15px">📱</span><span id="bLinkT">Link phone</span></button>
     <button class="b" id="bOpen" title="Library: your sets and subject-wise revision (L)"><svg viewBox="0 0 24 24"><path d="M4 5h4v14H4zM10 5h4v14h-4z"/><path d="M15.2 6.2l3.6-1 3.3 12.9-3.6 1z"/></svg><span>Library</span></button>
-  <button class="b" id="bLec" hidden title="Lectures: search YouTube or continue, plays in the mini window (Alt+Y)">▶ <span>Lectures</span></button><button class="b" id="bMore" title="More: Library, Backup, Save PDF, Phone, Quiz" aria-label="More">⋯<i class="mdot" id="moreDot" hidden></i></button><div id="morePop" hidden></div>
+  <button class="b" id="bMore" title="More: Library, Backup, Save PDF, Phone, Quiz" aria-label="More">⋯<i class="mdot" id="moreDot" hidden></i></button><div id="morePop" hidden></div>
   </div>
 
   <div id="pt" hidden><div class="ptw">
@@ -3933,29 +3933,7 @@ $('#vidSheet textarea').addEventListener('keydown',e=>e.stopPropagation());
 window.addEventListener('pointerdown',e=>{if(!$('#vidPop').hidden&&!e.target.closest('#vidPop,#dkVid'))$('#vidPop').hidden=true},true);
 window.__ppVid={PHV,phVid,vRemoteCmd,VR,prefs,linkStart,setActive:n=>setActive(n)};
 
-/* ▶ Lectures (desktop app): search YouTube / continue / linked / courses, played straight in the 📱 mini window */
-const LECOK=!!(window.ppDesktop&&window.ppDesktop.openMini&&window.ppDesktop.lectures);
-const ytAt=(u,t)=>{try{const x=new URL(u);const v=/youtu\.be$/.test(x.hostname)?x.pathname.slice(1):x.searchParams.get('v');if(v)return 'https://www.youtube.com/watch?v='+v+(t>15?'&t='+Math.floor(t)+'s':'')}catch(e){}return u};
-function lecPlay(u){$('#lecPop').hidden=true;window.ppDesktop.openMini(u);toast('▶ Opening in the mini window…')}
-async function lecOpen(){const P0=$('#lecPop');if(!P0.hidden){P0.hidden=true;return}if(!LECOK)return;
-  let L={recent:[],courses:[]};try{L=await window.ppDesktop.lectures()||L}catch(e){}
-  P0.innerHTML='<div class="ls">🔍<input placeholder="Search YouTube…" spellcheck="false"><span>Enter</span></div>';
-  const sec=t=>{const d=document.createElement('div');d.className='lh';d.textContent=t;P0.append(d)};
-  const row=(thumb,title,sub,u,prog)=>{const b=document.createElement('button');b.className='li';b.innerHTML='<span class="lt"></span><span><b></b><small></small></span>';
-    $('.lt',b).innerHTML=thumb+(prog!=null?'<em style="width:'+Math.round(prog*100)+'%"></em>':'');$('b',b).textContent=title;$('small',b).textContent=sub;b.onclick=()=>lecPlay(u);P0.append(b)};
-  const ago=t=>{const d=Math.round((Date.now()-t)/86400000);return d<=0?'today':d===1?'yesterday':d+' days ago'};
-  if(L.recent.length){sec('Continue watching');L.recent.forEach(r=>row('▶',r.title||'Lecture',vfmt(r.t)+' of '+vfmt(r.d)+' · '+ago(r.at),ytAt(r.u,r.t),r.d?r.t/r.d:null))}
-  const lk=activeN&&st.links&&st.links[activeN]||[];
-  if(lk.length){sec('Linked to this question ('+label(activeN)+')');lk.slice(-4).reverse().forEach(o=>row('📌',o.title||'Lecture',o.t!=null?'from '+vfmt(o.t):'',ytAt(o.u,o.t||0)))}
-  if(L.courses.length){sec('My courses');L.courses.forEach(c=>row('🎓',c.name,'Next: '+(c.title||'lecture'),ytAt(c.u,c.t||0)))}
-  sec('YouTube');row('▶','Open YouTube','Your subscriptions and history (signed in)','https://www.youtube.com/');
-  if(!L.recent.length&&!lk.length&&!L.courses.length){const e=document.createElement('div');e.className='le';e.textContent='Lectures you watch will show here to continue in one click.';P0.append(e)}
-  const inp=$('input',P0);inp.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape')P0.hidden=true;if(e.key==='Enter'&&inp.value.trim())lecPlay('https://www.youtube.com/results?search_query='+encodeURIComponent(inp.value.trim()))});
-  const b=$('#bLec').getBoundingClientRect();P0.hidden=false;const h=P0.offsetHeight,w=P0.offsetWidth;
-  P0.style.left=Math.max(10,Math.min(innerWidth-w-10,b.right-w))+'px';P0.style.top=Math.max(10,b.top-h-10)+'px';inp.focus()}
-if(LECOK){$('#bLec').hidden=false;$('#bLec').addEventListener('click',e=>{e.stopPropagation();lecOpen()});
-  document.addEventListener('keydown',e=>{if(e.altKey&&!e.ctrlKey&&(e.key==='y'||e.key==='Y')){e.preventDefault();lecOpen()}},true);
-  document.addEventListener('pointerdown',e=>{const P0=$('#lecPop');if(!P0.hidden&&!e.target.closest('#lecPop,#bLec'))P0.hidden=true},true)}
+/* ▶ Lectures + 📱 mini window removed (5 Nov 2026, Darshan) */
 window.__ppFind={FX,fxSearch,fxOpen,fxOcr,ocrPage,showSetDialog,CAP,capTake};
 window.__ppTest={due,autoRun,AB,bkAction,allNums,save,renderAll,key:()=>key,getSt:()=>st,sharedDoc:()=>!!P.q.docs[0]&&P.q.docs[0]===P.a.docs[0],openDocs:()=>DOCS.size};
 // make a set from a question/answer pair that has no set yet (old saved pair, or an old backup)
@@ -4826,7 +4804,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='05 Nov 22:17';   // build label, so you can check both devices have the same version
+const APPV='05 Nov 17:18';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)

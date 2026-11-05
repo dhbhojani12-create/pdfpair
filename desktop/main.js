@@ -224,10 +224,10 @@ async function miniEnd(show,pause,closed){const t=miniTab();const id=miniId;mini
   if(!closed&&miniWin&&!miniWin.isDestroyed()){const w=miniWin;miniWin=null;w.destroy()}}
 async function miniToggle(){if(miniId!=null){miniEnd(true);return}const c=cur();
   const t=tabById(pipOwner)||(c&&(await pipRun(c,"(()=>!!document.querySelector('video'))()"))===true?c:null);if(!t){tell('No video on this page');return}miniStart(t)}
-ipcMain.on('br-mini',()=>miniToggle());
+ipcMain.on('br-mini',()=>pipToggle());
 // ▶ Lectures (from PDF Pair): open a page straight in the mini window, without showing the browser
 const toPhone=u=>/^https:\/\/(www\.)?youtube\.com\//.test(u)&&!/\/(watch|live|shorts|embed)/.test(new URL(u).pathname);
-ipcMain.on('mini-open',async(e,u)=>{u=String(u||'');if(!/^https?:\/\//.test(u))return;
+ipcMain.on('mini-open',async(e,u)=>{return;u=String(u||'');if(!/^https?:\/\//.test(u))return;
   if(miniId!=null&&miniTab()&&miniWin&&!miniWin.isDestroyed()){const wc=miniTab().view.webContents;
     if(toPhone(u)){if(miniUA==null)miniUA=wc.getUserAgent();wc.setUserAgent(MOBILE_UA);u=u.replace(/^https:\/\/(www\.)?youtube\.com/,'https://m.youtube.com')}
     wc.loadURL(u);if(miniMode==='vid'&&toPhone(u))await miniSetMode('full');miniWin.show();return}
@@ -254,7 +254,7 @@ async function pipToggle(){const t=cur();const r=await pipRun(t,PIP_TOGGLE);if(r
 function fwdKeys(e,i){if(i.type!=='keyDown'||!bwin||bwin.isDestroyed())return;const k=(i.key||'').toLowerCase();
   const want=(i.control&&['k','.','t','w','l','tab','h'].includes(k))||(i.alt&&!i.control&&['h','m','s'].includes(k));
   if(want){e.preventDefault();bwin.webContents.send('br-key',{key:i.key,ctrl:i.control,alt:i.alt,shift:i.shift});if(k==='l'||k==='k')bwin.webContents.focus()}}
-function pipKeys(e,i){if(i.type==='keyDown'&&i.alt&&!i.control&&(i.key==='p'||i.key==='P')){e.preventDefault();miniToggle()}}
+function pipKeys(e,i){if(i.type==='keyDown'&&i.alt&&!i.control&&(i.key==='p'||i.key==='P')){e.preventDefault();pipToggle()}}
 
 // ---- 🛡 shield: ads/trackers blocked (Ghostery engine + EasyList, EasyPrivacy, uBlock filters), known phishing/malware sites warned
 const SH={blocker:null,bad:new Set(),allowBad:new Set(),count:new Map(),ready:false};
