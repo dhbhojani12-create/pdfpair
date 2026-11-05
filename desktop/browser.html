@@ -26,7 +26,7 @@ input,select{height:32px;border:1px solid #d5d8de;border-radius:16px;padding:0 1
 <div id="chrome"><div id="tabs"></div>
 <div id="t"><button class="ic" id="b" title="Back">←</button><button class="ic" id="f" title="Forward">→</button><button class="ic" id="r" title="Reload">⟳</button>
 <input id="u" spellcheck="false" placeholder="Web address"><button class="ic" id="star" title="Bookmark this page">☆</button>
-<input id="g" spellcheck="false" placeholder="🔍 Search Google"><span id="m"></span><button id="app" title="Back to PDF Pair">◧ PDF Pair</button></div>
+<input id="g" spellcheck="false" placeholder="🔍 Search Google"><button class="ic" id="ext" title="Open this page in your normal browser (for sites that need Google sign-in)">⧉</button><span id="m"></span><button id="app" title="Back to PDF Pair">◧ PDF Pair</button></div>
 <div id="bk"></div></div>
 <div id="menu" class="pop" hidden></div>
 <div id="dlg" class="pop dl" hidden style="top:86px;right:120px"><h3>Bookmark this page</h3><label for="dn">Name</label><input id="dn"><label for="ds">Where</label><select id="ds"></select><input id="dsn" placeholder="New folder name, e.g. DT" hidden style="margin-top:6px">
@@ -82,7 +82,7 @@ $('#dok').onclick=()=>{const t=$('#dn').value.trim()||host(cur.url);let w=$('#ds
   B.last=w;saveB();closeDlg();renderBar()};
 ['#dn','#dsn'].forEach(s=>$(s).addEventListener('keydown',e=>{if(e.key==='Enter')$('#dok').click()}));
 $('#ac').onclick=()=>askDone(false);$('#aok').onclick=()=>askDone(true);$('#ai').addEventListener('keydown',e=>{if(e.key==='Enter')askDone(true)});
-$('#b').onclick=()=>br.cmd('back');$('#f').onclick=()=>br.cmd('fwd');$('#r').onclick=()=>br.cmd(cur.loading?'stop':'reload');$('#app').onclick=()=>br.cmd('app');
+$('#b').onclick=()=>br.cmd('back');$('#f').onclick=()=>br.cmd('fwd');$('#r').onclick=()=>br.cmd(cur.loading?'stop':'reload');$('#app').onclick=()=>br.cmd('app');$('#ext').onclick=()=>br.cmd('ext');
 $('#u').addEventListener('keydown',e=>{if(e.key==='Enter')br.go($('#u').value)});
 $('#g').addEventListener('keydown',e=>{if(e.key==='Enter'&&$('#g').value.trim()){br.tab({op:'new',url:'https://www.google.com/search?q='+encodeURIComponent($('#g').value.trim())});$('#g').value=''}});
 let TABS=[];
