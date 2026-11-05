@@ -556,6 +556,10 @@ select.tin{appearance:auto}
 .mdo{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;cursor:pointer;text-align:left;width:100%}.mdo.on{border-color:#2f6fe0;background:#eef4ff}
 .mdo b{flex:1;font-size:14px}.mdo small{color:var(--mut);font-size:12px;text-align:right}
 @media (max-width:760px){#mockPanel{left:8px;right:8px;width:auto;top:auto;height:46%;bottom:8px}}
+.wlk{font-size:11px;font-weight:600;color:#6d28d9;background:#ede9fe;border-radius:9px;padding:1px 6px;cursor:pointer;white-space:nowrap}.wlk:hover{background:#ddd6fe}
+#webPop{position:absolute;z-index:60;width:360px;max-height:60vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 14px 34px rgba(0,0,0,.2);padding:10px}#webPop[hidden]{display:none}
+#webPop h4{margin:2px 4px 8px;font-size:13.5px}.wpi{display:flex;gap:8px;align-items:flex-start;padding:7px 6px;border-radius:8px}.wpi:hover{background:var(--ground-2)}.wpi .tx{flex:1;font-size:12.5px;word-break:break-word}.wpi .tx small{display:block;color:var(--mut);font-size:11px}
+.wpi button{font-size:12px;border-radius:6px;padding:2px 7px}.wpi .go{background:#6d28d9;color:#fff}.wpi .rm{color:var(--mut)}
 #vidBar{position:absolute;z-index:44;right:10px;bottom:10px;display:flex;align-items:center;gap:3px;background:rgba(31,35,40,.92);color:#fff;border-radius:10px;padding:4px 6px;box-shadow:0 6px 18px rgba(0,0,0,.28);font-size:12px}#vidBar[hidden]{display:none}
 #vidBar .vt{display:none;max-width:170px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.85;margin-right:2px}#vidBar button{color:#fff;height:26px;min-width:26px;padding:0 5px;border-radius:7px;font-size:13px;white-space:nowrap}#vidBar button:hover{background:rgba(255,255,255,.14)}#vidBar .vp{font-size:15px;background:rgba(255,255,255,.12)}
 #vidBar .vs{width:110px;accent-color:#ff3b3b}#vidBar .vtm{font-variant-numeric:tabular-nums;opacity:.85;white-space:nowrap;font-size:11.5px}#vidBar select{background:#2c3138;color:#fff;border:0;border-radius:6px;height:26px;font-size:12px}
@@ -725,6 +729,7 @@ select.tin{appearance:auto}
   <div id="dkCard" hidden role="dialog" aria-label="Downloaded PDF"><div class="dkt"></div><div class="dkr"><input id="dkName" class="tin" placeholder="Set name"><select id="dkSub" class="tin"></select><select id="dkType" class="tin"><option value="mod">Module / chapter</option><option value="rtp">RTP</option><option value="mtp">MTP</option><option value="pyq">Past papers</option><option value="mcq">MCQ booklet</option><option value="oth">Other</option><option value="con">Concept book</option></select></div><div class="acts"><button class="btn ghost" id="dkSkip">Skip</button><button class="btn" id="dkAdd">Add to library</button></div></div>
   <div id="vidBar" hidden role="group" aria-label="Video controls"><span class="vt"></span><button data-v="back10" title="Back 10 s (Alt+J)">⟲ 10</button><button data-v="play" class="vp" title="Play / pause (Alt+K)">⏸</button><button data-v="fwd10" title="Forward 10 s (Alt+L)">10 ⟳</button>
     <input type="range" class="vs" min="0" max="1000" value="0" aria-label="Position"><span class="vtm">0:00 / 0:00</span><select class="vr" title="Speed"><option>0.75</option><option selected>1</option><option>1.25</option><option>1.5</option><option>1.75</option><option>2</option></select><button data-v="back" title="Back to the tab">⤢</button></div>
+  <div id="webPop" hidden></div>
   <div id="ibCard" hidden role="alertdialog" aria-label="New marks from Claude"><div class="ibt"></div><div class="ibs"></div><div class="ibn"></div><div class="acts"><button class="btn ghost" id="ibIgnore">Ignore</button><button class="btn" id="ibApply">Apply ▶</button></div></div>
   <div id="ibDlg" hidden><div class="card" role="dialog" aria-labelledby="ibT"><h1 id="ibT">📥 Claude inbox</h1>
     <div class="ibOff"><p class="sub">Send a PDF to Claude in the chat. Claude marks it and puts the stickers in your inbox; this app picks them up on the laptop and the phone and asks before adding anything. Everything is locked with your own code.</p>
@@ -1407,6 +1412,8 @@ function mkRow(n){
   const row=document.createElement('div');row.className='row'+(q&&a?'':' open')+(n===activeN?' act':'')+(sel.has(n)?' sel':'');row.dataset.n=n;row.tabIndex=0;
   const sc=starCounts(st)[n]||0;
   row.innerHTML='<span class="badge'+(q&&a?'':' half')+'">'+n+'</span><span class="nm">'+'</span>'+(sc?'<span class="stc" title="'+sc+' star'+(sc===1?'':'s')+'">★'+sc+'</span>':'')+((st.rev||{})[n]?'<span class="rvd '+st.rev[n]+'" title="'+(st.rev[n]==='done'?'Revised':'Revise again')+'"></span>':'')+'<span class="pg">'+(q?'p'+q.page:'?')+' → '+(a?'p'+a.page:'?')+'</span><button class="del" title="Delete both stickers" aria-label="Delete">×</button>';
+  {const L=((st.links||{})[n]||[]).length,W=((st.wnotes||{})[n]||[]).length;if(L||W){const x=document.createElement('span');x.className='wlk';x.title='Lecture moments and web notes linked to this question';x.textContent=(L?'▶'+L:'')+(L&&W?' ':'')+(W?'🗒'+W:'');
+    x.addEventListener('click',e=>{e.stopPropagation();openPair(n);showWeb(n,x)});row.insertBefore(x,row.querySelector('.pg'))}}
   $('.nm',row).textContent=label(n);if(meta(n).amd){const t=document.createElement('span');t.className='amdb';t.textContent='⚠';t.title='Affected by an amendment';$('.nm',row).append(t)}
   row.title=label(n)+(meta(n).ch?'\n'+meta(n).ch:'')+(meta(n).tp?' › '+meta(n).tp:'');
   row.addEventListener('click',e=>{
@@ -2359,6 +2366,34 @@ if(window.ppDesktop&&window.ppDesktop.video){
   window.addEventListener('keydown',e=>{if(!VB.on||!e.altKey||e.ctrlKey||e.metaKey)return;const c=e.code;
     const act=c==='KeyJ'||c==='ArrowLeft'?'v.currentTime=Math.max(0,v.currentTime-10)':c==='KeyL'||c==='ArrowRight'?'v.currentTime=Math.min(v.duration||1e9,v.currentTime+10)':c==='KeyK'?'v.paused?v.play():v.pause()':null;
     if(!act)return;e.preventDefault();e.stopImmediatePropagation();vDo(act)},true);
+}
+
+
+/* 🔗 desktop browser bridge: lecture moments and web notes on questions; search and open questions from the browser's command bar */
+const wfmt=t=>{t=Math.max(0,Math.floor(t||0));const h=Math.floor(t/3600),m=Math.floor(t%3600/60),x=t%60;return (h?h+':'+String(m).padStart(2,'0'):m)+':'+String(x).padStart(2,'0')};
+function showWeb(n,anchor){const p=$('#webPop'),L=(st.links||{})[n]||[],W=(st.wnotes||{})[n]||[];p.innerHTML='<h4></h4>';$('h4',p).textContent=label(n);
+  const add=(icon,main,sub,go,rm)=>{const r=document.createElement('div');r.className='wpi';r.innerHTML='<span></span><div class="tx"><span></span><small></small></div>'+(go?'<button class="go">'+go[0]+'</button>':'')+'<button class="rm" title="Remove">×</button>';
+    r.firstChild.textContent=icon;$('.tx span',r).textContent=main;$('.tx small',r).textContent=sub;if(go)$('.go',r).onclick=go[1];$('.rm',r).onclick=()=>{pushUndo();rm();save();renderAll();showWeb(n,anchor)};p.append(r)};
+  L.forEach((o,i)=>add('▶',(o.t!=null?wfmt(o.t)+' · ':'')+(o.title||o.u),new Date(o.at||Date.now()).toLocaleDateString(),[o.t!=null?'▶ Play':'Open',()=>{if(window.ppDesktop)window.ppDesktop.openLecture(o.u);else window.open(o.u,'_blank')}],()=>L.splice(i,1)));
+  W.forEach((o,i)=>add('🗒',o.text||'(moment)',(o.title||'')+(o.t!=null?' · '+wfmt(o.t):''),o.u?['Open',()=>{if(window.ppDesktop)window.ppDesktop.openLecture(o.u);else window.open(o.u,'_blank')}]:null,()=>W.splice(i,1)));
+  if(!L.length&&!W.length){p.hidden=true;return}
+  const r=anchor.getBoundingClientRect(),a=$('#app').getBoundingClientRect();p.style.left=Math.min(r.left-a.left,a.width-370)+'px';p.style.top=Math.min(r.bottom-a.top+6,a.height-300)+'px';p.hidden=false}
+document.addEventListener('pointerdown',e=>{if(!e.target.closest('#webPop,.wlk'))$('#webPop').hidden=true});
+if(window.ppDesktop){
+  const stOfSet=x=>x.id===LIB.cur?st:(LS.get('pp:'+x.key)||{});
+  const need=()=>{const c=curSet();if(!c||isCset())return 'Open a question set in PDF Pair first';if(!activeN)return 'Click a question in PDF Pair first (its sticker or its row)';return null};
+  window.__ppDesk={
+    subjects:()=>subjects(),
+    index(){const out=[];for(const x of LIB.sets){if(x.type==='con')continue;const S=stOfSet(x);const ns=new Set([...((S.stickers||{}).q||[]),...((S.stickers||{}).a||[])].map(z=>z.n));
+      for(const n of ns){const m=(S.meta||{})[n]||{};out.push({id:x.id,n,name:(S.names||{})[n]||('Q '+n),ch:m.ch||'',tp:m.tp||'',set:x.name,sub:x.subject})}}return out},
+    async open(id,n){try{closeLib(true)}catch(e){}try{stopRv()}catch(e){}if(LIB.cur!==id)await openSet(id);openPair(n);return {ok:true}},
+    link(o){const e=need();if(e)return {error:e};pushUndo();st.links=st.links||{};(st.links[activeN]=st.links[activeN]||[]).push({u:String(o.u),t:o.t==null?null:+o.t,title:String(o.title||'').slice(0,200),at:Date.now()});save();renderAll();
+      toast('▶ Lecture moment linked to '+label(activeN));return {ok:true,label:label(activeN)}},
+    note(o){const e=need();if(e)return {error:e};pushUndo();st.wnotes=st.wnotes||{};(st.wnotes[activeN]=st.wnotes[activeN]||[]).push({text:String(o.text||'').slice(0,4000),u:String(o.u||''),t:o.t==null?null:+o.t,title:String(o.title||'').slice(0,200),at:Date.now()});save();renderAll();
+      toast('🗒 Web note added to '+label(activeN));return {ok:true,label:label(activeN)}}};
+  // study time: a minute counts when PDF Pair is in front and you used it in the last 2 minutes
+  let lastUse=Date.now();['pointerdown','keydown','wheel'].forEach(ev=>document.addEventListener(ev,()=>{lastUse=Date.now()},{passive:true,capture:true}));
+  setInterval(()=>{const c=curSet();if(c&&document.visibilityState==='visible'&&document.hasFocus()&&Date.now()-lastUse<120000&&window.ppDesktop.track)window.ppDesktop.track(c.subject||'Other',1)},60000);
 }
 
 /* compact toolbar: colours and less-used buttons tucked into small menus */
