@@ -51,29 +51,54 @@ function setupBrowserSession(ses){
   });
 }
 
-const TOP=84;
-function layoutBrowser(){if(!bwin||!view)return;const [w,h]=bwin.getContentSize();view.setBounds({x:0,y:TOP,width:w,height:Math.max(0,h-TOP)})}
-function openBrowser(url){
-  url=url||'https://www.icai.org/';
-  if(bwin&&!bwin.isDestroyed()){view.webContents.loadURL(url);bwin.show();bwin.focus();return}
-  bwin=new BrowserWindow({width:1250,height:860,title:'PDF Pair · Browser',backgroundColor:'#ffffff',
-    webPreferences:{preload:path.join(__dirname,'bpreload.js'),contextIsolation:true,sandbox:false}});
-  bwin.loadFile(path.join(__dirname,'browser.html'));
-  const ses=session.fromPartition('persist:browser');setupBrowserSession(ses);
-  view=new WebContentsView({webPreferences:{session:ses,contextIsolation:true,sandbox:true}});
-  bwin.contentView.addChildView(view);layoutBrowser();bwin.on('resize',layoutBrowser);
-  const wc=view.webContents;
-  const upd=()=>{if(bwin&&!bwin.isDestroyed())bwin.webContents.send('br-state',{url:wc.getURL(),title:wc.getTitle(),back:wc.navigationHistory.canGoBack(),fwd:wc.navigationHistory.canGoForward(),loading:wc.isLoading()})};
-  ['did-navigate','did-navigate-in-page','page-title-updated','did-start-loading','did-stop-loading'].forEach(ev=>wc.on(ev,upd));
-  wc.setWindowOpenHandler(({url})=>{wc.loadURL(url);return {action:'deny'}});   // one page: new tabs open here
-  wc.loadURL(url);
-  bwin.on('closed',()=>{bwin=null;view=null});
+// ---- built-in browser: tabs; the toolbar page loads from GitHub Pages (so it updates itself), local copy when offline
+const BR_URL=process.env.PP_BR_URL||APP_URL.replace(/[^/]*$/,'')+'desktop/browser.html';
+let top=112,tabs=[],active=null,nextId=1;
+const BMF=()=>path.join(app.getPath('userData'),'bookmarks.json');
+function cur(){return tabs.find(t=>t.id===active)}
+function layoutBrowser(){if(!bwin)return;const [w,h]=bwin.getContentSize();for(const t of tabs){t.view.setBounds({x:0,y:top,width:w,height:Math.max(0,h-top)});t.view.setVisible(t.id===active&&!covered)}}
+let covered=false;
+function state(){if(!bwin||bwin.isDestroyed())return;const c=cur(),wc=c&&c.view.webContents;
+  bwin.webContents.send('br-state',{tabs:tabs.map(t=>({id:t.id,title:t.view.webContents.getTitle()||t.view.webContents.getURL(),url:t.view.webContents.getURL(),loading:t.view.webContents.isLoading(),active:t.id===active})),
+    url:wc?wc.getURL():'',title:wc?wc.getTitle():'',back:!!wc&&wc.navigationHistory.canGoBack(),fwd:!!wc&&wc.navigationHistory.canGoForward(),loading:!!wc&&wc.isLoading()})}
+function newTab(url){
+  const ses=session.fromPartition('persist:browser');
+  const v=new WebContentsView({webPreferences:{session:ses,contextIsolation:true,sandbox:true}});
+  const t={id:nextId++,view:v};tabs.push(t);bwin.contentView.addChildView(v);
+  const wc=v.webContents;['did-navigate','did-navigate-in-page','page-title-updated','did-start-loading','did-stop-loading'].forEach(ev=>wc.on(ev,state));
+  wc.setWindowOpenHandler(({url})=>{newTab(url);return {action:'deny'}});
+  wc.loadURL(url||'https://www.google.com/');active=t.id;layoutBrowser();state();return t;
 }
-
-ipcMain.on('br-go',(e,u)=>{if(!view)return;let url=String(u||'').trim();if(!url)return;
-  if(!/^[a-z]+:\/\//i.test(url))url=/\s/.test(url)||!/\./.test(url)?'https://www.google.com/search?q='+encodeURIComponent(url):'https://'+url;view.webContents.loadURL(url)});
-ipcMain.on('br-cmd',(e,c)=>{if(!view)return;const wc=view.webContents;if(c==='back'&&wc.navigationHistory.canGoBack())wc.navigationHistory.goBack();if(c==='fwd'&&wc.navigationHistory.canGoForward())wc.navigationHistory.goForward();if(c==='reload')wc.reload();if(c==='app'&&win){win.show();win.focus()}if(c==='ext')shell.openExternal(wc.getURL())});
-ipcMain.on('br-cover',(e,on)=>{if(view)view.setVisible(!on)});
+function closeTab(id){const k=tabs.findIndex(t=>t.id===id);if(k<0)return;const t=tabs[k];bwin.contentView.removeChildView(t.view);try{t.view.webContents.close()}catch(e){}tabs.splice(k,1);
+  if(!tabs.length){newTab('https://www.google.com/');return}if(active===id)active=(tabs[k]||tabs[k-1]).id;layoutBrowser();state()}
+let sesReady=false;
+function openBrowser(url){
+  if(bwin&&!bwin.isDestroyed()){if(url)newTab(url);bwin.show();bwin.focus();return}
+  if(!sesReady){setupBrowserSession(session.fromPartition('persist:browser'));sesReady=true}
+  bwin=new BrowserWindow({width:1280,height:880,title:'PDF Pair · Browser',backgroundColor:'#ffffff',
+    webPreferences:{preload:path.join(__dirname,'bpreload.js'),contextIsolation:true,sandbox:false}});
+  let fell=false;const local=()=>{if(!fell){fell=true;bwin.loadFile(path.join(__dirname,'browser.html'))}};
+  bwin.webContents.on('did-fail-load',(e,code,desc,u,main)=>{if(main)local()});bwin.webContents.on('did-navigate',(e,u,code)=>{if(code>=400)local()});
+  bwin.webContents.on('did-finish-load',async()=>{if(fell)return;try{if(!(await bwin.webContents.executeJavaScript("!!document.getElementById('chrome')&&typeof br==='object'")))local()}catch(e){local()}});
+  bwin.loadURL(BR_URL+'?v='+Date.now()).catch(()=>{});
+  tabs=[];active=null;newTab(url||'https://www.icai.org/');
+  bwin.on('resize',layoutBrowser);bwin.webContents.on('did-finish-load',state);
+  bwin.on('closed',()=>{bwin=null;tabs=[];active=null});
+}
+async function readBm(){try{return JSON.parse(fs.readFileSync(BMF(),'utf8'))}catch(e){}
+  // first run of this version: bring over bookmarks saved by the old (local) browser bar
+  try{const w=new BrowserWindow({show:false,webPreferences:{contextIsolation:true}});await w.loadFile(path.join(__dirname,'offline.html'));
+    const v=await w.webContents.executeJavaScript("localStorage.getItem('bm')");w.destroy();if(v){const o=JSON.parse(v);fs.writeFileSync(BMF(),JSON.stringify(o));return o}}catch(e){}
+  return null}
+ipcMain.handle('bm-get',()=>readBm());
+ipcMain.on('bm-set',(e,o)=>{try{fs.writeFileSync(BMF(),JSON.stringify(o))}catch(err){}});
+ipcMain.on('br-top',(e,px)=>{top=Math.max(40,Math.min(240,+px||112));layoutBrowser()});
+ipcMain.on('br-tab',(e,a)=>{if(!bwin)return;if(a.op==='new')newTab(a.url);if(a.op==='close')closeTab(a.id);if(a.op==='switch'&&tabs.some(t=>t.id===a.id)){active=a.id;layoutBrowser();state()}});
+ipcMain.on('br-go',(e,u)=>{const c=cur();if(!c)return;let url=String(u||'').trim();if(!url)return;
+  if(!/^[a-z]+:\/\//i.test(url))url=/\s/.test(url)||!/\./.test(url)?'https://www.google.com/search?q='+encodeURIComponent(url):'https://'+url;c.view.webContents.loadURL(url)});
+ipcMain.on('br-cmd',(e,cmd)=>{if(cmd==='app'&&win){win.show();win.focus();return}const c=cur();if(!c)return;const wc=c.view.webContents;
+  if(cmd==='back'&&wc.navigationHistory.canGoBack())wc.navigationHistory.goBack();if(cmd==='fwd'&&wc.navigationHistory.canGoForward())wc.navigationHistory.goForward();if(cmd==='reload')wc.reload();if(cmd==='stop')wc.stop();if(cmd==='ext')shell.openExternal(wc.getURL())});
+ipcMain.on('br-cover',(e,on)=>{covered=!!on;layoutBrowser()});
 ipcMain.on('pp-browser',(e,u)=>openBrowser(u));
 ipcMain.handle('pp-fetch',async(e,url)=>{
   const r=await net.fetch(url);if(!r.ok)throw new Error('HTTP '+r.status);
