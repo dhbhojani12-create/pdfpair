@@ -99,7 +99,7 @@ function openBrowser(url){
   bwin.webContents.on('did-fail-load',(e,code,desc,u,main)=>{if(main)local()});bwin.webContents.on('did-navigate',(e,u,code)=>{if(code>=400)local()});
   bwin.webContents.on('did-finish-load',async()=>{if(fell)return;try{if(!(await bwin.webContents.executeJavaScript("!!document.getElementById('chrome')&&typeof br==='object'")))local()}catch(e){local()}});
   bwin.loadURL(BR_URL+'?v='+Date.now()).catch(()=>{});
-  tabs=[];active=null;newTab(url||'https://www.icai.org/');
+  tabs=[];active=null;newTab(url||'https://www.google.com/');
   bwin.on('resize',layoutBrowser);bwin.on('blur',()=>{setTimeout(()=>{if(bwin&&!bwin.isDestroyed()&&!bwin.isFocused())pipAuto(cur())},250)});bwin.on('focus',()=>pipBack(cur()));bwin.on('minimize',()=>pipAuto(cur()));bwin.on('leave-full-screen',()=>{fsMode=false;layoutBrowser()});bwin.webContents.on('before-input-event',(ev,i)=>{fsKeys(ev,i);pipKeys(ev,i)});bwin.webContents.on('did-finish-load',state);
   bwin.on('closed',()=>{bwin=null;tabs=[];active=null});
 }
