@@ -51,6 +51,15 @@ User PDFs and backups are never committed.
 - Test only what changed, unless they ask for a full check. Then publish and tell them the new version label (`APPV`).
 - The user said "I don't want any problem further": prefer optional changes, and never risk their data.
 
+## 📥 Claude inbox (built 5 Nov 2026)
+
+How Claude delivers marks straight into the app, instead of restore files.
+
+- **In the app:** ⋯ More → 📥 Claude inbox (phone: ⋯ → Claude inbox). "Turn on" makes a 16-letter code, kept in `prefs.ibCode` (so it travels in backups; restore adopts it if the device has none). The phone uses the same code (typed in, or from a backup).
+- **Where:** `inbox/<first 20 hex of sha256("pdfpair-inbox:"+CODE)>.json` in this repo, read from `raw.githubusercontent.com` on open, every 5 minutes while visible, and on "Check now". Each item is `{id,at,salt,iv,ct}`: AES-GCM, key from PBKDF2-SHA256 (150k rounds) of the code. Wrong code = nothing found.
+- **Package (inside):** `{setKey, setName, note, stickers{q,a}, names, meta}`, numbers from 1. The app shows a card "📥 New marks from Claude: <set> · N stickers", then Apply / Ignore. Apply opens that set, adds stickers after its highest number, skips any within 3% of an existing sticker on the same page, and one Ctrl+Z undoes it. Applied or ignored ids go in `prefs.ibDone`. If the set isn't on that device, Apply is disabled.
+- **To send (Claude):** get the code from Darshan in chat (never commit it), build marks.json (set key from his backup .json), run `python3 tools/inbox_send.py CODE marks.json`, then commit and push `inbox/`. Items older than 45 days are pruned on each send. Test: `tests/ib.js`.
+
 ## ✨ Auto-mark: removed (4 Nov 2026)
 
 Built on 4 Nov (ICAI finder + Gemini) and removed the same day at Darshan's request ("it is useless"). Don't bring it back unless he asks. The app now deletes the Gemini key it had saved (`gem:key`). The code is in git history (commits bb8fcae…b8e4d76) if ever needed.

@@ -564,6 +564,12 @@ select.tin{appearance:auto}
 .mdo{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;cursor:pointer;text-align:left;width:100%}.mdo.on{border-color:#2f6fe0;background:#eef4ff}
 .mdo b{flex:1;font-size:14px}.mdo small{color:var(--mut);font-size:12px;text-align:right}
 @media (max-width:760px){#mockPanel{left:8px;right:8px;width:auto;top:auto;height:46%;bottom:8px}}
+#ibDlg{position:fixed;inset:0;z-index:70;background:rgba(15,17,21,.45);display:grid;place-items:center;padding:16px}#ibDlg[hidden]{display:none}
+#ibDlg .card{background:var(--panel);border-radius:16px;padding:22px 24px;width:min(460px,100%);max-height:calc(100vh - 32px);overflow:auto;box-shadow:0 20px 50px rgba(0,0,0,.25)}#ibDlg h1{font-size:20px;margin:0 0 4px}
+#ibCode{display:block;font:600 22px var(--mono);letter-spacing:1px;text-align:center;background:var(--ground-2);border-radius:10px;padding:12px;margin:4px 0 10px;user-select:all}
+.ibr{display:flex;gap:8px;align-items:center;margin:8px 0}.ibr .tin{flex:1}#ibStat{font-size:12.5px;color:var(--mut);margin:6px 0 0}.ibsm{font-size:12.5px;color:var(--mut);margin:14px 0 4px}
+#ibCard{position:absolute;z-index:65;top:14px;left:50%;transform:translateX(-50%);width:min(440px,calc(100% - 24px));background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 14px 34px rgba(0,0,0,.22);padding:14px 16px}#ibCard[hidden]{display:none}
+#ibCard .ibt{font-weight:600;font-size:15px}#ibCard .ibs{font-size:13.5px;margin:3px 0}#ibCard .ibn{font-size:12px;color:var(--mut)}#ibCard .acts{margin-top:10px}
 /* MCQ practice */
 #mcqBar{position:absolute;z-index:31;left:50%;transform:translateX(-50%);bottom:calc(74px + env(safe-area-inset-bottom,0px));display:none;align-items:center;gap:6px;background:rgba(27,30,35,.94);color:#fff;padding:6px 8px;border-radius:26px;box-shadow:0 6px 18px rgba(0,0,0,.3);font-size:13px;white-space:nowrap;max-width:calc(100% - 16px)}
 #mcqBar.on{display:flex}
@@ -715,6 +721,16 @@ select.tin{appearance:auto}
   </main>
 
   <div id="mockBar" hidden><span class="mt"></span><span class="mc">3:00:00</span><button id="mockFin">Finish</button></div>
+  <div id="ibCard" hidden role="alertdialog" aria-label="New marks from Claude"><div class="ibt"></div><div class="ibs"></div><div class="ibn"></div><div class="acts"><button class="btn ghost" id="ibIgnore">Ignore</button><button class="btn" id="ibApply">Apply ▶</button></div></div>
+  <div id="ibDlg" hidden><div class="card" role="dialog" aria-labelledby="ibT"><h1 id="ibT">📥 Claude inbox</h1>
+    <div class="ibOff"><p class="sub">Send a PDF to Claude in the chat. Claude marks it and puts the stickers in your inbox; this app picks them up on the laptop and the phone and asks before adding anything. Everything is locked with your own code.</p>
+      <div class="acts" style="justify-content:flex-start;margin-top:0"><button class="btn" id="ibTurnOn">Turn on</button></div>
+      <p class="ibsm">Already have a code from your other device?</p><div class="ibr"><input id="ibIn2" class="tin" placeholder="XXXX-XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false"><button class="btn ghost" id="ibUse2">Use</button></div></div>
+    <div class="ibOn"><p class="sub">Give this code to Claude once in the chat. Use the same code on your phone. Keep it private: it unlocks your marks.</p>
+      <span id="ibCode"></span><div class="ibr" style="justify-content:center"><button class="btn ghost" id="ibCopy">Copy code</button><button class="btn" id="ibNow">Check now</button></div><p id="ibStat"></p>
+      <p class="ibsm">Use a code from your other device instead</p><div class="ibr"><input id="ibIn" class="tin" placeholder="XXXX-XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false"><button class="btn ghost" id="ibUse">Use</button></div>
+      <p class="ibsm"><button class="lnk" id="ibOffB">Turn the inbox off</button></p></div>
+    <div class="acts"><button class="btn ghost" id="ibClose">Close</button></div></div></div>
   <div id="mockPanel" hidden><div class="mph"><b>Check your paper</b><small></small></div><div class="mpl"></div><div class="mpf"><span class="mps"></span><button class="btn ghost" id="mockDiscard">Discard</button><button class="btn" id="mockSave">Save result</button></div></div>
   <div id="mockDlg" hidden><div class="card" role="dialog" aria-labelledby="mdT"><h1 id="mdT">Mock test</h1><p class="sub">Pick a paper. The answers stay locked until you finish, then you check each question.</p><div class="mdl"></div>
     <label class="fl" for="mdTime">Time</label><select id="mdTime" class="tin"><option value="60">1 hour</option><option value="90">1½ hours</option><option value="120">2 hours</option><option value="150">2½ hours</option><option value="180" selected>3 hours</option><option value="210">3½ hours</option></select>
@@ -751,6 +767,7 @@ select.tin{appearance:auto}
     <button class="b" id="bUndo" title="Undo (Ctrl+Z)"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button>
     <span class="sepv"></span>
     <button class="b" id="bBk" title="Backup and restore"><svg viewBox="0 0 24 24"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 9.5z"/><path d="M12 11v5M9.5 13.5 12 11l2.5 2.5"/></svg><span>Backup</span><i class="bdot" id="bkDot" hidden></i></button>
+    <button class="b" id="bInbox" title="Marks sent by Claude"><span class="mi">📥</span><span>Claude inbox</span></button>
     <button class="b" id="bQuiz" title="Quiz view: case text on the left, tap the options on the right" hidden>📝<span>Quiz</span></button>
     <button class="b" id="bSave" title="Save one linked PDF with stickers, highlights and bookmarks"><svg viewBox="0 0 24 24"><path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/></svg><span>Save PDF</span></button>
     <button class="b" id="bLink" title="Link your phone as a touch highlighter"><span style="font-size:15px">📱</span><span id="bLinkT">Link phone</span></button>
@@ -2116,12 +2133,85 @@ $('#rvExit').addEventListener('click',()=>{stopRv();openLib()});
 
 
 
+/* 📥 Claude inbox: Claude puts marks for a set in the GitHub repo, locked with the user's code; the app picks them up and asks before adding */
+const IB_RAW='https://raw.githubusercontent.com/dhbhojani12-create/pdfpair/main/inbox/';
+const IB={q:[],last:0,busy:false,msg:''};
+const ibNorm=c=>String(c||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+const ibFmt=c=>ibNorm(c).replace(/(.{4})(?=.)/g,'$1-');
+const b64d=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+async function ibFile(code){const h=new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode('pdfpair-inbox:'+ibNorm(code))));return [...h].slice(0,10).map(b=>b.toString(16).padStart(2,'0')).join('')+'.json'}
+async function ibOpen(code,it){
+  const base=await crypto.subtle.importKey('raw',new TextEncoder().encode(ibNorm(code)),'PBKDF2',false,['deriveKey']);
+  const k=await crypto.subtle.deriveKey({name:'PBKDF2',salt:b64d(it.salt),iterations:150000,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['decrypt']);
+  const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:b64d(it.iv)},k,b64d(it.ct));return JSON.parse(new TextDecoder().decode(pt));
+}
+function ibNewCode(){const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',r=crypto.getRandomValues(new Uint8Array(16));return [...r].map(b=>A[b%A.length]).join('')}
+async function ibCheck(manual){
+  const code=prefs.ibCode;if(!code||IB.busy)return;IB.busy=true;IB.last=Date.now();
+  try{
+    const r=await fetch(IB_RAW+(await ibFile(code))+'?t='+Date.now(),{cache:'no-store'});
+    if(r.status===404){IB.msg='Nothing new';if(manual)toast('📥 Nothing new from Claude');return}
+    if(!r.ok)throw new Error('GitHub said '+r.status);
+    const j=await r.json(),done=new Set(prefs.ibDone||[]);let n=0;
+    for(const it of j.items||[]){if(done.has(it.id)||IB.q.some(x=>x.id===it.id))continue;
+      try{const p=await ibOpen(code,it);p.id=it.id;IB.q.push(p);n++}catch(e){}}
+    IB.msg=IB.q.length?IB.q.length+' waiting':'Nothing new';
+    if(IB.q.length)ibShow();else if(manual)toast('📥 Nothing new from Claude');
+  }catch(e){IB.msg='Could not check ('+(e.message||e)+')';if(manual)toast('📥 Could not reach GitHub. Check your internet')}
+  finally{IB.busy=false;if(!$('#ibDlg').hidden)ibRender()}
+}
+function ibCount(p){return new Set([...(p.stickers&&p.stickers.q||[]),...(p.stickers&&p.stickers.a||[])].map(s=>s.n)).size}
+function ibShow(){const p=IB.q[0],c=$('#ibCard');if(!p){c.hidden=true;return}
+  const set=LIB.sets.find(s=>s.key===p.setKey);const chs=new Set(Object.values(p.meta||{}).map(m=>m.ch).filter(Boolean)).size;
+  $('.ibt',c).textContent='📥 New marks from Claude'+(IB.q.length>1?' (1 of '+IB.q.length+')':'');
+  $('.ibs',c).textContent=(p.setName||'a set')+' · '+ibCount(p)+' stickers'+(chs?', '+chs+' chapter'+(chs>1?'s':''):'');
+  $('.ibn',c).textContent=set?(p.note?p.note+' · ':'')+'Adds only; your own marks stay.':'This set is not in the library on this device. Add its PDF first, then press Check again.';
+  $('#ibApply',c).disabled=!set;c.hidden=false;
+}
+function ibDone(id){prefs.ibDone=[...(prefs.ibDone||[]).filter(x=>x!==id),id].slice(-200);savePrefs()}
+$('#ibIgnore').addEventListener('click',()=>{const p=IB.q.shift();if(p)ibDone(p.id);ibShow();toast('Ignored. Nothing was changed')});
+$('#ibApply').addEventListener('click',async()=>{
+  const p=IB.q[0];if(!p)return;const set=LIB.sets.find(s=>s.key===p.setKey);if(!set)return;
+  $('#ibApply').disabled=true;
+  try{
+    if(LIB.cur!==set.id||!curSet()){await openSet(set.id)}try{closeLib(true)}catch(e){}
+    if(key!==set.key){toast('Could not open '+set.name);$('#ibApply').disabled=false;return}
+    pushUndo();let n=maxN()+1;const first=n;let added=0,skipped=0;
+    const near=(side,s)=>st.stickers[side].some(x=>x.page===s.page&&Math.abs(x.y-s.y)<.03);
+    const nums=[...new Set([...(p.stickers.q||[]),...(p.stickers.a||[])].map(s=>s.n))].sort((a,b)=>a-b);
+    for(const old of nums){const q=(p.stickers.q||[]).find(s=>s.n===old),a=(p.stickers.a||[]).find(s=>s.n===old);
+      if((q&&near('q',q))||(!q&&a&&near('a',a))){skipped++;continue}
+      if(q)st.stickers.q.push({n,page:q.page,x:q.x,y:q.y});if(a)st.stickers.a.push({n,page:a.page,x:a.x,y:a.y});
+      const nm=(p.names||{})[old];if(nm)st.names[n]=nm;const m=(p.meta||{})[old];if(m)setMeta(n,{ch:m.ch,tp:m.tp});n++;added++}
+    st.next=Math.max(st.next||1,n);save();renderAll();
+    IB.q.shift();ibDone(p.id);ibShow();
+    toast(added?'Added '+added+' stickers ('+first+'–'+(n-1)+')'+(skipped?', skipped '+skipped+' already marked':'')+'. Ctrl+Z undoes them':'Nothing new: all '+skipped+' were already marked');
+  }catch(e){toast('Could not apply: '+(e.message||e));$('#ibApply').disabled=false}
+});
+function ibRender(){const d=$('#ibDlg'),on=!!prefs.ibCode;
+  $('.ibOff',d).hidden=on;$('.ibOn',d).hidden=!on;
+  if(on){$('#ibCode').textContent=ibFmt(prefs.ibCode);$('#ibStat').textContent=IB.last?'Last checked '+new Date(IB.last).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})+' · '+IB.msg:'Not checked yet'}
+}
+function openInbox(){ibRender();$('#ibDlg').hidden=false}
+$('#ibClose').addEventListener('click',()=>{$('#ibDlg').hidden=true});
+$('#ibTurnOn').addEventListener('click',()=>{prefs.ibCode=ibNewCode();savePrefs();ibRender();ibCheck()});
+$('#ibCopy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(ibFmt(prefs.ibCode));toast('Code copied. Paste it to Claude in the chat')}catch(e){toast('Copy did not work: select the code and copy it')}});
+$('#ibNow').addEventListener('click',()=>ibCheck(true));
+$('#ibUse').addEventListener('click',()=>{const v=ibNorm($('#ibIn').value);if(v.length<12){toast('That code looks too short');return}prefs.ibCode=v;prefs.ibDone=[];IB.q=[];savePrefs();$('#ibIn').value='';ibRender();ibCheck(true)});
+$('#ibUse2').addEventListener('click',()=>{const v=ibNorm($('#ibIn2').value);if(v.length<12){toast('That code looks too short');return}prefs.ibCode=v;prefs.ibDone=[];IB.q=[];savePrefs();$('#ibIn2').value='';ibRender();ibCheck(true)});
+$('#ibOffB').addEventListener('click',()=>{if(!confirmTwice('ibOff','Press again to turn the inbox off'))return;delete prefs.ibCode;IB.q=[];savePrefs();$('#ibCard').hidden=true;ibRender()});
+function confirmTwice(k,msg){const now=Date.now();if(IB['c'+k]&&now-IB['c'+k]<4000){IB['c'+k]=0;return true}IB['c'+k]=now;toast(msg);return false}
+setTimeout(()=>ibCheck(),4000);
+setInterval(()=>{if(document.visibilityState==='visible')ibCheck()},5*60e3);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&Date.now()-IB.last>60e3)ibCheck()});
+$('#bInbox').addEventListener('click',openInbox);
+
 /* compact toolbar: colours and less-used buttons tucked into small menus */
 (function(){
   const pop=$('#morePop');$('#app').append(pop);$('#app').append($('#colPop'));
   const place=(el,btn,alignRight)=>{const r=btn.getBoundingClientRect(),a=$('#app').getBoundingClientRect();el.style.bottom=(a.bottom-r.top+8)+'px';
     if(alignRight){el.style.left='';el.style.right=Math.max(8,a.right-r.right)+'px'}else{el.style.right='';el.style.left=Math.max(8,r.left-a.left-40)+'px'}};
-  [['bOpen','📚','Library'],['bBk',null,null],['bSave',null,null],['bLink',null,null],['bQuiz',null,null],['bSwap','⇄','Swap sides']].forEach(([id,ic,lab])=>{const b=$('#'+id);if(!b)return;
+  [['bOpen','📚','Library'],['bBk',null,null],['bSave',null,null],['bLink',null,null],['bQuiz',null,null],['bInbox',null,null],['bSwap','⇄','Swap sides']].forEach(([id,ic,lab])=>{const b=$('#'+id);if(!b)return;
     if(ic&&!b.querySelector('span')){b.innerHTML='<span class="mi">'+ic+'</span><span>'+lab+'</span>'}
     b.classList.remove('qonly');if(id==='bSwap')b.classList.add('qonly');pop.append(b)});
   const closeAll=()=>{pop.hidden=true;$('#colPop').hidden=true};
@@ -2756,6 +2846,7 @@ async function doRestore(c){
     LS.set('pp:'+k,c.snap.projects[k]);
   }
   for(const k in (c.snap.pos||{}))LS.set('pos:'+k,c.snap.pos[k]);
+  if(c.snap.prefs&&c.snap.prefs.ibCode&&!prefs.ibCode){prefs.ibCode=c.snap.prefs.ibCode;prefs.ibDone=c.snap.prefs.ibDone||[];savePrefs()}   // the Claude inbox code travels with backups
   if(c.files&&c.files.blobs)for(const id in c.files.blobs)await idbPut('blob:'+id,c.files.blobs[id]);
   LIB=Object.assign({subjects:['FR','AFM','Audit'],sets:[],cur:null},LS.get('pp:lib')||{});
   try{await recoverSets()}catch(e){}
@@ -3487,6 +3578,7 @@ function openMore(){
   add('🔒',prefs.wlock?'Unlock width':'Lock width',()=>{prefs.wlock=!prefs.wlock;savePrefs();APP.classList.toggle('wlock',!!prefs.wlock);['q','a','c'].forEach(s=>{const x=P[s];if(prefs.wlock&&x.zoom!==1){x.zoom=1;prefs.zoom[s]=1;layout(x,false)}x.sc.scrollLeft=0});toast(prefs.wlock?'Width locked: pages stay fitted to the screen, pinch and sideways moves are off':'Width unlocked: pinch to zoom again')},!!prefs.wlock);
   add('⊙','Fit width',()=>zoomTo(p,1));
   add('📱','Link to laptop',()=>{$('#linkDlg').hidden=false;renderLinkDlg()});
+  add('📥','Claude inbox',openInbox);
   add(document.fullscreenElement?'⤡':'⛶',document.fullscreenElement?'Exit full screen':'Full screen',phFull);
   $('#phMore').classList.add('open');
 }
@@ -3637,7 +3729,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='04 Nov 23:18';   // build label, so you can check both devices have the same version
+const APPV='05 Nov 07:52';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)

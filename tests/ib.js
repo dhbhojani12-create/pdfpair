@@ -1,0 +1,37 @@
+const {chromium}=require('playwright');const {execSync}=require('child_process');const fs=require('fs');
+const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);const S='/tmp/claude-0/-home-claude/18f77194-c1b7-561f-938c-23c25eb72d78/scratchpad/ib';
+(async()=>{const b=await chromium.launch({args:['--no-proxy-server']});const ctx=await b.newContext({viewport:{width:1300,height:820}});const p=await ctx.newPage();
+const errs=[];p.on('pageerror',e=>errs.push(e.message));
+await p.route('https://cdnjs.cloudflare.com/**',r=>{const u=r.request().url();const f=u.includes('qrcode')?'node_modules/qrcode-generator/qrcode.js':u.includes('jszip')?'node_modules/jszip/dist/jszip.min.js':u.includes('pdf-lib')?'node_modules/pdf-lib/dist/pdf-lib.min.js':'node_modules/pdfjs-dist/build/'+(u.endsWith('worker.min.js')?'pdf.worker.min.js':'pdf.min.js');r.fulfill({path:f,contentType:'application/javascript'})});
+await p.route('https://fonts.**',r=>r.fulfill({body:'',contentType:'text/css'}));
+let hits=0;await p.route('https://raw.githubusercontent.com/**',r=>{hits++;const f=S+'/inbox/'+r.request().url().split('/inbox/')[1].split('?')[0];
+  if(fs.existsSync(f))r.fulfill({path:f,contentType:'text/plain',headers:{'access-control-allow-origin':'*'}});else r.fulfill({status:404,body:'404: Not Found',headers:{'access-control-allow-origin':'*'}})});
+const w=ms=>p.waitForTimeout(ms);
+await p.goto('http://127.0.0.1:9300/app.html');await w(1200);
+await p.evaluate(()=>{const o=document.querySelector('#open');if(o)o.hidden=true});const [fc]=await Promise.all([p.waitForEvent('filechooser'),p.evaluate(()=>document.querySelector('#libRestore').click())]);await fc.setFiles('/home/claude/demo/amtest.zip');await w(3000);await p.evaluate(()=>document.querySelector('[data-b="restore"]').click());await w(4000);
+await p.evaluate(()=>__ppLib.openSet('amset'));await w(3000);await p.evaluate(()=>{document.querySelector('#lib').hidden=true});
+// put one existing sticker so the dedupe can be seen
+await p.evaluate(()=>{const st=__ppTest.getSt();st.stickers.q.push({n:1,page:5,x:.1,y:.3});st.stickers.a.push({n:1,page:5,x:.1,y:.6});st.next=2;__ppTest.save();__ppTest.renderAll()});
+await p.click('#bMore');await w(200);ok(await p.isVisible('#bInbox'),'📥 Claude inbox in ⋯ More');await p.click('#bInbox');await w(300);
+await p.screenshot({path:'ib1.png'});await p.click('#ibTurnOn');await w(500);
+const code=await p.evaluate(()=>document.querySelector('#ibCode').textContent);ok(/^[A-Z2-9]{4}(-[A-Z2-9]{4}){3}$/.test(code),'code made: '+code);
+await w(1500);let s=await p.evaluate(()=>document.querySelector('#ibStat').textContent);ok(/Nothing new/.test(s),'empty inbox: '+s);
+await p.screenshot({path:'ib2.png'});await p.click('#ibClose');
+const key=fs.readFileSync(S+'/key.txt','utf8').trim();
+fs.writeFileSync(S+'/m.json',JSON.stringify({setKey:key,setName:'AM test',note:'Illustrations 1–3',stickers:{q:[{n:1,page:5,x:.09,y:.305},{n:2,page:7,x:.09,y:.4},{n:3,page:10,x:.12,y:.2}],a:[{n:1,page:5,x:.09,y:.6},{n:2,page:7,x:.09,y:.7}]},names:{1:'Ind AS 2 · Illus 1',2:'Ind AS 2 · Illus 2',3:'Ind AS 2 · Illus 3'},meta:{1:{ch:'Ind AS 2 Inventory'},2:{ch:'Ind AS 2 Inventory'},3:{ch:'Ind AS 2 Inventory'}}}));
+console.log(execSync('python3 '+S+'/tools/inbox_send.py '+code+' '+S+'/m.json').toString().trim());
+// a package for a set not on this device
+fs.writeFileSync(S+'/m2.json',JSON.stringify({setKey:'nope|1::nope|1',setName:'Other book',stickers:{q:[{n:1,page:1,x:.1,y:.1}]}}));execSync('python3 '+S+'/tools/inbox_send.py '+code+' '+S+'/m2.json');
+await p.evaluate(()=>ibCheck(true)).catch(()=>{});await p.click('#bMore');await w(200);await p.click('#bInbox');await p.click('#ibNow');await p.click('#ibClose');await w(2500);
+s=await p.evaluate(()=>({card:!document.querySelector('#ibCard').hidden,t:document.querySelector('#ibCard').innerText}));ok(s.card&&/AM test · 3 stickers, 1 chapter/.test(s.t)&&/1 of 2/.test(s.t),'card shows: '+JSON.stringify(s.t));
+await p.screenshot({path:'ib3.png'});
+await p.click('#ibApply');await w(1000);
+s=await p.evaluate(()=>{const st=__ppTest.getSt();return {n:__ppTest.allNums(),nm:st.names[2],ch:st.meta[3]&&st.meta[3].ch,t:document.querySelector('#toast').textContent}});
+ok(s.n.join()==='1,2,3'&&s.nm==='Ind AS 2 · Illus 2','applied, duplicate skipped, renumbered: '+JSON.stringify(s));
+s=await p.evaluate(()=>({t:document.querySelector('#ibCard').innerText,dis:document.querySelector('#ibApply').disabled}));ok(/not in the library/.test(s.t)&&s.dis,'second package: set not here, Apply off');
+await p.click('#ibIgnore');await w(300);
+await p.keyboard.press('Control+z');await w(400);s=await p.evaluate(()=>__ppTest.allNums().join());ok(s==='1','Ctrl+Z undoes the batch: '+s);
+await p.reload();await w(7000);s=await p.evaluate(()=>({card:!document.querySelector('#ibCard').hidden,code:JSON.parse(localStorage.getItem('pp:prefs')).ibCode}));ok(!s.card&&!!s.code,'after reload: nothing offered again, code kept');
+// wrong code sees nothing
+await p.evaluate(()=>{prefs.ibCode='ZZZZZZZZZZZZZZZZ';prefs.ibDone=[];IB.q=[]});await p.evaluate(()=>ibCheck(true));await w(1500);s=await p.evaluate(()=>!document.querySelector('#ibCard').hidden);ok(!s,'another code sees nothing');
+console.log('hits',hits,'errors',errs);await b.close()})();
