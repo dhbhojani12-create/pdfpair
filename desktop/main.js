@@ -39,7 +39,14 @@ function setupBrowserSession(ses){
     cb({responseHeaders:h});
   });
   ses.on('will-download',(e,item)=>{
-    const name=item.getFilename()||'download.pdf';
+    const name=item.getFilename()||'download';
+    const isPdf=/\.pdf$/i.test(name)||/pdf/i.test(item.getMimeType()||'');
+    if(!isPdf){ // anything else goes to the normal Windows Downloads folder
+      const dir=app.getPath('downloads'),ext=path.extname(name),base=path.basename(name,ext);let p=path.join(dir,name),k=1;
+      while(fs.existsSync(p))p=path.join(dir,base+' ('+(k++)+')'+ext);
+      item.setSavePath(p);tell('⤓ Downloading '+name+' to Downloads…');
+      item.once('done',(ev,st)=>{tell(st==='completed'?'✓ Saved to Downloads: '+path.basename(p):'Download failed: '+name);if(st==='completed')shell.showItemInFolder(p)});
+      return}
     const tmp=path.join(os.tmpdir(),'pdfpair-'+Date.now()+'-'+name.replace(/[\\/:*?"<>|]/g,'_'));
     item.setSavePath(tmp);tell('⤓ Downloading '+name+'…');
     item.once('done',(ev,state)=>{
