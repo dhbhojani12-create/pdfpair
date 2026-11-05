@@ -1,0 +1,12 @@
+<!doctype html><html><head><meta charset="utf-8"><title>⚠ Dangerous site blocked</title><style>
+body{margin:0;font:15px system-ui,Segoe UI,sans-serif;background:#fbeaea;color:#2b1214;display:grid;place-items:center;min-height:100vh}
+.c{background:#fff;border-radius:16px;box-shadow:0 18px 50px rgba(120,0,0,.18);padding:30px 34px;max-width:560px;border-top:6px solid #c62828}
+h1{margin:0 0 10px;font-size:22px;color:#b71c1c}p{line-height:1.5;margin:8px 0}code{background:#f6e3e3;padding:2px 6px;border-radius:5px;word-break:break-all}
+.r{display:flex;gap:14px;align-items:center;margin-top:22px}button{font:inherit;border:0;border-radius:10px;padding:10px 18px;cursor:pointer;background:#1f2328;color:#fff;font-weight:600}a{color:#8a4b4b;font-size:13px}
+</style></head><body><div class="c"><h1>⚠ Dangerous site blocked</h1>
+<p><code id="h"></code> is on a public list of <b>phishing or malware</b> sites. It may try to steal passwords, bank or card details, or install harmful files.</p>
+<p>PDF Pair stopped it before it loaded.</p>
+<div class="r"><button id="b">← Go back (safe)</button><a href="#" id="c">Continue anyway (not recommended)</a></div></div>
+<script>const q=new URLSearchParams(location.search),h=q.get('h')||'',u=q.get('u')||'';document.getElementById('h').textContent=h;
+document.getElementById('b').onclick=()=>{history.length>1?history.back():location.href='https://www.google.com/'};
+document.getElementById('c').onclick=e=>{e.preventDefault();location.href='https://pdfpair.invalid/continue?u='+encodeURIComponent(u)};</script></body></html>

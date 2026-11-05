@@ -27,17 +27,7 @@ function createMain(){
 function setupBrowserSession(ses){
   try{ses.setUserAgent(app.userAgentFallback.replace(/\s*Electron\/\S+/,'').replace(/\s*(pdf-?pair|PDF Pair)\/\S+/ig,''))}catch(err){}
   // PDFs are downloaded (into the library) instead of opening in the viewer
-  ses.webRequest.onHeadersReceived((d,cb)=>{
-    const h=d.responseHeaders||{};
-    if(d.resourceType==='mainFrame'||d.resourceType==='subFrame'){
-      const ct=Object.keys(h).find(k=>k.toLowerCase()==='content-type');
-      if(ct&&String(h[ct]).toLowerCase().includes('application/pdf')){
-        for(const k of Object.keys(h))if(k.toLowerCase()==='content-disposition')delete h[k];
-        h['Content-Disposition']=['attachment'];
-      }
-    }
-    cb({responseHeaders:h});
-  });
+  shield(ses);
   ses.on('will-download',(e,item)=>{
     const name=item.getFilename()||'download';
     const isPdf=/\.pdf$/i.test(name)||/pdf/i.test(item.getMimeType()||'');
@@ -73,7 +63,7 @@ function layoutBrowser(){if(!bwin||bwin.isDestroyed())return;const [w,h]=bwin.ge
 let covered=false;
 const alive=t=>t&&t.view&&t.view.webContents&&!t.view.webContents.isDestroyed();
 function state(){try{if(!bwin||bwin.isDestroyed())return;tabs=tabs.filter(alive);if(!tabs.some(t=>t.id===active)&&tabs.length)active=tabs[tabs.length-1].id;const c=cur(),wc=c&&c.view.webContents;
-  bwin.webContents.send('br-state',{tabs:tabs.map(t=>({id:t.id,title:t.view.webContents.getTitle()||t.view.webContents.getURL(),url:t.view.webContents.getURL(),loading:t.view.webContents.isLoading(),active:t.id===active})),
+  bwin.webContents.send('br-state',{tabs:tabs.map(t=>({id:t.id,blocked:SH.count.get(t.view.webContents.id)||0,title:t.view.webContents.getTitle()||t.view.webContents.getURL(),url:t.view.webContents.getURL(),loading:t.view.webContents.isLoading(),active:t.id===active})),
     url:wc?wc.getURL():'',title:wc?wc.getTitle():'',back:!!wc&&wc.navigationHistory.canGoBack(),fwd:!!wc&&wc.navigationHistory.canGoForward(),loading:!!wc&&wc.isLoading()})}catch(e){}}
 function newTab(url){
   const ses=session.fromPartition('persist:browser');
@@ -116,6 +106,57 @@ async function pipAuto(t){const r=await pipRun(t,PIP_AUTO);if(r==='on'){pipOwner
 async function pipBack(t){if(t&&pipOwner===t.id){const r=await pipRun(t,PIP_EXIT);if(r==='off'||r==='none')pipOwner=null}}
 async function pipToggle(){const t=cur();const r=await pipRun(t,PIP_TOGGLE);if(r==='on'){pipOwner=t.id;tell('▣ Video popped out (Alt+P to bring it back)')}else if(r==='off'){pipOwner=null}else tell(r==='none'?'No video on this page':'Could not pop out this video')}
 function pipKeys(e,i){if(i.type==='keyDown'&&i.alt&&!i.control&&(i.key==='p'||i.key==='P')){e.preventDefault();pipToggle()}}
+
+// ---- 🛡 shield: ads/trackers blocked (Ghostery engine + EasyList, EasyPrivacy, uBlock filters), known phishing/malware sites warned
+const SH={blocker:null,bad:new Set(),allowBad:new Set(),count:new Map(),ready:false};
+const UD=()=>app.getPath('userData');
+const AD_LISTS=['https://raw.githubusercontent.com/easylist/easylist/gh-pages/easylist.txt','https://raw.githubusercontent.com/easylist/easylist/gh-pages/easyprivacy.txt','https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/filters.txt','https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/privacy.txt'];
+const BAD_LISTS=['https://raw.githubusercontent.com/curbengh/phishing-filter/gh-pages/phishing-filter-hosts.txt','https://raw.githubusercontent.com/curbengh/urlhaus-filter/gh-pages/urlhaus-filter-hosts.txt'];
+const DAY=864e5,fresh=p=>{try{return Date.now()-fs.statSync(p).mtimeMs<DAY}catch(e){return false}};
+const seed=(name)=>{const p=path.join(UD(),name),b=path.join(__dirname,'seed',name);if(!fs.existsSync(p)&&fs.existsSync(b))try{fs.copyFileSync(b,p)}catch(e){}return p};
+const hostOf=u=>{try{return new URL(u).hostname.toLowerCase().replace(/^www\./,'')}catch(e){return ''}};
+function isBad(h){if(!h)return false;const parts=h.split('.');for(let i=0;i<parts.length-1;i++){const d=parts.slice(i).join('.');if(SH.allowBad.has(d))return false;if(SH.bad.has(d))return true}return false}
+const siteOff=h=>{const c=cfg();return !!c.adOff||(c.adAllow||[]).includes(h)};
+async function loadBad(){const p=seed('badhosts.txt');
+  if(!fresh(p)){try{let out='';for(const u of BAD_LISTS){const r=await net.fetch(u);if(r.ok)out+=await r.text()+'\n'}if(out.length>10000)fs.writeFileSync(p,out)}catch(e){}}
+  try{const set=new Set();for(const l of fs.readFileSync(p,'utf8').split('\n')){const m=l.match(/^(?:0\.0\.0\.0|127\.0\.0\.1)\s+([a-z0-9.-]+)/i);if(m&&m[1]!=='0.0.0.0')set.add(m[1].toLowerCase())}SH.bad=set}catch(e){}}
+async function loadAds(){let EB;try{EB=require('@ghostery/adblocker-electron').ElectronBlocker}catch(e){console.error('adblocker missing',e);return}
+  const p=seed('adblock-engine.bin');if(!fresh(p)&&fs.existsSync(p)){try{const tmp=p+'.new';const b=await EB.fromLists(net.fetch,AD_LISTS,{enableCompression:true,loadCosmeticFilters:true,loadNetworkFilters:true});fs.writeFileSync(tmp,b.serialize());fs.renameSync(tmp,p)}catch(e){}}
+  try{SH.blocker=await EB.fromLists(net.fetch,AD_LISTS,{enableCompression:true,loadCosmeticFilters:true,loadNetworkFilters:true},{path:p,read:fs.promises.readFile,write:fs.promises.writeFile})}catch(e){console.error('adblock load',e)}}
+function shield(ses){
+  const pdfHdr=(d,h)=>{if(d.resourceType==='mainFrame'||d.resourceType==='subFrame'){const ct=Object.keys(h).find(k=>k.toLowerCase()==='content-type');
+      if(ct&&String(h[ct]).toLowerCase().includes('application/pdf')){for(const k of Object.keys(h))if(k.toLowerCase()==='content-disposition')delete h[k];h['Content-Disposition']=['attachment']}}return h};
+  const hook=()=>{
+    ses.webRequest.onBeforeRequest({urls:['<all_urls>']},(d,cb)=>{
+      const wc=d.webContents;
+      if(d.resourceType==='mainFrame'){
+        if(wc)SH.count.set(wc.id,0);
+        const u=new URL(d.url);
+        if(u.hostname==='pdfpair.invalid'){cb({cancel:true});const t=u.searchParams.get('u')||'';const h=hostOf(t);if(u.pathname==='/continue'&&h){SH.allowBad.add(h);if(wc)setTimeout(()=>wc.loadURL(t),10)}return}
+        const h=hostOf(d.url);
+        if(isBad(h)){cb({cancel:true});if(wc)setTimeout(()=>wc.loadFile(path.join(__dirname,'warn.html'),{query:{h,u:d.url}}),10);return}
+        return cb({});
+      }
+      const top=hostOf(wc&&!wc.isDestroyed()?wc.getURL():'');
+      if(!SH.blocker||siteOff(top))return cb({});
+      try{SH.blocker.onBeforeRequest(d,r=>{if(r&&(r.cancel||r.redirectURL)&&wc){SH.count.set(wc.id,(SH.count.get(wc.id)||0)+1);bump()}cb(r||{})})}catch(e){cb({})}
+    });
+    ses.webRequest.onHeadersReceived({urls:['<all_urls>']},(d,cb)=>{
+      const done=r=>{const h=(r&&r.responseHeaders)||d.responseHeaders||{};cb({responseHeaders:pdfHdr(d,h)})};
+      const wc=d.webContents,top=hostOf(wc&&!wc.isDestroyed()?wc.getURL():d.url);
+      if(SH.blocker&&!siteOff(top)){try{SH.blocker.onHeadersReceived(d,done)}catch(e){done({})}}else done({});
+    });
+  };
+  hook();
+  (async()=>{await Promise.all([loadBad(),loadAds()]);
+    if(SH.blocker){
+      if(!ses.registerPreloadScript){ses.registerPreloadScript=o=>{const f=o.filePath.replace(/index\.js$/,'index.cjs');ses.setPreloads([...ses.getPreloads(),f]);return f};ses.unregisterPreloadScript=id=>ses.setPreloads(ses.getPreloads().filter(x=>x!==id))}   // Electron 33
+      try{SH.blocker.enableBlockingInSession(ses)}catch(e){console.error('adblock enable',e)}hook()}   // Ghostery adds its page script; our hooks wrap its request filtering
+    SH.ready=true;bump()})();
+}
+let bumpT=null;function bump(){if(bumpT)return;bumpT=setTimeout(()=>{bumpT=null;state()},400)}
+ipcMain.handle('ad-info',()=>{const c=cur(),wc=c&&c.view.webContents,h=hostOf(wc?wc.getURL():'');const k=cfg();return {host:h,blocked:wc?(SH.count.get(wc.id)||0):0,siteOff:(k.adAllow||[]).includes(h),allOff:!!k.adOff,ready:SH.ready,lists:{ads:!!SH.blocker,bad:SH.bad.size}}});
+ipcMain.handle('ad-set',(e,o)=>{const k=cfg();let allow=k.adAllow||[];if(o.site){allow=o.off?[...new Set([...allow,o.site])]:allow.filter(x=>x!==o.site)}const n={adAllow:allow};if('allOff' in o)n.adOff=!!o.allOff;setCfg(n);const c=cur();if(c&&o.reload!==false)c.view.webContents.reload();return true});
 async function readBm(){try{return JSON.parse(fs.readFileSync(BMF(),'utf8'))}catch(e){}
   // first run of this version: bring over bookmarks saved by the old (local) browser bar
   try{const w=new BrowserWindow({show:false,webPreferences:{contextIsolation:true}});await w.loadFile(path.join(__dirname,'offline.html'));

@@ -10,7 +10,7 @@
 button{border:0;background:transparent;font:inherit;cursor:pointer;border-radius:8px}
 .ic{font-size:17px;width:34px;height:32px}.ic:hover,.fb:hover,.bb:hover{background:#e6e8ec}.ic:disabled{opacity:.35}
 input,select{height:32px;border:1px solid #d5d8de;border-radius:16px;padding:0 14px;font:inherit;background:#fff;outline:none}input:focus{border-color:#4c8dff}
-#u{flex:1;min-width:200px}#g{width:230px}#star{font-size:18px}#pip{height:30px;padding:0 11px;border-radius:15px;font-size:12.5px;background:#ece8ff;color:#4b32c3;font-weight:600;white-space:nowrap}#pip:hover{background:#ddd5ff}#star.on{color:#f5b400}
+#u{flex:1;min-width:200px}#g{width:230px}#star{font-size:18px}#shield{height:30px;padding:0 10px;border-radius:15px;font-size:12.5px;background:#e7f6ec;color:#1d6b3a;font-weight:600;white-space:nowrap}#shield.off{background:#f1f2f4;color:#8a929c}#shield:hover{filter:brightness(.95)}#pip{height:30px;padding:0 11px;border-radius:15px;font-size:12.5px;background:#ece8ff;color:#4b32c3;font-weight:600;white-space:nowrap}#pip:hover{background:#ddd5ff}#star.on{color:#f5b400}
 #m{font-size:12.5px;color:#23784a;max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #app{padding:0 12px;height:32px;font-size:13px;background:#1f2328;color:#fff}#app:hover{background:#000}
 .fb,.bb{height:26px;padding:0 9px;font-size:12.5px;color:#24292f;white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis}.fb.on{background:#dfe3ea}
@@ -25,10 +25,11 @@ input,select{height:32px;border:1px solid #d5d8de;border-radius:16px;padding:0 1
 </style></head><body>
 <div id="chrome"><div id="tabs"></div>
 <div id="t"><button class="ic" id="b" title="Back">←</button><button class="ic" id="f" title="Forward">→</button><button class="ic" id="r" title="Reload">⟳</button>
-<input id="u" spellcheck="false" placeholder="Web address"><button class="ic" id="star" title="Bookmark this page">☆</button><button id="pip" title="Pop out the video (Alt+P). It also pops out by itself when you leave a playing video, and comes back when you return">▣ Pop out</button>
+<input id="u" spellcheck="false" placeholder="Web address"><button class="ic" id="star" title="Bookmark this page">☆</button><button id="shield" hidden title="Ads and trackers blocked on this page">🛡 0</button><button id="pip" title="Pop out the video (Alt+P). It also pops out by itself when you leave a playing video, and comes back when you return">▣ Pop out</button>
 <input id="g" spellcheck="false" placeholder="🔍 Search Google"><button class="ic" id="ext" title="Open this page in your normal browser (for sites that need Google sign-in)">⧉</button><span id="m"></span><button id="app" title="Back to PDF Pair">◧ PDF Pair</button></div>
 <div id="bk"></div></div>
 <div id="menu" class="pop" hidden></div>
+<div id="admenu" class="pop" hidden style="width:300px"></div>
 <div id="dlg" class="pop dl" hidden style="top:86px;right:120px"><h3>Bookmark this page</h3><label for="dn">Name</label><input id="dn"><label for="ds">Where</label><select id="ds"></select><input id="dsn" placeholder="New folder name, e.g. DT" hidden style="margin-top:6px">
 <div class="row"><button id="drm" hidden>Remove</button><button id="dc">Cancel</button><button id="dok" class="pr">Save</button></div></div>
 <div id="ask" class="pop dl" hidden style="top:86px;left:12px"><h3 id="aq"></h3><input id="ai"><div class="row"><button id="ac">Cancel</button><button id="aok" class="pr">OK</button></div></div>
@@ -50,7 +51,7 @@ function renderBar(){if(!B)return;const bk=$('#bk');bk.innerHTML='';
   const a=document.createElement('button');a.id='add';a.textContent='＋ Folder';a.title='New folder, e.g. a subject';a.onclick=e=>{e.stopPropagation();ask('New folder (e.g. DT, IDT, AFM)','',n=>{if(!B.folders.some(x=>x.name.toLowerCase()===n.toLowerCase())){B.folders.push({name:n,items:[]});saveB();renderBar()}})};bk.append(a);
   const fb=find(cur.url);$('#star').textContent=fb?'★':'☆';$('#star').classList.toggle('on',!!fb);$('#star').title=fb?'Bookmarked'+(fb.f?' in '+fb.f.name:' on the bar')+' (click to edit)':'Bookmark this page';
 }
-function anyOpen(){return !$('#menu').hidden||!$('#dlg').hidden||!$('#ask').hidden}
+function anyOpen(){return !$('#menu').hidden||!$('#admenu').hidden||!$('#dlg').hidden||!$('#ask').hidden}
 function cover(){br.cover(anyOpen())}
 function showMenu(f,btn){open=f.name;const m=$('#menu');m.innerHTML='';
   if(!f.items.length)m.innerHTML='<div class="me">No bookmarks yet. Open a page and press ☆.</div>';
@@ -66,7 +67,7 @@ function showMenu(f,btn){open=f.name;const m=$('#menu');m.innerHTML='';
 function closeMenu(){open=null;$('#menu').hidden=true;cover();renderBar()}
 let askCb=null;function ask(q,v,cb){closeMenu();$('#aq').textContent=q;$('#ai').value=v||'';askCb=cb;$('#ask').hidden=false;cover();$('#ai').focus();$('#ai').select()}
 function askDone(ok){const v=$('#ai').value.trim(),cb=askCb;askCb=null;$('#ask').hidden=true;cover();if(ok&&v&&cb)cb(v)}
-document.addEventListener('click',e=>{if(!e.target.closest('.pop,.fb,#star,#add'))closeMenu()});
+document.addEventListener('click',e=>{if(!e.target.closest('.pop,.fb,#star,#add,#shield')){closeMenu();if(!$('#admenu').hidden){$('#admenu').hidden=true;cover()}}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeMenu();closeDlg();if(!$('#ask').hidden)askDone(false)}
   if(e.ctrlKey&&e.key.toLowerCase()==='t'){e.preventDefault();br.tab({op:'new'})}if(e.ctrlKey&&e.key.toLowerCase()==='w'){e.preventDefault();const a=TABS.find(t=>t.active);if(a)br.tab({op:'close',id:a.id})}});
 function openDlg(){closeMenu();const fb=find(cur.url);$('#dn').value=fb?fb.it.t:(cur.title||host(cur.url));
@@ -87,15 +88,28 @@ $('#ext').onclick=()=>{const a=TABS.find(t=>t.active);if(SIGN.test(cur.url)){con
 function msg(m){$('#m').textContent=m;clearTimeout(mt);mt=setTimeout(()=>{$('#m').textContent=''},8000)}
 $('#u').addEventListener('keydown',e=>{if(e.key==='Enter')br.go($('#u').value)});
 $('#g').addEventListener('keydown',e=>{if(e.key==='Enter'&&$('#g').value.trim()){br.tab({op:'new',url:'https://www.google.com/search?q='+encodeURIComponent($('#g').value.trim())});$('#g').value=''}});
-let TABS=[];
+let TABS=[],lastShieldUrl='';
 function renderTabs(){const tb=$('#tabs');tb.innerHTML='';TABS.forEach(t=>{const d=document.createElement('div');d.className='tab'+(t.active?' on':'');d.title=t.url;d.innerHTML='<span></span><button title="Close tab (Ctrl+W)">×</button>';
   d.querySelector('span').textContent=(t.loading?'⏳ ':'')+(t.title||'New tab');d.onclick=()=>br.tab({op:'switch',id:t.id});d.onauxclick=e=>{if(e.button===1)br.tab({op:'close',id:t.id})};
   d.querySelector('button').onclick=e=>{e.stopPropagation();br.tab({op:'close',id:t.id})};tb.append(d)});
   const n=document.createElement('button');n.id='nt';n.textContent='+';n.title='New tab (Ctrl+T)';n.onclick=()=>br.tab({op:'new'});tb.append(n)}
-br.onState(s=>{cur={url:s.url,title:s.title,loading:s.loading};TABS=s.tabs||[];(TABS||[]).forEach(t=>{if(/^https?:/.test(t.url)&&!SIGN.test(t.url))lastSite[t.id]=t.url});renderTabs();if(document.activeElement!==$('#u'))$('#u').value=s.url;$('#b').disabled=!s.back;$('#f').disabled=!s.fwd;document.title=(s.title||'Browser')+' · PDF Pair';$('#r').textContent=s.loading?'✕':'⟳';renderBar()});
+br.onState(s=>{cur={url:s.url,title:s.title,loading:s.loading};TABS=s.tabs||[];{const a=TABS.find(t=>t.active);if(br.ad&&a&&!adOffSite)$('#shield').textContent='🛡 '+(a.blocked||0);if(br.ad&&a&&a.url!==lastShieldUrl){lastShieldUrl=a.url;refreshShield()}}(TABS||[]).forEach(t=>{if(/^https?:/.test(t.url)&&!SIGN.test(t.url))lastSite[t.id]=t.url});renderTabs();if(document.activeElement!==$('#u'))$('#u').value=/warn\.html\?h=/.test(s.url)?'⚠ Dangerous site blocked: '+decodeURIComponent((s.url.match(/[?&]h=([^&]*)/)||[])[1]||''):s.url;$('#b').disabled=!s.back;$('#f').disabled=!s.fwd;document.title=(s.title||'Browser')+' · PDF Pair';$('#r').textContent=s.loading?'✕':'⟳';renderBar()});
 br.onMsg(m=>{$('#m').textContent=m;clearTimeout(mt);mt=setTimeout(()=>{$('#m').textContent=''},8000)});
 (async()=>{let o=null;try{o=await br.bmGet()}catch(e){}B=o&&o.folders?o:JSON.parse(JSON.stringify(DEF));if(!B.bar)B.bar=[];
   if(!B.claudeSeeded){if(!B.bar.some(x=>/claude\.ai/.test(x.u)))B.bar.unshift({t:'Claude',u:'https://claude.ai/'});if(!B.bar.some(x=>/rtp\.html/.test(x.u)))B.bar.push({t:'RTPs by subject',u:'https://dhbhojani12-create.github.io/pdfpair/rtp.html'});B.claudeSeeded=true;saveB()}
   renderBar();br.top($('#chrome').offsetHeight)})();
+// 🛡 ads/trackers + dangerous-site shield (desktop v1.8+)
+async function adMenu(){const m=$('#admenu');if(!m.hidden){m.hidden=true;cover();return}const i=await br.ad.info();m.innerHTML='';
+  const line=(html)=>{const d=document.createElement('div');d.className='me';d.style.color='#24292f';d.innerHTML=html;m.append(d)};
+  line(i.allOff?'<b>Blocking is off everywhere</b>':i.siteOff?'<b>Ads allowed on '+esc(i.host)+'</b>':'<b>'+i.blocked+'</b> ads and trackers blocked on this page');
+  line('<span style="color:#57606a;font-size:12px">'+(i.lists.ads?'Ad lists loaded':'Ad lists loading…')+' · '+(i.lists.bad?i.lists.bad.toLocaleString()+' dangerous sites on the warning list':'warning list loading…')+'</span>');
+  const btn=(t,f)=>{const b=document.createElement('div');b.className='mi';b.innerHTML='<span></span>';b.querySelector('span').textContent=t;b.onclick=async()=>{m.hidden=true;cover();await f();setTimeout(refreshShield,600)};m.append(b)};
+  if(i.host&&!i.allOff)btn(i.siteOff?'🛡 Block ads on '+i.host+' again':'Allow ads on '+i.host+' (if this site breaks)',()=>br.ad.set({site:i.host,off:!i.siteOff}));
+  btn(i.allOff?'🛡 Turn blocking back on everywhere':'Turn blocking off everywhere',()=>br.ad.set({allOff:!i.allOff}));
+  const r=$('#shield').getBoundingClientRect();m.style.top=($('#chrome').offsetHeight+2)+'px';m.style.left=Math.max(8,Math.min(r.left,innerWidth-310))+'px';m.hidden=false;cover()}
+function esc(t){return String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+let adOffSite=false;async function refreshShield(){if(!br.ad)return;try{const i=await br.ad.info();adOffSite=i.siteOff||i.allOff;$('#shield').classList.toggle('off',adOffSite);$('#shield').textContent='🛡 '+(adOffSite?'off':i.blocked)}catch(e){}}
+if(br.ad){$('#shield').hidden=false;$('#shield').onclick=e=>{e.stopPropagation();adMenu()}}
+
 new ResizeObserver(()=>br.top($('#chrome').offsetHeight)).observe($('#chrome'));
 </script></body></html>
