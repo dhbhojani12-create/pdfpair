@@ -430,6 +430,11 @@ body.t-hl .ov{cursor:var(--hlcur,text);touch-action:none}
 .sr .ed{opacity:0;width:26px;height:26px;border-radius:6px;color:var(--mut);display:grid;place-items:center;font-size:16px}
 .sr:hover .ed,.sr:focus-within .ed{opacity:1}.sr .ed:hover{background:var(--line);color:var(--ink)}
 .sr .ty{width:52px;text-align:center}
+.sethd{display:flex;align-items:center;gap:6px}.sethd #setsLbl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.selb{font-family:var(--sans);font-weight:500;font-size:11.5px;text-transform:none;letter-spacing:0;color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:2px 8px}.selb:hover{background:var(--hover)}
+.sr .sck{width:16px;height:16px;flex:none;border:1.5px solid var(--mut);border-radius:4px;display:grid;place-items:center;font-size:11px;line-height:1}
+.sr.pk{background:var(--on)}.sr.pk .sck{background:var(--ink);border-color:var(--ink);color:var(--panel)}
+#selBar{display:flex;align-items:center;gap:8px;margin:8px 4px 4px;padding-top:8px;border-top:1px solid var(--line);font-size:12px}#selBar[hidden]{display:none}#selN{flex:1;color:var(--mut)}#selBar .btn{padding:5px 10px;font-size:12px}
 .addset{margin-top:8px;border:1.5px dashed var(--line);border-radius:8px;padding:9px;color:var(--mut);font-size:13px;font-weight:500}
 .addset:hover{border-color:var(--ink);color:var(--ink)}
 .lmain{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0}
@@ -1020,8 +1025,9 @@ select.tin{appearance:auto}
       <div class="lhd"><b>Library</b><button class="ib" id="libClose" title="Back to reading (Esc)" aria-label="Back to reading">×</button></div>
       <div class="lbl">Subject</div>
       <div class="subs" id="subTabs"></div>
-      <div class="lbl" id="setsLbl">Sets</div>
+      <div class="lbl sethd"><span id="setsLbl">Sets</span><button class="selb" id="selBtn" title="Pick sets to download their PDFs">☐ Select</button></div>
       <div id="setList"></div>
+      <div id="selBar" hidden><button class="lnk" id="selAll">Select all</button><span id="selN"></span><button class="btn" id="selDl">⤓ Download</button></div>
       <button class="addset" id="addSet">+ Add a set</button>
       <button class="addset" id="libRestore">⟲ Restore a backup</button>
       <button class="addset phlk2" id="libLink">📱 Link to laptop</button>
@@ -2283,11 +2289,25 @@ function renderLib(){
   });
   tabs.append(plus);
   const sets=setsOf(libSub);$('#setsLbl').textContent='Your sets · '+libSub;
+  if(libSel&&libSel.sub!==libSub)libSel=null;
+  if(libSel)[...libSel.ids].forEach(id=>{if(!sets.some(x=>x.id===id))libSel.ids.delete(id)});
+  const sb=$('#selBtn');sb.hidden=!sets.length;sb.textContent=libSel?'Done':'☐ Select';
+  sb.onclick=()=>{libSel=libSel?null:{sub:libSub,ids:new Set()};renderLib()};
+  $('#selBar').hidden=!libSel||!sets.length;
+  if(libSel){const k=libSel.ids.size;$('#selN').textContent=k?k+' picked':'Pick sets';$('#selAll').textContent=k===sets.length?'Select none':'Select all';
+    $('#selAll').onclick=()=>{if(libSel.ids.size===sets.length)libSel.ids.clear();else sets.forEach(x=>libSel.ids.add(x.id));renderLib()};
+    $('#selDl').onclick=()=>dlSets(sets.filter(x=>libSel.ids.has(x.id)))}
   const sl=$('#setList');sl.innerHTML='';
   if(!sets.length){sl.innerHTML='<div class="empty">No sets in '+esc(libSub)+' yet.<br><button class="lnk" id="rmSub">Remove the '+esc(libSub)+' subject</button></div>';
     $('#rmSub').onclick=()=>{LIB.subjects=LIB.subjects.filter(x=>x!==libSub);saveLib();toast('Removed subject '+libSub);libSub=null;renderLib()}}
   sets.forEach(set=>{
     const r=document.createElement('div');r.className='sr'+(set.id===LIB.cur?' on':'');r.tabIndex=0;
+    if(libSel){const pk=libSel.ids.has(set.id);r.className='sr'+(pk?' pk':'');r.setAttribute('role','checkbox');r.setAttribute('aria-checked',pk);
+      r.innerHTML='<span class="sck">'+(pk?'✓':'')+'</span><span class="ty '+set.type+'">'+(set.type==='mod'?'MODULE':set.type==='con'?'CONCEPT':TSHORT[set.type])+'</span><span class="tx"><b></b><small></small></span>';
+      $('b',r).textContent=set.name;r.title=set.name;const nf=set.files.q.length+(set.same?0:set.files.a.length);$('small',r).textContent=nf+' PDF'+(nf===1?'':'s');
+      const tg=()=>{pk?libSel.ids.delete(set.id):libSel.ids.add(set.id);renderLib()};
+      r.addEventListener('click',tg);r.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();tg()}});
+      sl.append(r);return}
     const n=qCount(set);
     const ms=mcqStats(stOf(set));
     r.innerHTML='<span class="ty '+set.type+'">'+(set.type==='mod'?'MODULE':set.type==='con'?'CONCEPT':TSHORT[set.type])+'</span><span class="tx"><b></b><small>'+n+(set.type==='con'?' topic':' question')+(n===1?'':'s')+(ms.tried?' · MCQs '+ms.ok+'/'+ms.tried+' right ('+Math.round(100*ms.ok/ms.tried)+'%)':'')+'</small></span><button class="ed" title="Edit set" aria-label="Edit set">✎</button>';
@@ -2611,6 +2631,29 @@ async function dkTake(f){
   if(LIB.sets.some(s=>(s.files.q||[]).some(x=>x.size===file.size&&x.name===file.name))){toast(file.name+' is already in your library');return}
   DK.q.push(Object.assign({},f,{file}));dkShow();
 }
+let libSel=null;
+// Library → Select → Download: one ZIP with the original PDFs of the picked sets (a folder per set). Reads only; never changes the library.
+async function dlSets(list){
+  if(!list.length){toast('Pick at least one set first');return}
+  if(!window.JSZip){toast('The zip maker could not load. Check your internet connection.');return}
+  const safe=n=>String(n).replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim().slice(0,100)||'PDF';
+  toast('Packing '+list.length+' set'+(list.length===1?'':'s')+'…');
+  const z=new JSZip();let n=0,miss=0;const dirs=new Set();
+  for(const set of list){
+    let d=safe(set.name),i=2;while(dirs.has(d.toLowerCase()))d=safe(set.name)+' ('+(i++)+')';dirs.add(d.toLowerCase());
+    const seen=new Set(),names=new Set();
+    for(const sd of ['q','a'])for(const f of set.files[sd]||[]){
+      if(seen.has(f.id))continue;seen.add(f.id);
+      const b=await idbGet('blob:'+f.id);if(!b){miss++;continue}
+      let nm=safe(String(f.name||'file').replace(/\.pdf$/i,'')),j=2;const base=nm;while(names.has(nm.toLowerCase()))nm=base+' ('+(j++)+')';names.add(nm.toLowerCase());
+      z.folder(d).file(nm+'.pdf',b);n++}
+  }
+  if(!n){toast('No PDFs found for these sets on this device');return}
+  const one=list.length===1?safe(list[0].name):safe(list[0].subject||libSub)+' PDFs';
+  const blob=await z.generateAsync({type:'blob'});
+  await saveFile(one+' '+stamp().slice(0,10)+'.zip',blob);
+  toast('Downloaded '+n+' PDF'+(n===1?'':'s')+(miss?' · '+miss+' missing on this device':''));
+  libSel=null;renderLibIfOpen()}
 function renderLibIfOpen(){if(!$('#lib').hidden)renderLib()}
 async function dkAdd(){const f=DK.q[0];if(!f)return;
   const name=$('#dkName').value.trim()||f.name.replace(/\.pdf$/i,''),sub=$('#dkSub').value||'General',type=$('#dkType').value;

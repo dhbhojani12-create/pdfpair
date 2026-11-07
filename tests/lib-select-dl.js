@@ -1,0 +1,35 @@
+// Library → Select → Download: ZIP of the original PDFs of the picked sets.
+// Needs: node tests/fbmock.js (serves /app.html) and 4 small PDFs in $T (q1,a1,q2,a2).
+const {chromium}=require('playwright');const path=require('path');const {execSync}=require('child_process');
+const T=process.env.T||'/home/claude/t';const LIB=path.join(__dirname,'..','lib');
+let bad=0;const ok=(c,m)=>{if(!c)bad++;console.log((c?'PASS ':'FAIL ')+m)};
+(async()=>{const b=await chromium.launch({args:['--no-proxy-server'],executablePath:process.env.CHROME||undefined});const ctx=await b.newContext({viewport:{width:1300,height:860},acceptDownloads:true});const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));
+await p.route('https://cdnjs.cloudflare.com/**',r=>{const u=r.request().url();const f=u.includes('qrcode')?'qrcode.min.js':u.includes('jszip')?'jszip.min.js':u.includes('pdf-lib')?'pdf-lib.min.js':u.endsWith('worker.min.js')?'pdf.worker.min.js':'pdf.min.js';r.fulfill({path:path.join(LIB,f),contentType:'application/javascript'})});
+await p.route('https://fonts.**',r=>r.fulfill({body:'',contentType:'text/css'}));
+await p.goto('http://127.0.0.1:9300/app.html');await p.waitForTimeout(1500);
+const add=async(q,a)=>{await p.setInputFiles('#fq',T+'/'+q+'.pdf');await p.setInputFiles('#fa',T+'/'+a+'.pdf');await p.click('#oGo');await p.waitForTimeout(2000)};
+await add('q1','a1');
+const lib=async()=>{if(await p.isHidden('#lib')){await p.evaluate(()=>document.querySelector('#bOpen').click());await p.waitForTimeout(400)}};
+await lib();
+await p.click('#addSet');await p.waitForTimeout(400);await add('q2','a2');
+await lib();await p.waitForTimeout(500);
+const rows=await p.$$eval('#setList .sr',r=>r.length);ok(rows===2,'two sets listed: '+rows);
+ok(await p.isVisible('#selBtn'),'Select button shown');
+await p.click('#selBtn');await p.waitForTimeout(200);
+ok(await p.isVisible('#selBar'),'select bar shows');ok((await p.textContent('#selBtn'))==='Done','button says Done');
+ok(await p.$$eval('#setList .sck',r=>r.length)===2,'checkboxes on rows');
+await p.click('#setList .sr >> nth=0');await p.waitForTimeout(200);
+ok(/1 picked/.test(await p.textContent('#selN')),'one picked');ok(await p.isVisible('#selBar'),'still in library after tapping a row');
+await p.click('#selAll');await p.waitForTimeout(200);ok(/2 picked/.test(await p.textContent('#selN')),'select all picks both');
+const dp=p.waitForEvent('download');await p.click('#selDl');const d=await dp;const f='/tmp/'+d.suggestedFilename();await d.saveAs(f);
+console.log('file',d.suggestedFilename());
+const ls=execSync('python3 -c "import zipfile,sys;print(\'\\n\'.join(sorted(zipfile.ZipFile(sys.argv[1]).namelist())))" "'+f+'"').toString().trim().split('\n').filter(x=>!x.endsWith('/'));
+console.log(ls);ok(ls.length===4&&ls.every(x=>/\.pdf$/.test(x)),'zip has 4 PDFs');
+ok(new Set(ls.map(x=>x.split('/')[0])).size===2,'one folder per set');
+const same=execSync('python3 -c "import zipfile,sys;z=zipfile.ZipFile(sys.argv[1]);print(sorted(len(z.read(n)) for n in z.namelist() if n.endswith(\'.pdf\')))" "'+f+'"').toString().trim();
+const orig=JSON.stringify(['q1','a1','q2','a2'].map(n=>require('fs').statSync(T+'/'+n+'.pdf').size).sort((a,b)=>a-b)).replace(/,/g,', ');
+ok(same===orig,'PDFs are the originals byte-size: '+same);
+await p.waitForTimeout(300);ok((await p.textContent('#selBtn'))==='☐ Select'&&await p.isHidden('#selBar'),'select mode ends after download');
+await p.click('#setList .sr >> nth=0');await p.waitForTimeout(800);ok(await p.isHidden('#lib'),'normal tap opens the set again');
+ok(!errs.length,'no page errors '+errs.join(' | '));
+await b.close();process.exit(bad?1:0)})();
