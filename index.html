@@ -150,7 +150,7 @@ body.t-erase .nte{cursor:pointer}body.t-erase .nte:hover{outline:2px solid #d23a
 .pts select,.ptf select,.ptf input,.ptbody select,.ptbody input[type=text],.ptbody input[type=number]{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:6px 8px;font:13px var(--sans);max-width:100%}
 .pts select{min-width:260px;max-width:min(560px,100%)}
 #ptSrcInfo{color:var(--mut);font-size:12px}
-.ptbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:10px 14px 0}
+.ptbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:10px 14px;position:sticky;top:0;z-index:4;background:var(--chrome);border-bottom:1px solid var(--line);box-shadow:0 4px 10px -8px rgba(0,0,0,.25)}
 .ptbar .btn{padding:6px 10px;font-size:12.5px}
 .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
 .btn.ghost:hover{background:var(--hover)}.btn:disabled{opacity:.45;cursor:default}
@@ -3612,11 +3612,17 @@ async function ptChooseSrc(v){
     else if(v.startsWith('f:')){ptBusy('Opening…');await ptSetBase(await ptSrcFromLib(v.slice(2)))}}
   catch(e){toast('Could not open that PDF: '+(e.message||e))}finally{ptBusy()}
   ptRender()}
+function ptHere(){try{let ap=activePane();if(!ap||!ap.pages.length||(ap.side!=='q'&&ap.side!=='a'))ap=[P.q,P.a].find(x=>x.pages.length);if(ap&&ap.pages.length){const g=ap.pages[curPage(ap)-1];if(g&&g.fid)return {fid:g.fid,pi:g.pi}}}catch(e){return {err:e.message}}return null}
 async function openTools(tab){
   $('#morePop').hidden=true;$('#pt').hidden=false;if(tab)PT.tab=tab;
-  if(!PT.srcs.length&&PT.tab!=='img'){const cs=curSet(),f=cs&&(cs.files.q[0]||cs.files.a[0]);
-    if(f){ptBusy('Opening '+f.name+'…');try{await ptSetBase(await ptSrcFromLib(f.id))}catch(e){toast(e.message||String(e))}finally{ptBusy()}}}
-  ptSrcOptions();ptRender()}
+  // the page you are on: open its PDF and jump straight to it
+  const here=ptHere();
+  const cs=curSet();const inSet=here&&cs&&['q','a'].some(sd=>(cs.files[sd]||[]).some(f=>f.id===here.fid));
+  if(PT.tab!=='img'&&(!PT.srcs.length||(inSet&&(!PT.base||PT.base.fid!==here.fid)))){const f=inSet?{id:here.fid,name:((cs.files.q.concat(cs.files.a)).find(x=>x.id===here.fid)||{}).name}:cs&&(cs.files.q[0]||cs.files.a[0]);
+    if(f){ptBusy('Opening '+(f.name||'PDF')+'…');try{await ptSetBase(await ptSrcFromLib(f.id))}catch(e){toast(e.message||String(e))}finally{ptBusy()}}}
+  if(PT.tab==='org'&&here&&PT.base&&PT.base.fid===here.fid){const pp=PT.pages.find(x=>x.s===0&&x.pi===here.pi);if(pp){PT.sel.clear();PT.sel.add(pp.id);PT.last=PT.pages.indexOf(pp);PT.jump=pp.id;PT.soft=true}}
+  ptSrcOptions();ptRender();
+  if(PT.jump){const i=PT.pages.findIndex(x=>x.id===PT.jump);PT.jump=null;const c=$$('#ptBody .ptp')[i];if(c){c.scrollIntoView({block:'center'});PT.scroll=$('#ptBody').scrollTop}}}
 function closeTools(){$('#pt').hidden=true;if(PT.io)PT.io.disconnect()}
 $('#ptX').onclick=closeTools;
 $('#pt').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape'&&$('#ptAsk').hidden){e.preventDefault();closeTools()}});
@@ -3679,6 +3685,7 @@ function ptOrg(){
     $('.ptr',c).style.transform='rotate('+pp.rot+'deg)';$('.ptl b',c).textContent=i+1;
     $('.ptl span',c).textContent=pp.blank?'blank':S.kind==='img'?S.name:(PT.srcs.length>1?ptName(S.name).slice(0,14)+' · ':'')+'p.'+pp.pi;
     c.onclick=e=>{const k=e.target.closest('[data-k]');if(k){e.stopPropagation();if(k.dataset.k==='d'){PT.pages.splice(i,1);PT.sel.delete(pp.id)}else pp.rot=(pp.rot+(k.dataset.k==='r'?90:270))%360;ptRender();return}
+      if(PT.soft){PT.soft=false;if(!e.shiftKey)PT.sel.clear()}   // the page you came from is only a starting point
       if(e.shiftKey&&PT.last>=0){const [a,b]=[Math.min(PT.last,i),Math.max(PT.last,i)];for(let j=a;j<=b;j++)PT.sel.add(PT.pages[j].id)}
       else if(PT.sel.has(pp.id))PT.sel.delete(pp.id);else PT.sel.add(pp.id);PT.last=i;if(!PT.sel.size)PT.onlySel=false;ptRender()};
     c.addEventListener('dragstart',e=>{PT.drag=i;c.classList.add('dragging');e.dataTransfer.effectAllowed='move';try{e.dataTransfer.setData('text/plain',String(i))}catch(x){}});
@@ -3906,7 +3913,7 @@ $('#pt').addEventListener('drop',async e=>{if(PT.drag!=null)return;const fs0=[..
   if(PT.tab!=='org'&&PT.tab!=='img'){PT.tab=ims.length&&!pdfs.length?'img':'org'}
   for(const f of pdfs){const S=await ptLoadPdf(await f.arrayBuffer(),f.name);if(!PT.srcs.length)await ptSetBase(S);else ptInsertSrc(S)}
   if(ims.length)await ptTakeImages(ims);else ptRender()});
-window.__ppTools={PT,openTools,closeTools,ptBuild,rotMark,ptReplace,ptMap,ptRender,ptTakeImages,ptSetBase,ptLoadPdf};
+window.__ppTools={PT,ptHere,openTools,closeTools,ptBuild,rotMark,ptReplace,ptMap,ptRender,ptTakeImages,ptSetBase,ptLoadPdf};
 
 /* 📸 captures: from the desktop browser (📸 / Alt+S), a picture file, or a pasted screenshot. They wait in a tray; click one, then click a page */
 const CAP={tray:LS.get('cap:tray')||[],arm:null,urls:new Map(),shown:false};
@@ -5003,7 +5010,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='07 Nov 17:56';   // build label, so you can check both devices have the same version
+const APPV='07 Nov 18:08';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
