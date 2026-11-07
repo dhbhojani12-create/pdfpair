@@ -3596,7 +3596,7 @@ function ptPick(accept,multi){return new Promise(res=>{const i=document.createEl
 async function ptLoadPdf(bytes,name){const u8=new Uint8Array(bytes);const doc=await pdfjsLib.getDocument({data:u8.slice()}).promise;return {kind:'pdf',name,bytes:u8,doc,n:doc.numPages}}
 async function ptSrcFromLib(fid){const x=ptFiles().find(z=>z.f.id===fid);const b=await idbGet('blob:'+fid);if(!b)throw new Error('That PDF is not in this browser');
   const S=await ptLoadPdf(await b.arrayBuffer(),x?x.f.name:'PDF');S.fid=fid;S.set=x&&x.set;return S}
-function ptReset(){for(const S of PT.srcs){try{S.doc&&S.doc.destroy()}catch(e){}if(S.url)URL.revokeObjectURL(S.url)}PT.srcs=[];PT.pages=[];PT.sel.clear();PT.last=-1;PT.onlySel=false;PT.split.outline=null}
+function ptReset(){PT.tc=new Map();PT.q=[];for(const S of PT.srcs){try{S.doc&&S.doc.destroy()}catch(e){}if(S.url)URL.revokeObjectURL(S.url)}PT.srcs=[];PT.pages=[];PT.sel.clear();PT.last=-1;PT.onlySel=false;PT.split.outline=null}
 async function ptSetBase(S){ptReset();PT.srcs=[S];PT.base=S.fid?{fid:S.fid,set:S.set,name:S.name}:{pc:true,name:S.name};
   for(let i=1;i<=S.n;i++)PT.pages.push({s:0,pi:i,rot:0,id:uid()});ptSrcOptions()}
 async function ptChooseSrc(v){
@@ -3622,13 +3622,19 @@ $$('.ptt button').forEach(b=>b.onclick=async()=>{const was=PT.tab;PT.tab=b.datas
 
 /* thumbnails, drawn when they scroll into view */
 function ptThumbQueue(el,pp){PT.q.push([el,pp]);ptThumbRun()}
-async function ptThumbRun(){if(PT.qBusy)return;PT.qBusy=true;
-  while(PT.q.length){const [el,pp]=PT.q.shift();if(!el.isConnected||el.dataset.done)continue;el.dataset.done=1;const S=PT.srcs[pp.s];const box=$('.ptr',el);
+async function ptThumbRun(){if(PT.qBusy)return;PT.qBusy=true;PT.tc=PT.tc||new Map();
+  const near=el=>{const r=el.getBoundingClientRect(),b=$('#ptBody').getBoundingClientRect();return r.bottom>b.top-300&&r.top<b.bottom+300};
+  while(PT.q.length){
+    // newest first, and only cards still on screen (fast scrolling through 400+ pages no longer queues every page you passed)
+    const [el,pp]=PT.q.pop();if(!el.isConnected||el.dataset.done)continue;if(!near(el)){if(PT.io)PT.io.observe(el);continue}
+    el.dataset.done=1;const S=PT.srcs[pp.s];const box=$('.ptr',el);
     try{if(pp.blank){box.innerHTML='<div class="blank"></div>';continue}
       if(S.kind==='img'){const im=document.createElement('img');im.src=S.url;box.innerHTML='';box.append(im);continue}
-      const pg=await S.doc.getPage(pp.pi);const v1=pg.getViewport({scale:1});const sc=Math.min(264/v1.width,264/v1.height);const v=pg.getViewport({scale:sc});
-      const c=document.createElement('canvas');c.width=Math.round(v.width);c.height=Math.round(v.height);c.style.width=Math.round(v.width/2)+'px';
-      await pg.render({canvasContext:c.getContext('2d'),viewport:v}).promise;box.innerHTML='';box.append(c)}catch(e){box.textContent='⚠'}}
+      const ck=pp.s+':'+pp.pi;let url=PT.tc.get(ck);
+      if(!url){const pg=await S.doc.getPage(pp.pi);const v1=pg.getViewport({scale:1});const sc=Math.min(264/v1.width,264/v1.height);const v=pg.getViewport({scale:sc});
+        const c=document.createElement('canvas');c.width=Math.round(v.width);c.height=Math.round(v.height);const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);
+        await pg.render({canvasContext:x,viewport:v}).promise;url=c.toDataURL('image/jpeg',.72);c.width=c.height=0;PT.tc.set(ck,url)}
+      if(!el.isConnected)continue;const im=document.createElement('img');im.src=url;im.style.maxWidth='132px';im.style.maxHeight='132px';box.innerHTML='';box.append(im)}catch(e){box.textContent='⚠'}}
   PT.qBusy=false}
 function ptRender(){
   $$('.ptt button').forEach(b=>b.classList.toggle('on',b.dataset.k===PT.tab));
@@ -3672,6 +3678,7 @@ function ptOrg(){
     c.addEventListener('dragover',e=>{if(PT.drag==null)return;e.preventDefault();const r=c.getBoundingClientRect(),after=e.clientX>r.left+r.width/2;c.classList.toggle('drop-r',after);c.classList.toggle('drop-l',!after)});
     c.addEventListener('dragleave',()=>c.classList.remove('drop-l','drop-r'));
     c.addEventListener('drop',e=>{e.preventDefault();if(PT.drag==null)return;const r=c.getBoundingClientRect(),after=e.clientX>r.left+r.width/2;ptMove(PT.drag,i+(after?1:0));PT.drag=null});
+    {const u=PT.tc&&!pp.blank&&S.kind==='pdf'&&PT.tc.get(pp.s+':'+pp.pi);if(u){c.dataset.done=1;const im=document.createElement('img');im.src=u;im.style.maxWidth='132px';im.style.maxHeight='132px';const bx=$('.ptr',c);bx.innerHTML='';bx.append(im)}}
     grid.append(c);PT.io.observe(c)});
   ptFootOut({canReplace:!img});
   $('#ptBody').scrollTop=PT.scroll||0;$('#ptBody').onscroll=()=>{PT.scroll=$('#ptBody').scrollTop}}
