@@ -174,6 +174,7 @@ body.t-erase .nte{cursor:pointer}body.t-erase .nte:hover{outline:2px solid #d23a
 .ptp.sel .ptchk{background:#2f6fe0;border-color:#2f6fe0}
 .ptempty{padding:60px 20px;text-align:center;color:var(--mut);font-size:14px;line-height:1.7}
 .ptf{display:flex;align-items:center;gap:8px;padding:12px 14px;background:var(--panel);border-top:1px solid var(--line);flex-wrap:wrap}
+.ptf .ptns{color:#c2410c;font-weight:700}
 .ptf .sum{flex:1;min-width:160px;color:var(--mut);font-size:12.5px}
 .ptf input[type=text]{width:230px}
 .ptf label{display:flex;align-items:center;gap:5px;font-size:12.5px}
@@ -3623,7 +3624,13 @@ async function openTools(tab){
   if(PT.tab==='org'&&here&&PT.base&&PT.base.fid===here.fid){const pp=PT.pages.find(x=>x.s===0&&x.pi===here.pi);if(pp){PT.sel.clear();PT.sel.add(pp.id);PT.last=PT.pages.indexOf(pp);PT.jump=pp.id;PT.soft=true}}
   ptSrcOptions();ptRender();
   if(PT.jump){const i=PT.pages.findIndex(x=>x.id===PT.jump);PT.jump=null;const c=$$('#ptBody .ptp')[i];if(c){c.scrollIntoView({block:'center'});PT.scroll=$('#ptBody').scrollTop}}}
-function closeTools(){$('#pt').hidden=true;if(PT.io)PT.io.disconnect()}
+const ptSig=()=>PT.pages.map(x=>x.blank?'B':x.s+':'+x.pi+':'+x.rot).join(',');
+function ptChanged(){if(!PT.base||!PT.srcs[0]||PT.srcs[0].kind!=='pdf')return false;const S0=PT.srcs[0];return PT.pages.length!==S0.n||PT.pages.some((x,i)=>x.blank||x.s!==0||x.pi!==i+1||x.rot)}
+async function closeTools(force){
+  if(force!==true&&PT.tab==='org'&&ptChanged()&&PT.savedSig!==ptSig()){
+    if(!await ptAsk('<b>Your changes are not in your PDF yet.</b><br>'+PT.pages.length+' pages here (the PDF has '+PT.srcs[0].n+').<br><br>Press <b>♻ Replace in this set</b> to put them in, or close and drop them.','Close without saving'))return;
+    ptReset();PT.base=null}
+  $('#pt').hidden=true;if(PT.io)PT.io.disconnect()}
 $('#ptX').onclick=closeTools;
 $('#pt').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape'&&$('#ptAsk').hidden){e.preventDefault();closeTools()}});
 $('#pt').addEventListener('click',e=>{if(e.target.id==='pt')closeTools()});
@@ -3734,6 +3741,7 @@ function ptFootOut(o){
   const f=$('#ptFoot');f.innerHTML='';const cs=curSet(),b=PT.base;
   const sum=document.createElement('span');sum.className='sum';f.append(sum);
   if(o.sum)sum.textContent=o.sum;else{const n=ptOutPages().length;sum.textContent=PT.onlySel?'Extract: '+n+' selected page'+(n>1?'s':''):n+' page'+(n!==1?'s':'')+(PT.srcs.length>1?' from '+PT.srcs.length+' files':'');
+    if(!PT.onlySel&&PT.tab==='org'&&ptChanged()&&PT.savedSig!==ptSig()){const w=document.createElement('b');w.className='ptns';w.textContent=' · ⚠ Not in your PDF yet: press ♻ Replace in this set';sum.append(w)}
     if(PT.onlySel){const x=document.createElement('button');x.className='btn ghost';x.textContent='All pages';x.onclick=()=>{PT.onlySel=false;ptRender()};f.append(x)}}
   const nm=document.createElement('input');nm.type='text';nm.id='ptNm';nm.placeholder='Name';
   nm.value=o.name||(PT.tab==='img'?'Images '+new Date().toLocaleDateString(undefined,{day:'numeric',month:'short'}):b?ptName(b.set?b.set.name:b.name)+(PT.onlySel?' (pages)':' (edited)'):'New PDF');
@@ -3752,8 +3760,8 @@ async function ptOut(how,o){
   try{
     if(o.custom){await o.custom(how,name,sub);return}
     ptBusy('Building the PDF…');const pages=ptOutPages();const bytes=o.build?await o.build():await ptBuild(pages);
-    if(how==='dl'){await saveFile(name+'.pdf',new Blob([bytes],{type:'application/pdf'}));return}
-    if(how==='lib'){const set=await ptToLib(bytes,name,sub,PT.base&&PT.base.set&&PT.base.set.type);ptBusy();toast('📚 Added “'+name+'” to '+sub);return set}
+    if(how==='dl'){await saveFile(name+'.pdf',new Blob([bytes],{type:'application/pdf'}));PT.savedSig=ptSig();ptRender();return}
+    if(how==='lib'){const set=await ptToLib(bytes,name,sub,PT.base&&PT.base.set&&PT.base.set.type);ptBusy();toast('📚 Added “'+name+'” to '+sub);PT.savedSig=ptSig();ptRender();return set}
     if(how==='rep'){ptBusy();await ptReplace(bytes,o.map?o.map():ptMap(pages))}
   }catch(e){console.error(e);toast('Could not make the PDF: '+(e.message||e))}finally{ptBusy()}}
 async function ptToLib(bytes,name,sub,type){
@@ -3811,7 +3819,7 @@ async function ptReplace(bytes,mp){
   await openSet(cs.id);undoStack=[];
   PT.base={fid:id,set:cs,name:file.name};try{PT.srcs[0].doc.destroy()}catch(e){}
   ptReset();const S=await ptLoadPdf(bytes,file.name);S.fid=id;S.set=cs;await ptSetBase(S);ptBusy();
-  closeTools();toast('♻ Replaced. The original is in your library as “'+bakName+'”')}
+  closeTools(true);toast('♻ Replaced. The original is in your library as “'+bakName+'”')}
 
 /* ---------- ✂ split ---------- */
 function ptRanges(txt,n){const out=[];for(const part of String(txt).split(/[,;]+/)){const m=part.trim().match(/^(\d+)\s*(?:[-–to]+\s*(\d*))?$/i);if(!m)continue;const a=+m[1],b=m[2]===undefined?a:m[2]===''?n:+m[2];if(a>=1&&a<=n&&b>=a)out.push([a,Math.min(b,n)])}return out}
@@ -5010,7 +5018,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='07 Nov 18:08';   // build label, so you can check both devices have the same version
+const APPV='07 Nov 18:13';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
