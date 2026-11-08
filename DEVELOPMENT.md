@@ -151,3 +151,5 @@ Library → 📚 ICAI tab (per subject). Lists official ICAI PDFs from `shelf.js
 Built on 4 Nov (ICAI finder + Gemini) and removed the same day at Darshan's request ("it is useless"). Don't bring it back unless he asks. The app now deletes the Gemini key it had saved (`gem:key`). The code is in git history (commits bb8fcae…b8e4d76) if ever needed.
 
 Note: the module zips given on 1 Nov missed indented illustrations (about 150 across Modules 1–5) because the old parser required x < 90. Fixed in `marking/modules2to5_parse.py`.
+
+**8 Nov 2026:** Darshan asked for the old ▣ Pop out player back. The v2.3.1 zip (Alt+P = plain picture-in-picture, auto pop-out on leaving the tab, 🎬 bar in PDF Pair; no mini window) was packaged from `desktop/` and sent. desktop-pip and desktop-videobar tests pass.
