@@ -153,3 +153,5 @@ Built on 4 Nov (ICAI finder + Gemini) and removed the same day at Darshan's requ
 Note: the module zips given on 1 Nov missed indented illustrations (about 150 across Modules 1–5) because the old parser required x < 90. Fixed in `marking/modules2to5_parse.py`.
 
 **8 Nov 2026:** Darshan asked for the old ▣ Pop out player back. The v2.3.1 zip (Alt+P = plain picture-in-picture, auto pop-out on leaving the tab, 🎬 bar in PDF Pair; no mini window) was packaged from `desktop/` and sent. desktop-pip and desktop-videobar tests pass.
+
+**📌 Link fixes (8 Nov):** the 🎬 video bar has a 📌 button (VJS now returns the tab URL). `__ppDesk.link` (bar 📌, browser 📌 Link / Alt+M) links to the picked question as before; when no question is picked, or in a concept book, it now links to the page you are reading instead of failing: `st.pglinks['q:12']=[{u,t,title,at}]`, shown as a red ▶ 12:30 chip at the top right of that page (click plays in the ▶ Lecture player for YouTube, ✕ removes). Test: `tests/desktop-linkbar.js`.

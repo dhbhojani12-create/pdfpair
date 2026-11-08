@@ -210,6 +210,8 @@ body.t-erase .cim:hover{box-shadow:0 0 0 2px #d23a3a}
 .capi .u{position:absolute;left:3px;bottom:3px;background:rgba(22,163,74,.9);color:#fff;font:700 10px var(--sans);padding:1px 5px;border-radius:6px}
 @media (max-width:720px){#capTray{left:8px;right:8px;width:auto;bottom:70px}}
 .einc{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin:12px 0 4px;font-size:13px}.einc span{color:var(--mut);width:100%}.einc label{display:flex;align-items:center;gap:5px}.einc .lnk{color:#2f6fe0;font:600 12.5px var(--sans);text-decoration:underline}
+.plk{position:absolute;right:calc(var(--W) * .012);z-index:5;display:flex;align-items:center;gap:4px;background:#dc2626;color:#fff;border-radius:999px;padding:3px 8px;font:700 11.5px var(--sans);cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.plk i{font-style:normal;opacity:.75;display:none}.plk:hover i{display:inline}.plk:hover{background:#b91c1c}
 .nbar .nsz{min-width:28px;text-align:center;font-variant-numeric:tabular-nums}
 .clipbox{position:absolute;border:2px dashed #2f6fe0;background:rgba(47,111,224,.10);z-index:6;pointer-events:none}
 .clp{position:absolute;border:2px dashed rgba(47,111,224,.55);border-radius:4px;z-index:3;pointer-events:none;display:none}
@@ -924,7 +926,7 @@ select.tin{appearance:auto}
   <div id="mockBar" hidden><span class="mt"></span><span class="mc">3:00:00</span><button id="mockFin">Finish</button></div>
   <div id="dkCard" hidden role="dialog" aria-label="Downloaded PDF"><div class="dkt"></div><div class="dkr"><input id="dkName" class="tin" placeholder="Set name"><select id="dkSub" class="tin"></select><select id="dkType" class="tin"><option value="mod">Module / chapter</option><option value="rtp">RTP</option><option value="mtp">MTP</option><option value="pyq">Past papers</option><option value="mcq">MCQ booklet</option><option value="oth">Other</option><option value="con">Concept book</option></select></div><div class="acts"><button class="btn ghost" id="dkSkip">Skip</button><button class="btn" id="dkAdd">Add to library</button></div></div>
   <div id="vidBar" hidden role="group" aria-label="Video controls"><span class="vt"></span><button data-v="back10" title="Back 10 s (Alt+J)">⟲ 10</button><button data-v="play" class="vp" title="Play / pause (Alt+K)">⏸</button><button data-v="fwd10" title="Forward 10 s (Alt+L)">10 ⟳</button>
-    <input type="range" class="vs" min="0" max="1000" value="0" aria-label="Position"><span class="vtm">0:00 / 0:00</span><select class="vr" title="Speed"><option>0.75</option><option selected>1</option><option>1.25</option><option>1.5</option><option>1.75</option><option>2</option></select><button data-v="back" title="Back to the tab">⤢</button></div>
+    <input type="range" class="vs" min="0" max="1000" value="0" aria-label="Position"><span class="vtm">0:00 / 0:00</span><select class="vr" title="Speed"><option>0.75</option><option selected>1</option><option>1.25</option><option>1.5</option><option>1.75</option><option>2</option></select><button data-v="link" title="📌 Link this moment to the open question (or this page)">📌</button><button data-v="back" title="Back to the tab">⤢</button></div>
   <div id="webPop" hidden></div>
   <div id="ibCard" hidden role="alertdialog" aria-label="New marks from Claude"><div class="ibt"></div><div class="ibs"></div><div class="ibn"></div><div class="acts"><button class="btn ghost" id="ibIgnore">Ignore</button><button class="btn" id="ibApply">Apply ▶</button></div></div>
   <div id="ibDlg" hidden><div class="card" role="dialog" aria-labelledby="ibT"><h1 id="ibT">📥 Claude inbox</h1>
@@ -1380,6 +1382,7 @@ function renderAnn(side){try{syncFollowSoon()}catch(e){}
     pos(el,t.x,t.y);pg.ov.append(el)});
   (st.clips||[]).filter(c=>c.side===side).forEach(c=>{const pg=p.pages[c.page-1];if(pg)pg.ov.append(clipEl(c))});
   (st.notes||[]).filter(n=>n.side===side).forEach(n=>{const pg=p.pages[n.page-1];if(pg)pg.ov.append(noteEl(n))});
+  try{pgLinkEls(side,p)}catch(e){}
   (st.imgs||[]).filter(m=>m.side===side).forEach(m=>{const pg=p.pages[m.page-1];if(pg)pg.ov.append(imgEl(m))});
   (st.topics||[]).filter(t=>(isCset()?'q':(t.side||'q'))===side).forEach(t=>{const pg=p.pages[t.page-1];if(!pg)return;pg.ov.append(tmkEl(t,t.id===activeTid))});
   st.bm[side].forEach(n=>{const pg=p.pages[n-1];if(!pg)return;const r=document.createElement('div');r.className='rib';const nm=bmName(side,n);r.title=(nm?'“'+nm+'”. ':'')+'Bookmarked. Click to remove';pg.ov.append(r);if(nm){const l=document.createElement('div');l.className='ribl';l.textContent=nm;pg.ov.append(l)}});
@@ -1389,6 +1392,19 @@ function renderAnn(side){try{syncFollowSoon()}catch(e){}
     if(s.n===activeN)el.classList.add('act');
     pos(el,s.x,s.y);pg.ov.append(el)});
 }
+
+/* 📌 lecture moments linked to a PAGE (when no question is picked, or in a concept book): a small ▶ chip at the top right of the page */
+function pgAt(u,t){try{const x=new URL(u);const v=/youtu\.be$/.test(x.hostname)?x.pathname.slice(1):x.searchParams.get('v');if(v)return 'https://www.youtube.com/watch?v='+v+(t>5?'&t='+Math.floor(t)+'s':'')}catch(e){}return u}
+function pgLink(o){let ap=null;try{ap=activePane()}catch(e){}if(!ap||!ap.pages.length||(ap.side!=='q'&&ap.side!=='a'))ap=[P.q,P.a].find(x=>x.pages.length);if(!ap||!key)return null;
+  const n=curPage(ap),k=ap.side+':'+n;pushUndo();st.pglinks=st.pglinks||{};(st.pglinks[k]=st.pglinks[k]||[]).push({u:String(o.u),t:o.t==null?null:+o.t,title:String(o.title||'').slice(0,200),at:Date.now()});save();renderAll();
+  const lab='page '+n;toast('📌 Lecture moment linked to '+lab+(o.t!=null?' at '+vfmt(o.t):''));return {ok:true,label:lab}}
+function pgLinkEls(side,p){for(const k in (st.pglinks||{})){const [sd,ns]=k.split(':');if(sd!==side)continue;const pg=p.pages[+ns-1];if(!pg)continue;
+  st.pglinks[k].forEach((o,i)=>{const b=document.createElement('div');b.className='plk';b.style.top='calc(var(--W) * '+(0.012+i*0.034).toFixed(3)+')';b.title=(o.title||o.u)+'\nClick to play · ✕ to remove';
+    b.innerHTML='<span>▶ '+(o.t!=null?vfmt(o.t):'Open')+'</span><i>✕</i>';
+    b.addEventListener('pointerdown',e=>e.stopPropagation());
+    b.addEventListener('click',e=>{e.stopPropagation();if(e.target.tagName==='I'){pushUndo();st.pglinks[k].splice(i,1);if(!st.pglinks[k].length)delete st.pglinks[k];save();renderAll();return}
+      if(window.__ppLec&&window.__ppLec.ytId&&window.__ppLec.ytId(o.u)){window.__ppLec.lpOpen(o.u,o.t);return}if(window.ppDesktop)window.ppDesktop.openLecture(o.u);else window.open(o.u,'_blank')});
+    pg.ov.append(b)})}}
 function renderAll(){renderAnn('q');renderAnn('a');updIndex();updBar();updNav();['q','a'].forEach(s=>{updGrid(P[s]);updChip(P[s])})}
 
 let activeN=null;
@@ -2682,7 +2698,7 @@ if(DESK){
 /* 🎬 controls for a popped-out browser video (desktop app) */
 const VB={on:false,drag:false,last:null};
 const vfmt=t=>{t=Math.max(0,Math.floor(t||0));const h=Math.floor(t/3600),m=Math.floor(t%3600/60),s=t%60;return (h?h+':'+String(m).padStart(2,'0'):m)+':'+String(s).padStart(2,'0')};
-const VJS="(()=>{const v=document.pictureInPictureElement;if(!v)return null;return {p:v.paused,t:v.currentTime,d:v.duration||0,r:v.playbackRate,title:document.title.replace(/^\\(\\d+\\)\\s*/,'').replace(/ - YouTube$/,'')}})()";
+const VJS="(()=>{const v=document.pictureInPictureElement;if(!v)return null;return {p:v.paused,t:v.currentTime,d:v.duration||0,r:v.playbackRate,u:location.href,title:document.title.replace(/^\\(\\d+\\)\\s*/,'').replace(/ - YouTube$/,'')}})()";
 async function vPoll(){if(!window.ppDesktop||!window.ppDesktop.video)return;let st=null;try{st=await window.ppDesktop.video(VJS)}catch(e){}
   const b=$('#vidBar');VB.on=!!st;b.hidden=!st;if(!st)return;VB.last=st;
   {const tb=$('#bar'),r=tb&&tb.getBoundingClientRect(),bw=b.offsetWidth||380,ar=$('#app').getBoundingClientRect();const over=r&&r.width&&r.right>ar.right-10-bw;b.style.bottom=over?(ar.bottom-r.top+8)+'px':'10px'}
@@ -2693,7 +2709,8 @@ if(window.ppDesktop&&window.ppDesktop.video){
   setInterval(()=>{if(document.visibilityState==='visible')vPoll()},1000);
   $('#vidBar').addEventListener('click',e=>{const k=e.target.closest('[data-v]');if(!k)return;const v=k.dataset.v;
     if(v==='play')vDo('v.paused?v.play():v.pause()');if(v==='back10')vDo('v.currentTime=Math.max(0,v.currentTime-10)');if(v==='fwd10')vDo('v.currentTime=Math.min(v.duration||1e9,v.currentTime+10)');
-    if(v==='back'){window.ppDesktop.showBrowser();setTimeout(vPoll,800)}});
+    if(v==='back'){window.ppDesktop.showBrowser();setTimeout(vPoll,800)}
+    if(v==='link'){const s0=VB.last;if(!s0||!s0.u){toast('No video to link');return}const r=window.__ppDesk.link({u:pgAt(s0.u,s0.t),t:Math.floor(s0.t),title:s0.title});if(r&&r.error)toast('📌 '+r.error)}});
   const sl=$('#vidBar .vs');sl.addEventListener('input',()=>{VB.drag=true;if(VB.last)$('#vidBar .vtm').textContent=vfmt(sl.value/1000*VB.last.d)+' / '+vfmt(VB.last.d)});
   sl.addEventListener('change',()=>{VB.drag=false;vDo('v.currentTime='+(sl.value/1000)+'*(v.duration||0)')});
   $('#vidBar .vr').addEventListener('change',e=>vDo('v.playbackRate='+(+e.target.value||1)));
@@ -2721,7 +2738,7 @@ if(window.ppDesktop){
     index(){const out=[];for(const x of LIB.sets){if(x.type==='con')continue;const S=stOfSet(x);const ns=new Set([...((S.stickers||{}).q||[]),...((S.stickers||{}).a||[])].map(z=>z.n));
       for(const n of ns){const m=(S.meta||{})[n]||{};out.push({id:x.id,n,name:(S.names||{})[n]||('Q '+n),ch:m.ch||'',tp:m.tp||'',set:x.name,sub:x.subject})}}return out},
     async open(id,n){try{closeLib(true)}catch(e){}try{stopRv()}catch(e){}if(LIB.cur!==id)await openSet(id);openPair(n);return {ok:true}},
-    link(o){const e=need();if(e)return {error:e};pushUndo();st.links=st.links||{};(st.links[activeN]=st.links[activeN]||[]).push({u:String(o.u),t:o.t==null?null:+o.t,title:String(o.title||'').slice(0,200),at:Date.now()});save();renderAll();
+    link(o){const e=need();if(e){const r=pgLink(o);return r||{error:e}}pushUndo();st.links=st.links||{};(st.links[activeN]=st.links[activeN]||[]).push({u:String(o.u),t:o.t==null?null:+o.t,title:String(o.title||'').slice(0,200),at:Date.now()});save();renderAll();
       toast('▶ Lecture moment linked to '+label(activeN));return {ok:true,label:label(activeN)}},
     note(o){const e=need();if(e)return {error:e};pushUndo();st.wnotes=st.wnotes||{};(st.wnotes[activeN]=st.wnotes[activeN]||[]).push({text:String(o.text||'').slice(0,4000),u:String(o.u||''),t:o.t==null?null:+o.t,title:String(o.title||'').slice(0,200),at:Date.now()});save();renderAll();
       toast('🗒 Web note added to '+label(activeN));return {ok:true,label:label(activeN)}}};
