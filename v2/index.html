@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PDF Pair</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#F4F1EA;--desk:#E7E3DA;--card:#FFFEFB;--ink:#24221E;--ink2:#5F5A51;--ink3:#6B675F;--line:#E2DDD2;--line2:#DDD7CB;--acc:#2F4A5C;--sel:#E9E4D8;--weak:#9A4A2B;--ok:#4E6B4A;--serif:'Source Serif 4',Georgia,serif}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--paper);color:var(--ink);font:15px/1.5 Inter,system-ui,sans-serif}
+a{color:var(--acc)}button{font:inherit;color:inherit}
+[hidden]{display:none!important}
+.serif{font-family:var(--serif)}
+/* library */
+#lib{display:flex;min-height:100%}
+#side{width:270px;flex:0 0 270px;border-right:1px solid var(--line);padding:36px 26px;display:flex;flex-direction:column;gap:28px}
+#side .brand{font:600 22px var(--serif)}
+.subj{display:flex;flex-wrap:wrap;gap:14px;font-size:14px}
+.subj button{background:none;border:0;padding:0 0 3px;cursor:pointer;color:var(--ink3);border-bottom:2px solid transparent}
+.subj button.on{color:var(--ink);font-weight:600;border-color:var(--acc)}
+#libmain{flex:1;min-width:0;padding:48px 56px;max-width:1100px}
+#libmain h1{margin:0 0 6px;font:500 40px var(--serif)}
+.muted{color:var(--ink3);font-size:14px}
+.grp{margin-top:34px}
+.grp h2{margin:0 0 6px;font-size:12px;font-weight:500;color:var(--ink3);letter-spacing:.06em}
+.row{display:flex;gap:20px;align-items:baseline;padding:14px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.row .nm{flex:1 1 300px;font-weight:500}
+.row .meta{font-size:13px;color:var(--ink3);min-width:120px}
+.row button{background:none;border:0;color:var(--acc);cursor:pointer;font-size:14px;padding:4px 0}
+.empty{padding:40px 0;color:var(--ink3)}
+/* viewer */
+#view{position:fixed;inset:0;background:var(--desk);display:flex;flex-direction:column}
+#vtop{display:flex;align-items:baseline;gap:18px;padding:12px 24px;flex-wrap:wrap;font-size:13px;color:var(--ink3)}
+#vtop button{background:none;border:0;cursor:pointer;color:var(--ink2);font-size:14px;padding:0}
+#vtop .sp{flex:1}
+#vtop .k{color:var(--ink3)}
+#pages{flex:1;overflow:auto;padding:4px 24px 90px;outline:none}
+.pg{margin:0 auto 18px;background:var(--card);box-shadow:0 1px 2px rgba(40,30,10,.08),0 8px 24px rgba(40,30,10,.06);position:relative}
+.pg canvas{display:block;width:100%;height:100%}
+#zoomlbl{min-width:44px;text-align:right}
+#toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9}
+#toast.on{opacity:1}
+@media (max-width:760px){#lib{flex-direction:column}#side{width:auto;flex:none;border-right:0;border-bottom:1px solid var(--line);padding:22px}#libmain{padding:24px 22px}}
+</style>
+</head>
+<body>
+
+<div id="lib">
+  <nav id="side" aria-label="Subjects">
+    <div class="brand">PDF Pair</div>
+    <div class="subj" id="subjs"></div>
+    <div class="muted" style="margin-top:auto">New version · your current app is unchanged.<br><a href="../">Open the current app</a></div>
+  </nav>
+  <main id="libmain">
+    <h1 id="ltitle">Library</h1>
+    <div class="muted" id="lsub"></div>
+    <div id="groups"></div>
+  </main>
+</div>
+
+<div id="view" hidden>
+  <div id="vtop">
+    <button id="back">← Library</button>
+    <span id="vname"></span>
+    <span id="vpage"></span>
+    <span class="sp"></span>
+    <span>Zoom <span class="k">Ctrl + / −</span></span>
+    <span>Fit width <span class="k">Ctrl 0</span></span>
+    <span id="zoomlbl"></span>
+  </div>
+  <div id="pages" tabindex="0"></div>
+</div>
+
+<div id="toast" role="status"></div>
+
+<script src="../lib/pdf.min.js"></script>
+<script>
+'use strict';
+pdfjsLib.GlobalWorkerOptions.workerSrc='../lib/pdf.worker.min.js';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('on'),2200)}
+
+/* ---- storage: the current app's data is only READ; v2 writes under pp2: keys ---- */
+function idb(){return new Promise((res,rej)=>{const r=indexedDB.open('pdfpair',1);r.onupgradeneeded=()=>r.result.createObjectStore('files');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+async function idbGet(k){try{const db=await idb();return await new Promise(res=>{const r=db.transaction('files').objectStore('files').get(k);r.onsuccess=()=>res(r.result||null);r.onerror=()=>res(null)})}catch(e){return null}}
+const oldLib=()=>{try{return JSON.parse(localStorage.getItem('pp:lib'))||{}}catch(e){return {}}};
+const S={get(k,d){try{const v=localStorage.getItem('pp2:'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem('pp2:'+k,JSON.stringify(v))}catch(e){toast('Could not save: storage is full')}}};
+
+/* ---- library ---- */
+const TYPE={con:'Concept books',mod:'Study material',rtp:'RTP',mtp:'MTP',pyq:'Past papers',mcq:'MCQ',oth:'Other'};
+const ORDER=['con','mod','rtp','mtp','pyq','mcq','oth'];
+let curSubj=S.get('subj',null);
+function subjectsOf(lib){const set=new Set((lib.subjects||[]).map(s=>typeof s==='string'?s:(s&&s.name)||''));(lib.sets||[]).forEach(x=>x.subject&&set.add(x.subject));set.delete('');return [...set]}
+function renderLib(){
+  const lib=oldLib(),sets=lib.sets||[],subs=subjectsOf(lib);
+  if(!curSubj||!subs.includes(curSubj))curSubj=subs[0]||null;
+  $('#subjs').innerHTML=subs.map(s=>`<button class="${s===curSubj?'on':''}" data-s="${esc(s)}">${esc(s)}</button>`).join('');
+  $('#ltitle').textContent=curSubj||'Library';
+  const mine=sets.filter(x=>x.subject===curSubj);
+  $('#lsub').textContent=mine.length?mine.length+' PDF sets':'';
+  if(!sets.length){$('#groups').innerHTML='<div class="empty">No PDFs found yet. Add them in the current app first (they show up here by themselves).</div>';return}
+  const by={};mine.forEach(x=>(by[x.type||'oth']=by[x.type||'oth']||[]).push(x));
+  $('#groups').innerHTML=ORDER.filter(t=>by[t]).map(t=>`<section class="grp"><h2>${esc((TYPE[t]||t).toUpperCase())}</h2>${by[t].map(rowHtml).join('')}</section>`).join('')||'<div class="empty">Nothing in this subject yet.</div>';
+}
+function rowHtml(x){
+  const q=(x.files&&x.files.q)||[],a=(x.files&&x.files.a)||[];
+  const both=!x.same&&a.length;
+  const open=f=>`<button data-open="${esc(f.id)}" data-name="${esc(x.name+(both?(q.includes(f)?' · questions':' · answers'):''))}">Open${both?(q.includes(f)?' questions':' answers'):''}</button>`;
+  return `<div class="row"><span class="nm">${esc(x.name)}</span><span class="meta">${both?'Questions + answers':(x.same?'Q + A in one PDF':'')}</span>${q.slice(0,1).map(open).join('')}${both?a.slice(0,1).map(open).join(''):''}</div>`;
+}
+$('#subjs').onclick=e=>{const b=e.target.closest('button');if(!b)return;curSubj=b.dataset.s;S.set('subj',curSubj);renderLib()};
+$('#groups').onclick=e=>{const b=e.target.closest('[data-open]');if(b)openPdf(b.dataset.open,b.dataset.name)};
+
+/* ---- viewer: continuous pages, rendered only when near the screen ---- */
+const V={doc:null,id:null,zoom:null,base:null,pages:[],obs:null,tasks:new Map()};
+async function openPdf(id,name){
+  const rec=await idbGet('blob:'+id);
+  if(!rec){toast('This PDF is not on this device');return}
+  const blob=rec.blob||rec;let doc;
+  try{doc=await pdfjsLib.getDocument({data:new Uint8Array(await blob.arrayBuffer())}).promise}catch(e){toast('Could not open this PDF');return}
+  closePdf(true);
+  V.doc=doc;V.id=id;$('#vname').textContent=name;
+  const p1=await doc.getPage(1);V.base=p1.getViewport({scale:1});
+  const pos=S.get('pos:'+id,{});V.zoom=pos.z||null;
+  $('#lib').hidden=true;$('#view').hidden=false;
+  layout();
+  requestAnimationFrame(()=>{if(pos.p>1)goPage(pos.p,true);showPage()});
+  $('#pages').focus();
+}
+function fitW(){return Math.min(($("#pages").clientWidth-48)/V.base.width,1.5)}
+function scale(){return V.zoom||fitW()}
+function layout(){
+  const box=$('#pages'),s=scale(),keep=V.doc?curPage():1;
+  V.tasks.forEach(t=>t.cancel&&t.cancel());V.tasks.clear();
+  if(V.obs)V.obs.disconnect();
+  box.innerHTML='';V.pages=[];
+  for(let i=1;i<=V.doc.numPages;i++){
+    const d=document.createElement('div');d.className='pg';d.dataset.n=i;
+    d.style.width=Math.round(V.base.width*s)+'px';d.style.height=Math.round(V.base.height*s)+'px';
+    box.appendChild(d);V.pages.push(d);
+  }
+  V.obs=new IntersectionObserver(es=>es.forEach(e=>{const n=+e.target.dataset.n;if(e.isIntersecting)draw(n);else drop(n)}),{root:box,rootMargin:'150% 0px'});
+  V.pages.forEach(d=>V.obs.observe(d));
+  $('#zoomlbl').textContent=Math.round(s*100)+'%';
+  if(keep>1)goPage(keep,true);
+}
+async function draw(n){
+  const d=V.pages[n-1];if(!d||d.dataset.done==='1'||V.tasks.has(n))return;
+  const doc=V.doc,s=scale(),dpr=Math.min(window.devicePixelRatio||1,2);
+  V.tasks.set(n,{});
+  try{
+    const page=await doc.getPage(n);if(doc!==V.doc)return;
+    const vp=page.getViewport({scale:s*dpr});
+    if(n===1||Math.abs(vp.width/dpr-parseFloat(d.style.width))>2){d.style.width=Math.round(vp.width/dpr)+'px';d.style.height=Math.round(vp.height/dpr)+'px'}
+    const c=document.createElement('canvas');c.width=vp.width;c.height=vp.height;
+    const t=page.render({canvasContext:c.getContext('2d'),viewport:vp});V.tasks.set(n,t);
+    await t.promise;if(doc!==V.doc)return;
+    d.querySelector('canvas')?.remove();d.appendChild(c);d.dataset.done='1';
+  }catch(e){}finally{V.tasks.delete(n)}
+}
+function drop(n){const d=V.pages[n-1];if(!d)return;const t=V.tasks.get(n);if(t&&t.cancel)t.cancel();V.tasks.delete(n);d.querySelector('canvas')?.remove();d.dataset.done=''}
+function curPage(){const box=$('#pages'),mid=box.scrollTop+box.clientHeight*0.35;let n=1;for(const d of V.pages){if(d.offsetTop<=mid)n=+d.dataset.n;else break}return n}
+function goPage(n,instant){n=Math.max(1,Math.min(V.pages.length,n));const d=V.pages[n-1];if(d)$('#pages').scrollTo({top:d.offsetTop-8,behavior:instant?'auto':'smooth'})}
+function savePos(){if(V.id)S.set('pos:'+V.id,{p:curPage(),z:V.zoom})}
+function showPage(){if(V.doc)$('#vpage').textContent='Page '+curPage()+' of '+V.doc.numPages}
+let spT;$('#pages').addEventListener('scroll',()=>{showPage();clearTimeout(spT);spT=setTimeout(savePos,400)},{passive:true});
+function setZoom(z){const k=curPage();V.zoom=z;layout();goPage(k,true);savePos()}
+function closePdf(quiet){if(V.doc){savePos();V.tasks.forEach(t=>t.cancel&&t.cancel());V.tasks.clear();if(V.obs)V.obs.disconnect();try{V.doc.destroy()}catch(e){}}V.doc=null;V.id=null;$('#pages').innerHTML='';if(!quiet){$('#view').hidden=true;$('#lib').hidden=false;renderLib()}}
+$('#back').onclick=()=>closePdf();
+let rzT;addEventListener('resize',()=>{if(!V.doc||V.zoom)return;clearTimeout(rzT);rzT=setTimeout(()=>{const k=curPage();layout();goPage(k,true)},150)});
+
+/* ---- keys ---- */
+addEventListener('keydown',e=>{
+  if(!V.doc||e.target.closest('input,textarea'))return;
+  const c=e.ctrlKey||e.metaKey;
+  if(c&&(e.key==='='||e.key==='+')){e.preventDefault();setZoom(Math.min(scale()*1.15,4))}
+  else if(c&&e.key==='-'){e.preventDefault();setZoom(Math.max(scale()/1.15,.3))}
+  else if(c&&e.key==='0'){e.preventDefault();setZoom(null)}
+  else if(!c&&(e.key==='ArrowRight'||e.key==='PageDown')){e.preventDefault();goPage(curPage()+1)}
+  else if(!c&&(e.key==='ArrowLeft'||e.key==='PageUp')){e.preventDefault();goPage(curPage()-1)}
+  else if(e.key==='Escape'){closePdf()}
+});
+addEventListener('beforeunload',savePos);
+
+renderLib();
+</script>
+</body>
+</html>
