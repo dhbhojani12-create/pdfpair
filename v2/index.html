@@ -51,7 +51,8 @@ a{color:var(--acc)}button{font:inherit;color:inherit}
   <nav id="side" aria-label="Subjects">
     <div class="brand">PDF Pair</div>
     <div class="subj" id="subjs"></div>
-    <div class="muted" style="margin-top:auto">New version · your current app is unchanged.<br><a href="../">Open the current app</a></div>
+    <div style="margin-top:auto;display:flex;flex-direction:column;gap:6px"><button id="bkBtn" style="align-self:flex-start;background:none;border:0;padding:0;color:var(--acc);cursor:pointer;font-size:14px">Open a backup…</button><span class="muted" id="bkInfo"></span><input type="file" id="bkFile" accept=".zip" hidden></div>
+    <div class="muted">New version · your current app is unchanged.<br><a href="../">Open the current app</a></div>
   </nav>
   <main id="libmain">
     <h1 id="ltitle">Library</h1>
@@ -76,6 +77,7 @@ a{color:var(--acc)}button{font:inherit;color:inherit}
 <div id="toast" role="status"></div>
 
 <script src="../lib/pdf.min.js"></script>
+<script src="../lib/jszip.min.js"></script>
 <script>
 'use strict';
 pdfjsLib.GlobalWorkerOptions.workerSrc='../lib/pdf.worker.min.js';
@@ -86,7 +88,12 @@ function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clea
 /* ---- storage: the current app's data is only READ; v2 writes under pp2: keys ---- */
 function idb(){return new Promise((res,rej)=>{const r=indexedDB.open('pdfpair',1);r.onupgradeneeded=()=>r.result.createObjectStore('files');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
 async function idbGet(k){try{const db=await idb();return await new Promise(res=>{const r=db.transaction('files').objectStore('files').get(k);r.onsuccess=()=>res(r.result||null);r.onerror=()=>res(null)})}catch(e){return null}}
-const oldLib=()=>{try{return JSON.parse(localStorage.getItem('pp:lib'))||{}}catch(e){return {}}};
+function idb2(){return new Promise((res,rej)=>{const r=indexedDB.open('pdfpair2',1);r.onupgradeneeded=()=>r.result.createObjectStore('files');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+async function idb2Get(k){try{const db=await idb2();return await new Promise(res=>{const r=db.transaction('files').objectStore('files').get(k);r.onsuccess=()=>res(r.result||null);r.onerror=()=>res(null)})}catch(e){return null}}
+async function idb2Put(k,v){const db=await idb2();await new Promise((res,rej)=>{const t=db.transaction('files','readwrite');t.objectStore('files').put(v,k);t.oncomplete=res;t.onerror=()=>rej(t.error)})}
+/* library: the current app's own library if this browser has one, else the copy loaded from a backup */
+const oldLib=()=>{let l={};try{l=JSON.parse(localStorage.getItem('pp:lib'))||{}}catch(e){}if((l.sets||[]).length)return l;try{return JSON.parse(localStorage.getItem('pp2:lib'))||{}}catch(e){return {}}};
+async function getPdf(id){const a=await idbGet('blob:'+id);if(a)return a.blob||a;const b=await idb2Get('blob:'+id);return b||null}
 const S={get(k,d){try{const v=localStorage.getItem('pp2:'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem('pp2:'+k,JSON.stringify(v))}catch(e){toast('Could not save: storage is full')}}};
 
 /* ---- library ---- */
@@ -101,7 +108,7 @@ function renderLib(){
   $('#ltitle').textContent=curSubj||'Library';
   const mine=sets.filter(x=>x.subject===curSubj);
   $('#lsub').textContent=mine.length?mine.length+' PDF sets':'';
-  if(!sets.length){$('#groups').innerHTML='<div class="empty">No PDFs found yet. Add them in the current app first (they show up here by themselves).</div>';return}
+  if(!sets.length){$('#groups').innerHTML='<div class="empty">No PDFs in this browser yet.<br>Open this page in the browser where you use PDF Pair, or use <b>Open a backup…</b> (bottom left) with your PDF Pair backup zip.</div>';return}
   const by={};mine.forEach(x=>(by[x.type||'oth']=by[x.type||'oth']||[]).push(x));
   $('#groups').innerHTML=ORDER.filter(t=>by[t]).map(t=>`<section class="grp"><h2>${esc((TYPE[t]||t).toUpperCase())}</h2>${by[t].map(rowHtml).join('')}</section>`).join('')||'<div class="empty">Nothing in this subject yet.</div>';
 }
@@ -117,9 +124,9 @@ $('#groups').onclick=e=>{const b=e.target.closest('[data-open]');if(b)openPdf(b.
 /* ---- viewer: continuous pages, rendered only when near the screen ---- */
 const V={doc:null,id:null,zoom:null,base:null,pages:[],obs:null,tasks:new Map()};
 async function openPdf(id,name){
-  const rec=await idbGet('blob:'+id);
-  if(!rec){toast('This PDF is not on this device');return}
-  const blob=rec.blob||rec;let doc;
+  const blob=await getPdf(id);
+  if(!blob){toast('This PDF is not on this device');return}
+  let doc;
   try{doc=await pdfjsLib.getDocument({data:new Uint8Array(await blob.arrayBuffer())}).promise}catch(e){toast('Could not open this PDF');return}
   closePdf(true);
   V.doc=doc;V.id=id;$('#vname').textContent=name;
@@ -184,6 +191,18 @@ addEventListener('keydown',e=>{
   else if(e.key==='Escape'){closePdf()}
 });
 addEventListener('beforeunload',savePos);
+
+/* ---- open a backup zip: copied into v2's own storage, the current app is not touched ---- */
+$('#bkBtn').onclick=()=>$('#bkFile').click();
+$('#bkFile').onchange=async()=>{const f=$('#bkFile').files[0];$('#bkFile').value='';if(!f)return;
+  try{toast('Reading the backup…');const z=await JSZip.loadAsync(f);const j=z.file('pdfpair.json');if(!j)throw new Error('This zip was not made by PDF Pair');
+    const snap=JSON.parse(await j.async('string'));const pj=snap.projects||{};const lib=pj.lib||snap.lib;if(!lib||!(lib.sets||[]).length)throw new Error('No library found in this backup');
+    const files=Object.keys(z.files).filter(n=>/^blobs\/.+\.pdf$/.test(n));let i=0;
+    for(const n of files){const id=n.slice(6,-4);const b=await z.file(n).async('blob');await idb2Put('blob:'+id,new Blob([b],{type:'application/pdf'}));i++;if(i%5===0)toast('Copying PDFs… '+i+' of '+files.length)}
+    await idb2Put('projects',pj);localStorage.setItem('pp2:lib',JSON.stringify(lib));
+    toast(files.length+' PDFs loaded');renderLib();
+  }catch(e){toast(e.message||'Could not read this backup')}};
+(function(){try{const l=JSON.parse(localStorage.getItem('pp:lib'));if(l&&(l.sets||[]).length){$('#bkInfo').textContent='Using this browser\'s PDF Pair library';}}catch(e){}})();
 
 renderLib();
 </script>
