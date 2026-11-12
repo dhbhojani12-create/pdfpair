@@ -423,7 +423,10 @@ body.t-hl .ov{cursor:var(--hlcur,text);touch-action:none}
 
 /* backup */
 #bBk{position:relative}
-#bBk[hidden]{display:none!important}
+#bBk[hidden],#bInbox[hidden],#bLink[hidden]{display:none!important}
+#libPhone{position:relative}
+#app.phone #libPhone,#app.phone #libSearch{display:none}
+#libPhone.on{border-style:solid;border-color:#2f6fe0;color:#2f6fe0}
 #libRestore{position:relative}
 #libRestore .bdot{top:8px;right:10px;box-shadow:none}
 .bdot{position:absolute;top:6px;right:5px;width:8px;height:8px;border-radius:50%;background:#3fbf6a;box-shadow:0 0 0 2px var(--bar)}
@@ -1009,10 +1012,10 @@ select.tin{appearance:auto}
     <button class="b" id="bUndo" title="Undo (Ctrl+Z)"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button>
     <span class="sepv"></span>
     <button class="b" id="bBk" title="Backup and restore" hidden><svg viewBox="0 0 24 24"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 9.5z"/><path d="M12 11v5M9.5 13.5 12 11l2.5 2.5"/></svg><span>Backup</span><i class="bdot" id="bkDot" hidden></i></button>
-    <button class="b" id="bInbox" title="Marks sent by Claude"><span class="mi">📥</span><span>Claude inbox</span></button>
+    <button class="b" id="bInbox" title="Marks sent by Claude" hidden><span class="mi">📥</span><span>Claude inbox</span></button>
     <button class="b" id="bQuiz" title="Quiz view: case text on the left, tap the options on the right" hidden>📝<span>Quiz</span></button>
     <button class="b" id="bSave" title="Save one linked PDF with stickers, highlights and bookmarks"><svg viewBox="0 0 24 24"><path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/></svg><span>Save PDF</span></button>
-    <button class="b" id="bLink" title="Link your phone as a touch highlighter"><span style="font-size:15px">📱</span><span id="bLinkT">Link phone</span></button>
+    <button class="b" id="bLink" title="Link your phone as a touch highlighter" hidden><span style="font-size:15px">📱</span><span id="bLinkT">Link phone</span></button>
     <button class="b" id="bOpen" title="Library: your sets and subject-wise revision (L)"><svg viewBox="0 0 24 24"><path d="M4 5h4v14H4zM10 5h4v14h-4z"/><path d="M15.2 6.2l3.6-1 3.3 12.9-3.6 1z"/></svg><span>Library</span></button>
   <button class="b" id="bLec" hidden title="Lecture: pick a lecture, it plays in the corner (Alt+Y)">▶ <span>Lecture</span></button><button class="b" id="bMore" title="More: Library, Backup, Save PDF, Phone, Quiz" aria-label="More">⋯<i class="mdot" id="moreDot" hidden></i></button><div id="morePop" hidden></div>
   </div>
@@ -1067,7 +1070,10 @@ select.tin{appearance:auto}
       <div id="setList"></div>
       <div id="selBar" hidden><button class="lnk" id="selAll">Select all</button><span id="selN"></span><button class="btn" id="selDl">⤓ Download</button></div>
       <button class="addset" id="addSet">+ Add a set</button>
+      <button class="addset" id="libSearch" title="Search inside every PDF in your library">🔎 Search PDFs</button>
       <button class="addset" id="libRestore" title="Backup and restore">☁ Backup &amp; restore<i class="bdot" id="bkDot2" hidden></i></button>
+      <button class="addset" id="libInbox" title="Marks sent by Claude">📥 Claude inbox</button>
+      <button class="addset" id="libPhone" title="Link your phone as a touch highlighter">📱 <span id="libPhoneT">Link phone</span></button>
       <button class="addset phlk2" id="libLink">📱 Link to laptop</button>
     </aside>
     <section class="lmain">
@@ -2252,6 +2258,9 @@ function openLinkPhone(){if(!$('#open').hidden)closeDlg();closeLib(true);$('#lib
 $('#phEmGo').addEventListener('click',e=>{e.stopPropagation();openRestore()});
 $('#oLink').addEventListener('click',e=>{e.stopPropagation();openLinkPhone()});
 $('#libLink').addEventListener('click',e=>{e.stopPropagation();openLinkPhone()});
+$('#libInbox').addEventListener('click',e=>{e.stopPropagation();openInbox()});
+$('#libPhone').addEventListener('click',e=>{e.stopPropagation();$('#bLink').click()});
+$('#libSearch').addEventListener('click',e=>{e.stopPropagation();$('#lib').hidden=true;$('#fbar .fsc [data-s="lib"]').click()});
 $('#oDel').addEventListener('click',async()=>{
   const b=$('#oDel'),set=dlg.set;if(!set)return;
   if(!dlg.arm){dlg.arm=true;b.classList.add('arm');b.textContent='Click again to delete it and its marks';return}
@@ -2728,7 +2737,8 @@ if(DESK){
   $('#dkSkip').addEventListener('click',()=>{DK.q.shift();dkShow()});
   $('#dkName').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter')dkAdd()});
   const b=document.createElement('button');b.className='b';b.id='bBrowse';b.title='Built-in browser: PDFs you download there come straight into your library';b.innerHTML='<span class="mi">🌐</span><span>Browser</span>';
-  b.addEventListener('click',()=>window.ppDesktop.openBrowser());$('#morePop').prepend(b);
+  b.addEventListener('click',()=>window.ppDesktop.openBrowser());
+  b.className='addset';b.innerHTML='🌐 Browser';$('#libPhone').after(b);
 }
 
 
@@ -2789,7 +2799,7 @@ if(window.ppDesktop){
   const pop=$('#morePop');$('#app').append(pop);$('#app').append($('#colPop'));
   const place=(el,btn,alignRight)=>{const r=btn.getBoundingClientRect(),a=$('#app').getBoundingClientRect();el.style.bottom=(a.bottom-r.top+8)+'px';
     if(alignRight){el.style.left='';el.style.right=Math.max(8,a.right-r.right)+'px'}else{el.style.right='';el.style.left=Math.max(8,r.left-a.left-40)+'px'}};
-  [['bOpen','📚','Library'],['bSave',null,null],['bLink',null,null],['bQuiz',null,null],['bInbox',null,null],['bSwap','⇄','Swap sides']].forEach(([id,ic,lab])=>{const b=$('#'+id);if(!b)return;
+  [['bOpen','📚','Library'],['bSave',null,null],['bQuiz',null,null],['bSwap','⇄','Swap sides']].forEach(([id,ic,lab])=>{const b=$('#'+id);if(!b)return;
     if(ic&&!b.querySelector('span')){b.innerHTML='<span class="mi">'+ic+'</span><span>'+lab+'</span>'}
     b.classList.remove('qonly');if(id==='bSwap')b.classList.add('qonly');pop.append(b)});
   const closeAll=()=>{pop.hidden=true;$('#colPop').hidden=true};
@@ -2805,7 +2815,7 @@ function hlCursor(){const c=['#ffd400','#5ad66d','#ff6fa5'][prefs.color]||'#ffd4
   document.body.style.setProperty('--hlcur','url("data:image/svg+xml,'+encodeURIComponent(svg)+'") 7 21, text')}
 function updColDot(){try{$('#colDot').style.background=['#ffd400','#5ad66d','#ff6fa5'][prefs.color]||'#ffd400'}catch(e){}try{hlCursor()}catch(e){}}
 function updMoreDot(){try{const d=$('#moreDot');const linked=$('#bLink').classList.contains('on'),bk=!$('#bkDot').hidden;d.hidden=!(linked||bk);d.classList.toggle('warn',bk&&!linked);
-  $('#bMore').title='More: Library, Backup, Save PDF, Phone'+(linked?' (phone linked)':'')+(bk?' · a backup is due':'')}catch(e){}}
+  $('#bMore').title='More: Library, Save PDF, PDF tools'+(linked?' (phone linked)':'')+(bk?' · a backup is due':'')}catch(e){}}
 
 /* ---------- quiz view for the MCQ booklet: case on the left (the real PDF), tap options on the right ---------- */
 var QZ=null;   // {key, cases:[{n,qs:[{n,stem,opts,ans,head,reason}]}]}
@@ -5127,7 +5137,6 @@ function openMore(){
   add('🔒',prefs.wlock?'Unlock width':'Lock width',()=>{prefs.wlock=!prefs.wlock;savePrefs();APP.classList.toggle('wlock',!!prefs.wlock);['q','a','c'].forEach(s=>{const x=P[s];if(prefs.wlock&&x.zoom!==1){x.zoom=1;prefs.zoom[s]=1;layout(x,false)}x.sc.scrollLeft=0});toast(prefs.wlock?'Width locked: pages stay fitted to the screen, pinch and sideways moves are off':'Width unlocked: pinch to zoom again')},!!prefs.wlock);
   add('⊙','Fit width',()=>zoomTo(p,1));
   add('📱','Link to laptop',()=>{$('#linkDlg').hidden=false;renderLinkDlg()});
-  add('📥','Claude inbox',openInbox);
   add(document.fullscreenElement?'⤡':'⛶',document.fullscreenElement?'Exit full screen':'Full screen',phFull);
   $('#phMore').classList.add('open');
 }
@@ -5330,7 +5339,8 @@ function updLinkUI(){
   const ph=SY.role()==='phone'&&syncOk(),lp=SY.role()==='laptop'&&syncOk();
   $('#app').classList.toggle('linked',ph);$('#app').classList.toggle('wlock',!!prefs.wlock||ph);
   if(ph)['q','a','c'].forEach(sd=>{const x=P[sd];if(x.zoom!==1){x.zoom=1;layout(x,false)}x.sc.scrollLeft=0});
-  const b=$('#bLink');if(b){b.classList.toggle('on',lp);$('#bLinkT').textContent=lp?(Date.now()-lkPeer<45000?'Phone linked':'Phone linked (away)'):'Link phone'}
+  const b=$('#bLink');if(b){b.classList.toggle('on',lp);$('#bLinkT').textContent=lp?(Date.now()-lkPeer<45000?'Phone linked':'Phone linked (away)'):'Link phone';
+    const lb=$('#libPhone');if(lb){lb.classList.toggle('on',lp);$('#libPhoneT').textContent=$('#bLinkT').textContent}}
   if(ph){const fresh=Date.now()-lkFollowT<45000;$('#lkStat').classList.toggle('wait',!fresh||!!prefs.phIndep);$('#lkTxt').textContent=prefs.phIndep?'○ On its own · tap to follow':fresh?'● Following laptop':'Waiting for your laptop…'}
   if(!$('#linkDlg').hidden)renderLinkDlg();
 }
