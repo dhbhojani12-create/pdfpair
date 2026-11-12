@@ -432,11 +432,13 @@ body.t-hl .ov{cursor:var(--hlcur,text);touch-action:none}
 /* backup */
 #bBk{position:relative}
 #bBk[hidden],#bInbox[hidden],#bLink[hidden]{display:none!important}
-#libPhone{position:relative}
 #app.phone #libPhone,#app.phone #libSearch{display:none}
-#libPhone.on{border-style:solid;border-color:#2f6fe0;color:#2f6fe0}
-#libRestore{position:relative}
-#libRestore .bdot{top:8px;right:10px;box-shadow:none}
+#libPhone.on{border-color:#2f6fe0;color:#2f6fe0;background:#eef3ff}
+.libtools{display:grid;grid-template-columns:repeat(auto-fit,minmax(46px,1fr));gap:6px;margin-top:8px}
+.lt{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 2px 6px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);font-size:10.5px;font-weight:500;cursor:pointer;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lt:hover{background:var(--hover)}
+.lt .i{font-size:16px;line-height:1.1}
+.lt .bdot{top:5px;right:6px;box-shadow:none}
 .bdot{position:absolute;top:6px;right:5px;width:8px;height:8px;border-radius:50%;background:#3fbf6a;box-shadow:0 0 0 2px var(--bar)}
 .bdot.warn{background:#f0b429}
 .bkpop{width:320px;padding:14px;z-index:48}
@@ -1078,10 +1080,12 @@ select.tin{appearance:auto}
       <div id="setList"></div>
       <div id="selBar" hidden><button class="lnk" id="selAll">Select all</button><span id="selN"></span><button class="btn" id="selDl">⤓ Download</button></div>
       <button class="addset" id="addSet">+ Add a set</button>
-      <button class="addset" id="libSearch" title="Search inside every PDF in your library">🔎 Search PDFs</button>
-      <button class="addset" id="libRestore" title="Backup and restore">☁ Backup &amp; restore<i class="bdot" id="bkDot2" hidden></i></button>
-      <button class="addset" id="libInbox" title="Marks sent by Claude">📥 Claude inbox</button>
-      <button class="addset" id="libPhone" title="Link your phone as a touch highlighter">📱 <span id="libPhoneT">Link phone</span></button>
+      <div class="libtools" role="group" aria-label="Tools">
+        <button class="lt" id="libSearch" title="Search inside every PDF in your library"><span class="i">🔎</span>Search</button>
+        <button class="lt" id="libRestore" title="Backup and restore"><span class="i">☁</span>Backup<i class="bdot" id="bkDot2" hidden></i></button>
+        <button class="lt" id="libInbox" title="Claude inbox: marks sent by Claude"><span class="i">📥</span>Inbox</button>
+        <button class="lt" id="libPhone" title="Link your phone as a touch highlighter"><span class="i">📱</span><span id="libPhoneT">Phone</span></button>
+      </div>
       <button class="addset phlk2" id="libLink">📱 Link to laptop</button>
     </aside>
     <section class="lmain">
@@ -2746,7 +2750,7 @@ if(DESK){
   $('#dkName').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter')dkAdd()});
   const b=document.createElement('button');b.className='b';b.id='bBrowse';b.title='Built-in browser: PDFs you download there come straight into your library';b.innerHTML='<span class="mi">🌐</span><span>Browser</span>';
   b.addEventListener('click',()=>window.ppDesktop.openBrowser());
-  b.className='addset';b.innerHTML='🌐 Browser';$('#libPhone').after(b);
+  b.className='lt';b.innerHTML='<span class="i">🌐</span>Browser';$('#libPhone').after(b);
 }
 
 
@@ -5296,7 +5300,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='12 Nov 07:54';   // build label, so you can check both devices have the same version
+const APPV='12 Nov 07:56';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
@@ -5348,7 +5352,7 @@ function updLinkUI(){
   $('#app').classList.toggle('linked',ph);$('#app').classList.toggle('wlock',!!prefs.wlock||ph);
   if(ph)['q','a','c'].forEach(sd=>{const x=P[sd];if(x.zoom!==1){x.zoom=1;layout(x,false)}x.sc.scrollLeft=0});
   const b=$('#bLink');if(b){b.classList.toggle('on',lp);$('#bLinkT').textContent=lp?(Date.now()-lkPeer<45000?'Phone linked':'Phone linked (away)'):'Link phone';
-    const lb=$('#libPhone');if(lb){lb.classList.toggle('on',lp);$('#libPhoneT').textContent=$('#bLinkT').textContent}}
+    const lb=$('#libPhone');if(lb){lb.classList.toggle('on',lp);$('#libPhoneT').textContent=lp?(Date.now()-lkPeer<45000?'Linked':'Away'):'Phone';lb.title=lp?$('#bLinkT').textContent+'. Click for the link window':'Link your phone as a touch highlighter'}}
   if(ph){const fresh=Date.now()-lkFollowT<45000;$('#lkStat').classList.toggle('wait',!fresh||!!prefs.phIndep);$('#lkTxt').textContent=prefs.phIndep?'○ On its own · tap to follow':fresh?'● Following laptop':'Waiting for your laptop…'}
   if(!$('#linkDlg').hidden)renderLinkDlg();
 }
