@@ -3580,6 +3580,8 @@ async function pdRun(manual,kind){
   finally{PD.busy=false;PD.prog=null;updBk()}
 }
 async function pdBackups(){   // newest first, from every account
+  try{await PD.refreshAll()}catch(e){}   // renew expired sign-ins first, or their backups are missed
+  PD.missed=PD.accs().filter(a=>!PD.isLive(a)).map(a=>a.email.split('@')[0]);
   const out=[];await Promise.allSettled(PD.live().map(async a=>{const id=await PD.path(a,PD.PATH,false);if(!id)return;
     (await PD.list(a,id," and name contains 'PDF Pair' and mimeType='application/json'")).forEach(f=>out.push(Object.assign(f,{email:a.email})))}));
   const seen=new Set();   // same backup can be listed twice: show it once
@@ -3716,7 +3718,9 @@ function renderBk(){
       h+='<label><input type="checkbox" data-b="pd-pdfs"'+(o.pdfs?' checked':'')+'><span><b>PDFs and pictures too</b>: each is uploaded once; new or changed PDFs go up automatically</span></label>';
       h+=PD.deadHtml().replace('class="pddead"','class="pddead" style="border-radius:7px;margin:0 0 8px"');
       h+='<div class="row2">'+(o.on?'':'<button class="btn" data-b="pd-on">Turn on</button>')+'<button class="btn'+(o.on?'':' ghost')+'" data-b="pd-now">Back up now</button><button class="btn ghost" data-b="pd-list">Restore…</button>'+(o.on?'<button class="btn ghost" data-b="pd-off">Turn off</button>':'')+'</div>';
-      if(PD.list_)h+='<div class="pdlist">'+(PD.list_.length?PD.list_.map((f,i)=>'<button class="it" data-b="pd-r'+i+'">'+esc(f.name.replace(/\.json$/,''))+'<small>'+esc(f.email.split('@')[0])+(f.size?' · '+fmtSz(+f.size):'')+'</small></button>').join(''):'<p class="stt">No PoolDrive backups yet.</p>')+'</div>';
+      if(PD.list_){const lb=f=>{const m=/^PDF Pair latest – (.+?)( \w{4})?\.json$/.exec(f.name);return m?'Latest from '+(m[2]&&m[1]+m[2]===PD.dev()?'this '+m[1].toLowerCase():m[1]):(/\(check\)/.test(f.name)?'Check copy':'Dated copy')};
+        h+='<div class="pdlist">'+(PD.list_.length?PD.list_.map((f,i)=>'<button class="it" data-b="pd-r'+i+'">'+esc(lb(f))+' · '+esc(when(Date.parse(f.modifiedTime)))+'<small>'+esc(f.email.split('@')[0])+(f.size?' · '+fmtSz(+f.size):'')+'</small></button>').join(''):'<p class="stt">No PoolDrive backups yet.</p>')+
+          (PD.missed&&PD.missed.length?'<p class="stt" style="margin:6px 0 0"><b>Not checked:</b> '+esc(PD.missed.join(', '))+' (sign-in expired). Reconnect in PoolDrive to see backups saved there.</p>':'')+'</div>'}
       h+='</div>';}
     }
     pop.classList.toggle('pdon',PD.has());
@@ -5398,7 +5402,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='12 Nov 09:17';   // build label, so you can check both devices have the same version
+const APPV='12 Nov 09:24';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)

@@ -182,3 +182,8 @@ PoolDrive (`dhbhojani12-create/PoolDrive`, https://dhbhojani12-create.github.io/
 ## PoolDrive backup box readable in dark mode (12 Nov 09:17)
 - The PoolDrive box in the Backup popup had a fixed light background, so in dark mode its text was nearly invisible. It now uses a soft purple tint that works in both themes.
 - The PoolDrive restore list hides duplicate entries (same file listed twice).
+
+## PoolDrive restore list: clearer and complete (12 Nov 09:24)
+- Before listing, expired sign-ins are renewed, so backups in every account show (before, accounts with an expired 1-hour sign-in were silently skipped).
+- Each entry now says what it is and when, in local time: "Latest from Laptop · today 2:50 PM", "Dated copy · …". File names use UTC time, which was confusing.
+- If an account still can't be checked, the list says which one.
