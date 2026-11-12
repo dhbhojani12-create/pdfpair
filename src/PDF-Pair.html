@@ -3665,11 +3665,16 @@ async function bkAction(a){
     }
     else if(a==='full'){
       if(!window.JSZip){toast('The zip maker could not load. Check your internet connection.');return}
-      toast('Packing your backup…');const z=new JSZip();const snap=snapshot();const ids=[];
-      for(const set of LIB.sets)for(const sd of ['q','a'])for(const f0 of set.files[sd]){if(ids.includes(f0.id))continue;const b0=await idbGet('blob:'+f0.id);if(b0){z.file('blobs/'+f0.id+'.pdf',b0);ids.push(f0.id)}}
+      closePop();   // show progress in the toast; the popup would hide it
+      const z=new JSZip();const snap=snapshot();const ids=[];let bytes=0;
+      const all=[];for(const set of LIB.sets)for(const sd of ['q','a'])for(const f0 of set.files[sd])if(!all.includes(f0.id))all.push(f0.id);
+      for(let i=0;i<all.length;i++){toast('Collecting your PDFs… '+(i+1)+' of '+all.length);const b0=await idbGet('blob:'+all[i]);if(b0){z.file('blobs/'+all[i]+'.pdf',b0,{binary:true});ids.push(all[i]);bytes+=b0.size}}
       snap.blobs=ids;const im=[];for(const k in snap.projects){const pj=snap.projects[k];for(const m of (pj&&pj.imgs)||[]){if(im.includes(m.id))continue;const b1=await idbGet('img:'+m.id);if(b1){z.file('imgs/'+m.id+(b1.type==='image/jpeg'?'.jpg':'.png'),b1);im.push(m.id)}}}
       if(im.length)snap.imgs=im;z.file('pdfpair.json',JSON.stringify(snap));
-      const blob=await z.generateAsync({type:'blob'});
+      let blob;const mb=Math.round(bytes/1048576);
+      try{blob=await z.generateAsync({type:'blob',compression:'STORE',streamFiles:true},m=>toast('Packing '+ids.length+' PDFs ('+mb+' MB)… '+Math.floor(m.percent)+'%'))}
+      catch(err){toast('Could not pack '+mb+' MB of PDFs on this device ('+(err&&err.message||err)+'). Try PoolDrive backup in Chrome, or back up fewer sets with Library → Select → Download.');return}
+      toast('Saving the backup ('+mb+' MB)… choose where to save it');
       await saveFile('PDF Pair full backup '+stamp().slice(0,10)+'.zip',blob);
       if(!AB.dir){AB.last={at:Date.now(),n:countQ(snap),where:'download'};LS.set('pp:ab',AB.last)}
     }
