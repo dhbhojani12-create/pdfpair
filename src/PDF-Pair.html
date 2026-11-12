@@ -423,6 +423,9 @@ body.t-hl .ov{cursor:var(--hlcur,text);touch-action:none}
 
 /* backup */
 #bBk{position:relative}
+#bBk[hidden]{display:none!important}
+#libRestore{position:relative}
+#libRestore .bdot{top:8px;right:10px;box-shadow:none}
 .bdot{position:absolute;top:6px;right:5px;width:8px;height:8px;border-radius:50%;background:#3fbf6a;box-shadow:0 0 0 2px var(--bar)}
 .bdot.warn{background:#f0b429}
 .bkpop{width:320px;padding:14px;z-index:48}
@@ -1005,7 +1008,7 @@ select.tin{appearance:auto}
     <button class="b" data-t="erase" title="Eraser (E): click a sticker or highlight"><svg viewBox="0 0 24 24"><path d="M20 20H9L4 15a2 2 0 0 1 0-3l8-8a2 2 0 0 1 3 0l5 5a2 2 0 0 1 0 3l-8 8"/><path d="M8 11l6 6"/></svg></button>
     <button class="b" id="bUndo" title="Undo (Ctrl+Z)"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button>
     <span class="sepv"></span>
-    <button class="b" id="bBk" title="Backup and restore"><svg viewBox="0 0 24 24"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 9.5z"/><path d="M12 11v5M9.5 13.5 12 11l2.5 2.5"/></svg><span>Backup</span><i class="bdot" id="bkDot" hidden></i></button>
+    <button class="b" id="bBk" title="Backup and restore" hidden><svg viewBox="0 0 24 24"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 9.5z"/><path d="M12 11v5M9.5 13.5 12 11l2.5 2.5"/></svg><span>Backup</span><i class="bdot" id="bkDot" hidden></i></button>
     <button class="b" id="bInbox" title="Marks sent by Claude"><span class="mi">📥</span><span>Claude inbox</span></button>
     <button class="b" id="bQuiz" title="Quiz view: case text on the left, tap the options on the right" hidden>📝<span>Quiz</span></button>
     <button class="b" id="bSave" title="Save one linked PDF with stickers, highlights and bookmarks"><svg viewBox="0 0 24 24"><path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/></svg><span>Save PDF</span></button>
@@ -1064,7 +1067,7 @@ select.tin{appearance:auto}
       <div id="setList"></div>
       <div id="selBar" hidden><button class="lnk" id="selAll">Select all</button><span id="selN"></span><button class="btn" id="selDl">⤓ Download</button></div>
       <button class="addset" id="addSet">+ Add a set</button>
-      <button class="addset" id="libRestore">⟲ Restore a backup</button>
+      <button class="addset" id="libRestore" title="Backup and restore">☁ Backup &amp; restore<i class="bdot" id="bkDot2" hidden></i></button>
       <button class="addset phlk2" id="libLink">📱 Link to laptop</button>
     </aside>
     <section class="lmain">
@@ -2242,9 +2245,9 @@ const slotTake={};
   sl.addEventListener('drop',e=>{e.preventDefault();sl.classList.remove('over');const f=e.dataTransfer.files[0];if(f)take(f)});
 });
 $('#oCancel').addEventListener('click',closeDlg);
-function openRestore(){if(!$('#open').hidden)closeDlg();closePop();$('#bBk').click();const fi=$('#bkFile');if(fi)fi.click()}
+function openRestore(){if(!$('#open').hidden)closeDlg();closePop();openBk($('#libRestore'));const fi=$('#bkFile');if(fi)fi.click()}
 $('#oRestore').addEventListener('click',e=>{e.stopPropagation();openRestore()});
-$('#libRestore').addEventListener('click',e=>{e.stopPropagation();openRestore()});
+$('#libRestore').addEventListener('click',e=>{e.stopPropagation();openBk($('#libRestore'))});
 function openLinkPhone(){if(!$('#open').hidden)closeDlg();closeLib(true);$('#lib').hidden=true;$('#linkDlg').hidden=false;renderLinkDlg()}
 $('#phEmGo').addEventListener('click',e=>{e.stopPropagation();openRestore()});
 $('#oLink').addEventListener('click',e=>{e.stopPropagation();openLinkPhone()});
@@ -2786,7 +2789,7 @@ if(window.ppDesktop){
   const pop=$('#morePop');$('#app').append(pop);$('#app').append($('#colPop'));
   const place=(el,btn,alignRight)=>{const r=btn.getBoundingClientRect(),a=$('#app').getBoundingClientRect();el.style.bottom=(a.bottom-r.top+8)+'px';
     if(alignRight){el.style.left='';el.style.right=Math.max(8,a.right-r.right)+'px'}else{el.style.right='';el.style.left=Math.max(8,r.left-a.left-40)+'px'}};
-  [['bOpen','📚','Library'],['bBk',null,null],['bSave',null,null],['bLink',null,null],['bQuiz',null,null],['bInbox',null,null],['bSwap','⇄','Swap sides']].forEach(([id,ic,lab])=>{const b=$('#'+id);if(!b)return;
+  [['bOpen','📚','Library'],['bSave',null,null],['bLink',null,null],['bQuiz',null,null],['bInbox',null,null],['bSwap','⇄','Swap sides']].forEach(([id,ic,lab])=>{const b=$('#'+id);if(!b)return;
     if(ic&&!b.querySelector('span')){b.innerHTML='<span class="mi">'+ic+'</span><span>'+lab+'</span>'}
     b.classList.remove('qonly');if(id==='bSwap')b.classList.add('qonly');pop.append(b)});
   const closeAll=()=>{pop.hidden=true;$('#colPop').hidden=true};
@@ -3566,19 +3569,28 @@ async function autoRun(force){
 function updBk(){
   const d=$('#bkDot');let c=null;
   if(AB.dir)c=AB.state==='on'?'ok':'warn';
-  if(PD.has()&&PD.opt().on)c=PD.state==='signin'||PD.state==='err'||PD.state==='warn'?'warn':(c||'ok');
   else if(!AB.last||Date.now()-AB.last.at>3*864e5)c='warn';
+  if(PD.has()&&PD.opt().on)c=PD.state==='signin'||PD.state==='err'||PD.state==='warn'?'warn':(AB.dir?c:'ok');
   d.hidden=!c;d.classList.toggle('warn',c==='warn');
+  const d2=$('#bkDot2');if(d2){d2.hidden=!c;d2.classList.toggle('warn',c==='warn')}
   $('#bBk').title=AB.dir?(AB.state==='on'?'Auto backup on. Last: '+when(AB.last&&AB.last.at):'Auto backup paused. Click to allow the folder again'):'Backup and restore'+(c?'. No recent backup':'');
+  $('#libRestore').title=$('#bBk').title;
   if(bkOpen)renderBk();
 }
 let bkOpen=false,bkConfirm=null;
-$('#bBk').addEventListener('click',e=>{e.stopPropagation();if(closePop())return;bkOpen=true;bkConfirm=null;
+// Backup and restore lives in the Library ("☁ Backup & restore"), not on the PDF screen
+let bkAnchor=null;
+function openBk(anchor){if(closePop()&&bkAnchor===anchor)return;bkOpen=true;bkConfirm=null;bkAnchor=anchor||$('#libRestore');
+  if($('#lib').hidden&&bkAnchor===$('#libRestore'))openLib();
   pop=document.createElement('div');pop.className='pop bkpop';$('#app').append(pop);pop.addEventListener('pointerdown',ev=>ev.stopPropagation());
   renderBk();
-});
-function placeBk(){if(!pop)return;const br=($('#bBk').offsetParent?$('#bBk'):$('#bMore')).getBoundingClientRect(),ar=$('#app').getBoundingClientRect();
-  pop.style.left=clamp(br.left-ar.left-150,16,ar.width-pop.offsetWidth-16)+'px';pop.style.bottom=(ar.bottom-br.top+12)+'px'}
+}
+$('#bBk').addEventListener('click',e=>{e.stopPropagation();openBk($('#libRestore'))});
+function placeBk(){if(!pop)return;const ar=$('#app').getBoundingClientRect(),w=pop.offsetWidth;
+  const an=bkAnchor&&bkAnchor.offsetParent?bkAnchor:null;
+  if(an){const r=an.getBoundingClientRect();
+    if(r.right-ar.left+12+w<=ar.width-8){pop.style.left=(r.right-ar.left+12)+'px';pop.style.bottom=Math.max(8,ar.bottom-r.bottom)+'px';return}}
+  pop.style.left=Math.max(8,(ar.width-w)/2)+'px';pop.style.bottom='16px'}
 function renderBk(){
   if(!pop||!pop.classList.contains('bkpop')){bkOpen=false;return}
   let h='<h4>Backup</h4>';
@@ -5110,7 +5122,6 @@ function openMore(){
   add('🔖','Bookmark page',()=>{if(p.pages.length)toggleBm(p.side,curPage(p))},!!(p.pages.length&&(st.bm[p.side]||[]).includes(curPage(p))));
   add('#','Next number',()=>setTimeout(()=>$('#bNum').click(),0),false,cs);
   add('⤓','Save PDF',()=>$('#bSave').click());
-  add('☁','Backup',()=>setTimeout(()=>$('#bBk').click(),0));
   add('📚','Library',()=>openLib());
   add('＋','Add PDF below',()=>$('.abtn',p.el)&&$('.abtn',p.el).click(),false,p.side==='c');
   add('🔒',prefs.wlock?'Unlock width':'Lock width',()=>{prefs.wlock=!prefs.wlock;savePrefs();APP.classList.toggle('wlock',!!prefs.wlock);['q','a','c'].forEach(s=>{const x=P[s];if(prefs.wlock&&x.zoom!==1){x.zoom=1;prefs.zoom[s]=1;layout(x,false)}x.sc.scrollLeft=0});toast(prefs.wlock?'Width locked: pages stay fitted to the screen, pinch and sideways moves are off':'Width unlocked: pinch to zoom again')},!!prefs.wlock);
@@ -5449,7 +5460,7 @@ async function phoneRtc(o){
 async function takeShared(files){
   files=[...files].filter(Boolean);if(!files.length)return;
   const pack=files.find(f=>/\.(zip|json)$/i.test(f.name)||/zip|json/.test(f.type));
-  if(pack){if(!$('#open').hidden)closeDlg();$('#lib').hidden=true;$('#bBk').click();await readBackup(pack);return}
+  if(pack){if(!$('#open').hidden)closeDlg();openBk($('#libRestore'));await readBackup(pack);return}
   const pdfs=files.filter(f=>/\.pdf$/i.test(f.name)||f.type==='application/pdf');if(!pdfs.length){toast('Only PDFs and PDF Pair backups can be added');return}
   // a PDF this phone already knows (same name and size) but whose file is missing: just put it back
   const left=[];let fixed=null;
