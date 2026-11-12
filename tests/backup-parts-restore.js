@@ -1,0 +1,10 @@
+const {chromium}=require('playwright');const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);const fs=require('fs');
+(async()=>{const b=await chromium.launch({args:['--no-proxy-server']});const p=await (await b.newContext({viewport:{width:1300,height:860}})).newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));
+await p.route('https://cdnjs.cloudflare.com/**',r=>{const u=r.request().url();const f=u.includes('qrcode')?'node_modules/qrcode-generator/qrcode.js':u.includes('jszip')?'node_modules/jszip/dist/jszip.min.js':u.includes('pdf-lib')?'node_modules/pdf-lib/dist/pdf-lib.min.js':'node_modules/pdfjs-dist/build/'+(u.endsWith('worker.min.js')?'pdf.worker.min.js':'pdf.min.js');r.fulfill({path:f,contentType:'application/javascript'})});
+await p.route('https://fonts.**',r=>r.fulfill({body:'',contentType:'text/css'}));
+await p.goto('http://127.0.0.1:9300/app.html');await p.waitForTimeout(2000);
+const parts=fs.readdirSync('/tmp/claude-0').filter(f=>f.startsWith('parts-')).map(f=>'/tmp/claude-0/'+f);
+for(const f of parts){await p.evaluate(()=>{let i=document.querySelector('#tbk');if(!i){i=document.createElement('input');i.type='file';i.id='tbk';document.body.append(i)}});await p.setInputFiles('#tbk',f);
+  const r=await p.evaluate(async()=>{const f=document.querySelector('#tbk').files[0];await __ppTest.readBackup(f);const c=__ppTest.bkc();if(!c)return 'no read';await __ppTest.doRestore(c);return 'ok'}).catch(e=>'ERR '+e.message);console.log(f,r);await p.waitForTimeout(1500)}
+const s=await p.evaluate(async()=>{const L=JSON.parse(localStorage.getItem('pp:lib'));let have=0;for(const set of L.sets){const id=set.files.q[0].id;const db=await new Promise(r=>{const q=indexedDB.open('pdfpair');q.onsuccess=()=>r(q.result)});const b=await new Promise(r=>{const g=db.transaction('files').objectStore('files').get('blob:'+id);g.onsuccess=()=>r(g.result)});if(b)have++}return {sets:L.sets.length,have}});
+ok(s.sets===3&&s.have===3,'restoring all parts brings back every PDF: '+JSON.stringify(s));console.log(errs);await b.close()})();

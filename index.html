@@ -3674,17 +3674,25 @@ async function bkAction(a){
     else if(a==='full'){
       if(!window.JSZip){toast('The zip maker could not load. Check your internet connection.');return}
       closePop();   // show progress in the toast; the popup would hide it
-      const z=new JSZip();const snap=snapshot();const ids=[];let bytes=0;
-      const all=[];for(const set of LIB.sets)for(const sd of ['q','a'])for(const f0 of set.files[sd])if(!all.includes(f0.id))all.push(f0.id);
-      for(let i=0;i<all.length;i++){toast('Collecting your PDFs… '+(i+1)+' of '+all.length);const b0=await idbGet('blob:'+all[i]);if(b0){z.file('blobs/'+all[i]+'.pdf',b0,{binary:true});ids.push(all[i]);bytes+=b0.size}}
-      snap.blobs=ids;const im=[];for(const k in snap.projects){const pj=snap.projects[k];for(const m of (pj&&pj.imgs)||[]){if(im.includes(m.id))continue;const b1=await idbGet('img:'+m.id);if(b1){z.file('imgs/'+m.id+(b1.type==='image/jpeg'?'.jpg':'.png'),b1);im.push(m.id)}}}
-      if(im.length)snap.imgs=im;z.file('pdfpair.json',JSON.stringify(snap));
-      let blob;const mb=Math.round(bytes/1048576);
-      try{blob=await z.generateAsync({type:'blob',compression:'STORE',streamFiles:true},m=>toast('Packing '+ids.length+' PDFs ('+mb+' MB)… '+Math.floor(m.percent)+'%'))}
-      catch(err){toast('Could not pack '+mb+' MB of PDFs on this device ('+(err&&err.message||err)+'). Try PoolDrive backup in Chrome, or back up fewer sets with Library → Select → Download.');return}
-      toast('Saving the backup ('+mb+' MB)… choose where to save it');
-      await saveFile('PDF Pair full backup '+stamp().slice(0,10)+'.zip',blob);
-      if(!AB.dir){AB.last={at:Date.now(),n:countQ(snap),where:'download'};LS.set('pp:ab',AB.last)}
+      // big libraries are split into parts of about 300 MB, so packing never runs out of memory (each part is a complete backup you can restore)
+      const PART=(window.__bkPartMB||300)*1048576;const all=[],seen=new Set();
+      for(const set of LIB.sets)for(const sd of ['q','a'])for(const f0 of set.files[sd]||[])if(!seen.has(f0.id)){seen.add(f0.id);all.push(f0.id)}
+      const items=[];let total=0;for(let i=0;i<all.length;i++){toast('Checking your PDFs… '+(i+1)+' of '+all.length);const b0=await idbGet('blob:'+all[i]);if(b0){items.push({id:all[i],size:b0.size||0});total+=b0.size||0}}
+      const parts=[];let curp=[],cur=0;for(const it of items){if(curp.length&&cur+it.size>PART){parts.push(curp);curp=[];cur=0}curp.push(it);cur+=it.size}if(curp.length||!parts.length)parts.push(curp);
+      const N=parts.length,day=stamp().slice(0,10),mbAll=Math.round(total/1048576);let savedN=0;
+      for(let k=0;k<N;k++){const part=parts[k],tag=N>1?' (part '+(k+1)+' of '+N+')':'';
+        let z=new JSZip();const snap=snapshot();snap.blobs=[];if(N>1)snap.part={n:k+1,of:N};let bytes=0;
+        for(let i=0;i<part.length;i++){toast('Collecting PDFs'+tag+'… '+(i+1)+' of '+part.length);const b0=await idbGet('blob:'+part[i].id);if(b0){z.file('blobs/'+part[i].id+'.pdf',b0,{binary:true});snap.blobs.push(part[i].id);bytes+=b0.size}}
+        if(k===0){const im=[];for(const key0 in snap.projects){const pj=snap.projects[key0];for(const m of (pj&&pj.imgs)||[]){if(im.includes(m.id))continue;const b1=await idbGet('img:'+m.id);if(b1){z.file('imgs/'+m.id+(b1.type==='image/jpeg'?'.jpg':'.png'),b1);im.push(m.id)}}}if(im.length)snap.imgs=im}
+        z.file('pdfpair.json',JSON.stringify(snap));
+        let blob;const mb=Math.round(bytes/1048576);
+        try{blob=await z.generateAsync({type:'blob',compression:'STORE',streamFiles:true},m=>toast('Packing'+tag+': '+snap.blobs.length+' PDFs ('+mb+' MB)… '+Math.floor(m.percent)+'%'))}
+        catch(err){toast('Could not pack'+tag+' ('+(err&&err.message||err)+'). '+(savedN?savedN+' part(s) were saved. ':'')+'Try again, or back up fewer sets with Library → Select → Download.');return}
+        z=null;toast('Saving'+tag+' ('+mb+' MB)… choose where to save it');
+        try{await saveFile('PDF Pair full backup '+day+(N>1?' part '+(k+1)+' of '+N:'')+'.zip',blob)}catch(err){toast('Could not save'+tag+': '+(err&&err.message||err));return}
+        blob=null;savedN++;if(k<N-1)await new Promise(r=>setTimeout(r,1500))}
+      toast(N>1?'✓ Backup saved in '+N+' parts ('+mbAll+' MB). Keep all '+N+' files; restore each one to get every PDF back':'✓ Backup saved ('+mbAll+' MB)');
+      if(!AB.dir){AB.last={at:Date.now(),n:countQ(snapshot()),where:'download'};LS.set('pp:ab',AB.last)}
     }
     else if(a==='restore-pick'){$('#bkFile',pop).click();return}
     else if(a==='cancel'){bkConfirm=null}
@@ -4438,7 +4446,7 @@ window.addEventListener('keydown',e=>{if(!e.altKey||e.ctrlKey||e.metaKey)return;
 window.addEventListener('pagehide',()=>lpSavePos(true));
 window.__ppLec={LP,ytId,ytParse,lpOpen,lpAct,lecOpen};
 window.__ppFind={FX,fxSearch,fxOpen,fxOcr,ocrPage,showSetDialog,CAP,capTake};
-window.__ppTest={due,autoRun,AB,bkAction,allNums,save,renderAll,key:()=>key,getSt:()=>st,sharedDoc:()=>!!P.q.docs[0]&&P.q.docs[0]===P.a.docs[0],openDocs:()=>DOCS.size};
+window.__ppTest={due,autoRun,AB,bkAction,readBackup,doRestore,bkc:()=>bkConfirm,allNums,save,renderAll,key:()=>key,getSt:()=>st,sharedDoc:()=>!!P.q.docs[0]&&P.q.docs[0]===P.a.docs[0],openDocs:()=>DOCS.size};
 // make a set from a question/answer pair that has no set yet (old saved pair, or an old backup)
 async function adoptPair(q,a){
   const norm=x=>!x?[]:Array.isArray(x)?x:[x];const qs=norm(q),as=norm(a);
@@ -5305,7 +5313,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='12 Nov 08:00';   // build label, so you can check both devices have the same version
+const APPV='12 Nov 13:37';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
