@@ -3374,10 +3374,18 @@ PD.setOpt=o=>LS.set('pdb:cfg',Object.assign(PD.opt(),o));
 PD.qs=o=>new URLSearchParams(o).toString();
 PD.q=s=>String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
 class PDAuth extends Error{constructor(a){super('Sign-in expired for '+(a&&a.email));this.acc=a}}
-PD.api=async(a,path,opts={})=>{
-  if(!PD.isLive(a))throw new PDAuth(a);
+// "Stay signed in": PoolDrive's helper (cfg.authUrl, the user's own Apps Script) turns a long-term key into fresh sign-ins
+PD._rf={};
+PD.refresh=a=>{const url=PD.cfg().authUrl;if(!a||!a.rt||!url)return Promise.resolve(null);if(PD._rf[a.email])return PD._rf[a.email];
+  return PD._rf[a.email]=(async()=>{try{const j=await (await fetch(url,{method:'POST',body:JSON.stringify({op:'refresh',refresh_token:a.rt})})).json();
+    if(j.error){if(/invalid_grant/i.test(j.error))PD.put({email:a.email,rt:null});return null}
+    const t={email:a.email,token:j.access_token,exp:Date.now()+j.expires_in*1000};if(j.refresh_token)t.rt=j.refresh_token;PD.put(t);return Object.assign(a,t)}
+    catch(e){return null}finally{delete PD._rf[a.email]}})()};
+PD.refreshAll=async()=>{const due=PD.accs().filter(a=>a.rt&&a.exp<Date.now()+5*60e3);if(due.length)await Promise.all(due.map(PD.refresh));return due.length};
+PD.api=async(a,path,opts={},retry=true)=>{
+  if(!PD.isLive(a)){const f=await PD.refresh(a);if(!f)throw new PDAuth(a);a=f}
   const r=await fetch(path.startsWith('http')?path:PD.API+path,Object.assign({},opts,{headers:Object.assign({Authorization:'Bearer '+a.token},opts.headers||{})}));
-  if(r.status===401){a.exp=0;PD.put({email:a.email,exp:0});throw new PDAuth(a)}
+  if(r.status===401){a.exp=0;PD.put({email:a.email,exp:0});if(retry&&await PD.refresh(a))return PD.api(a,path,opts,false);throw new PDAuth(a)}
   if(!r.ok){let m='Google Drive error '+r.status;try{m=(await r.json()).error.message||m}catch(e){}throw new Error(m)}
   return opts.raw?r:(r.status===204?null:r.json());
 };
@@ -3388,7 +3396,16 @@ PD.gis=()=>new Promise((res,rej)=>{
 });
 // one tap per account (browsers allow one sign-in window per click)
 PD.reconnect=async a=>{
-  await PD.gis();const SC='https://www.googleapis.com/auth/drive';
+  await PD.gis();const SC='https://www.googleapis.com/auth/drive',url=PD.cfg().authUrl;
+  if(url){   // one sign-in that also gives the long-term key
+    const code=await new Promise((res,rej)=>{google.accounts.oauth2.initCodeClient({client_id:PD.cfg().clientId,scope:SC,ux_mode:'popup',hint:a.email,login_hint:a.email,
+      callback:x=>x.error?rej(new Error(x.error)):res(x.code),error_callback:e=>rej(new Error(e.type==='popup_closed'?'Sign-in window was closed':(e.message||e.type)))}).requestCode()});
+    const j=await (await fetch(url,{method:'POST',body:JSON.stringify({op:'code',code})})).json();if(j.error)throw new Error(j.error_description||j.error);
+    const t={email:a.email,token:j.access_token,exp:Date.now()+j.expires_in*1000};if(j.refresh_token)t.rt=j.refresh_token;
+    const me=await PD.api(t,'about?fields=user(emailAddress),storageQuota(limit,usage)');
+    if(me.user.emailAddress!==a.email)throw new Error('You picked '+me.user.emailAddress+'. Choose '+a.email);
+    t.limit=me.storageQuota.limit?+me.storageQuota.limit:0;t.usage=+me.storageQuota.usage||0;PD.put(t);return t;
+  }
   const r=await new Promise((res,rej)=>{google.accounts.oauth2.initTokenClient({client_id:PD.cfg().clientId,scope:SC,prompt:'',hint:a.email,login_hint:a.email,
     callback:x=>x.error?rej(new Error(x.error)):res(x),error_callback:e=>rej(new Error(e.type==='popup_closed'?'Sign-in window was closed':(e.message||e.type)))}).requestAccessToken({prompt:'',hint:a.email,login_hint:a.email})});
   const t={email:a.email,token:r.access_token,exp:Date.now()+r.expires_in*1000};
@@ -3408,7 +3425,8 @@ PD.path=async(a,names,make)=>{let id='root';
     else if(make)id=(await PD.api(a,'files?fields=id',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,mimeType:PD.FOLDER,parents:[id]})})).id;
     else return null}
   return id};
-PD.uploadP=(a,parent,name,blob,type,onp)=>new Promise((res,rej)=>{   // same as PD.upload, with upload progress
+PD.uploadP=async(a,parent,name,blob,type,onp)=>{if(!PD.isLive(a)){const f=await PD.refresh(a);if(!f)throw new PDAuth(a);a=f}return PD._uploadP(a,parent,name,blob,type,onp)};
+PD._uploadP=(a,parent,name,blob,type,onp)=>new Promise((res,rej)=>{   // same as PD.upload, with upload progress
   if(!PD.isLive(a))return rej(new PDAuth(a));
   const b='pdp'+Math.random().toString(36).slice(2);
   const body=new Blob(['--'+b+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'+JSON.stringify({name,parents:[parent]})+'\r\n--'+b+'\r\nContent-Type: '+type+'\r\n\r\n',blob,'\r\n--'+b+'--']);
@@ -3442,6 +3460,7 @@ function pdPick(side){
 function pdClose(){const el=$('#pdp');if(el)el.remove();PK=null}
 async function pdLoad(){
   if(!PK)return;const seq=++PK.seq;PK.sel=null;
+  try{await PD.refreshAll()}catch(e){}
   $('#pdDead').innerHTML=PD.deadHtml();
   const top=PK.stack[PK.stack.length-1];
   $('#pdCr').innerHTML=PK.q?'<b>Search: “'+esc(PK.q)+'”</b>':PK.stack.map((x,i)=>i===PK.stack.length-1?'<b>'+esc(x.name)+'</b>':'<button data-cr="'+i+'">'+esc(x.name)+'</button><span>›</span>').join('');
@@ -3502,6 +3521,7 @@ PD.latestName=()=>'PDF Pair latest – '+PD.dev()+'.json';
 async function pdRun(manual,kind){
   kind=kind||'history';
   if(PD.busy)return false;
+  try{await PD.refreshAll()}catch(e){}
   if(!PD.live().length){PD.state='signin';updBk();if(manual)toast('Reconnect a PoolDrive account first');return false}
   PD.busy=true;PD.state='busy';PD.prog={phase:'start'};updBk();
   try{
@@ -3578,9 +3598,12 @@ PD.dirty=false;PD.firstDirty=0;PD.dt=0;
 window.pdTouched=()=>{if(!PD.has()||!PD.opt().on)return;PD.dirty=true;const now=Date.now();if(!PD.firstDirty)PD.firstDirty=now;
   clearTimeout(PD.dt);PD.dt=setTimeout(pdFlush,now-PD.firstDirty>5*60e3?2000:60e3)};
 async function pdFlush(){clearTimeout(PD.dt);if(!PD.dirty||!PD.has()||!PD.opt().on)return;
+  try{await PD.refreshAll()}catch(e){}
   if(PD.busy){PD.dt=setTimeout(pdFlush,30e3);return}
   if(!PD.live().length){PD.state='signin';updBk();return}
   await pdRun(false,'latest');updBk()}
+setInterval(async()=>{try{if(await PD.refreshAll()&&PD.state==='signin'){PD.state='';if(PD.dirty)pdFlush();updBk()}}catch(e){}},60e3);
+setTimeout(()=>{PD.refreshAll().then(n=>{if(n)updBk()}).catch(()=>{})},1500);
 setInterval(()=>{if(pdDue()&&PD.live().length)pdRun(false);else if(pdDue()&&PD.state!=='signin'){PD.state='signin';updBk()}},60e3);
 document.addEventListener('visibilitychange',()=>{const o=PD.opt();if(document.visibilityState!=='hidden'||!PD.has()||!o.on||!PD.live().length)return;
   if(PD.dirty)pdFlush();else if(!o.last||Date.now()-o.last.at>3600e3)pdRun(false)});
