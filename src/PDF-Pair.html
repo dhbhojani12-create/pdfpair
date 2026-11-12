@@ -342,6 +342,38 @@ body.t-hl .ov{cursor:var(--hlcur,text);touch-action:none}
 .slot input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
 .slot .fn{font-weight:500;font-size:13px;word-break:break-word}
 .slot .hint{font-size:12px;color:var(--mut)}
+.pdslot{position:relative;z-index:2;align-self:flex-start;display:inline-flex;align-items:center;gap:6px;margin-top:4px;padding:6px 10px;border:1px solid #4f46e5;border-radius:8px;background:#eef0ff;color:#3730a3;font-size:12.5px;font-weight:600;cursor:pointer}
+.pdslot:hover{background:#e0e3ff}
+.pdslot[hidden]{display:none}
+#pdp{position:fixed;inset:0;z-index:90;display:grid;place-items:center;background:rgba(15,17,20,.45);padding:16px}
+#pdp .pcard{width:min(620px,100%);max-height:calc(100vh - 32px);display:flex;flex-direction:column;background:var(--panel);color:var(--ink);border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.35);overflow:hidden}
+#pdp .pdh{padding:16px 18px 12px;display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--line)}
+#pdp .pdh .r1{display:flex;align-items:center;gap:10px}
+#pdp .pdh h3{margin:0;font-size:16px;flex:1}
+#pdp .pdh input{height:38px;padding:0 12px;border:1px solid var(--line);border-radius:9px;background:var(--panel);color:var(--ink);font:inherit;font-size:14px}
+#pdp .pdcr{display:flex;align-items:center;flex-wrap:wrap;gap:4px;font-size:13.5px;color:var(--mut)}
+#pdp .pdcr button{border:0;background:none;color:var(--mut);padding:2px 4px;border-radius:5px;cursor:pointer;font:inherit}
+#pdp .pdcr button:hover{background:var(--hover);color:var(--ink)}
+#pdp .pdcr b{color:var(--ink)}
+#pdp .pdlst{flex:1;overflow:auto;min-height:220px}
+#pdp .pdit{width:100%;display:flex;align-items:center;gap:12px;padding:9px 18px;border:0;border-bottom:1px solid var(--line);background:none;color:var(--ink);text-align:left;font:inherit;font-size:14px;cursor:pointer}
+#pdp .pdit:hover{background:var(--hover)}
+#pdp .pdit.on{background:#eef0ff}
+#pdp .pdit .pdnm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#pdp .pdit small{color:var(--mut);font-size:12px;white-space:nowrap}
+#pdp .pdfic{flex:none;width:28px;height:28px;border-radius:7px;background:#d93f3f;color:#fff;font-size:9px;font-weight:700;display:grid;place-items:center}
+#pdp .pdft{display:flex;align-items:center;gap:8px;padding:12px 18px;border-top:1px solid var(--line);background:var(--chrome)}
+#pdp .pdft span{flex:1;font-size:12.5px;color:var(--mut)}
+#pdp .pdmsg{padding:30px 18px;text-align:center;color:var(--mut);font-size:13.5px}
+#pdp .pddead{padding:10px 18px;background:#fff6e5;color:#7a4b00;font-size:12.5px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.bkpop .pdb{border:1px solid #c7c9f5;background:#f4f4ff;border-radius:9px;padding:10px;margin:0 0 10px}
+.bkpop .pdb h5{margin:0 0 4px;font-size:13px;display:flex;align-items:center;gap:6px;color:#3730a3}
+.bkpop .pdb .stt{margin:0 0 8px}
+.bkpop .pdb label{display:flex;gap:6px;align-items:flex-start;font-size:12px;margin:0 0 8px;color:var(--ink)}
+.bkpop .pdb .row2{flex-wrap:wrap;margin:0}
+.bkpop .pdb .row2 .btn{font-size:12px;padding:6px 10px}
+.bkpop .pdlist{display:flex;flex-direction:column;gap:2px;margin:6px 0 0;max-height:190px;overflow:auto}
+.bkpop.pdon{max-height:calc(100vh - 140px);overflow:auto}
 .how{margin:18px 0 0;padding:14px 0 0;border-top:1px solid var(--line);display:grid;gap:8px;font-size:13px;color:var(--mut)}
 .how div{display:flex;gap:10px;align-items:center}
 .how .badge{width:20px;height:20px;font-size:10px}
@@ -1003,8 +1035,8 @@ select.tin{appearance:auto}
       <p class="sub" id="osub">A set is one question PDF and its answer PDF, like a study module, an MTP, an RTP or a past paper.</p>
       <p class="rstl" id="oRest">Moving from another device? <button class="lnk" id="oRestore">Restore a backup</button><span class="phlk"><br>Using this phone as your laptop's highlighter? <button class="lnk" id="oLink">📱 Link to laptop</button></span></p>
       <div class="slots">
-        <label class="slot" id="slot-q"><input type="file" accept="application/pdf,.pdf" id="fq"><span class="tag" style="align-self:flex-start">QUESTIONS</span><span class="fn">Choose PDF…</span><span class="hint">e.g. the MTP question paper</span></label>
-        <label class="slot" id="slot-a"><input type="file" accept="application/pdf,.pdf" id="fa"><span class="tag" style="align-self:flex-start;background:#2f8f5b">ANSWERS</span><span class="fn">Choose PDF…</span><span class="hint">e.g. its suggested answers</span></label>
+        <label class="slot" id="slot-q"><input type="file" accept="application/pdf,.pdf" id="fq"><span class="tag" style="align-self:flex-start">QUESTIONS</span><span class="fn">Choose PDF…</span><span class="hint">e.g. the MTP question paper</span><button type="button" class="pdslot" data-pd="q" hidden><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 9.5 4.5 4.5 0 0 0 7 18z"/></svg>From PoolDrive</button></label>
+        <label class="slot" id="slot-a"><input type="file" accept="application/pdf,.pdf" id="fa"><span class="tag" style="align-self:flex-start;background:#2f8f5b">ANSWERS</span><span class="fn">Choose PDF…</span><span class="hint">e.g. its suggested answers</span><button type="button" class="pdslot" data-pd="a" hidden><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 9.5 4.5 4.5 0 0 0 7 18z"/></svg>From PoolDrive</button></label>
       </div>
       <label class="ck" id="oSameW"><input type="checkbox" id="oSame"><span>Answers are in the same PDF <small style="color:var(--mut)">(questions and solutions in one file; it is stored and opened only once)</small></span></label>
       <div class="ofl">
@@ -2199,9 +2231,11 @@ function slotShow(s,f){const sl=$('#slot-'+s);sl.classList.toggle('has',!!f);$('
 function sameUI(){const on=$('#oSame').checked;$('#slot-a').classList.toggle('off',on);if(on){dlg.pick.a=null;slotShow('a',{name:'Same PDF as the questions',keep:false})}else slotShow('a',dlg.set&&!dlg.set.same&&dlg.set.files.a.length?{name:dlg.set.files.a.map(f=>f.name).join(' + '),keep:true}:null);updGo()}
 $('#oSame').addEventListener('change',sameUI);
 function updGo(){$('#oGo').disabled=dlg.mode==='add'&&!(dlg.pick.q||dlg.pick.a)}
+const slotTake={};
 ['q','a'].forEach(s=>{
   const inp=$('#f'+s),sl=$('#slot-'+s);
   const take=f=>{dlg.pick[s]=f;slotShow(s,f);if(dlg.mode==='add'&&!$('#oName').value.trim())$('#oName').value=f.name.replace(/\.pdf$/i,'');updGo()};
+  slotTake[s]=take;
   inp.addEventListener('change',()=>{if(inp.files[0])take(inp.files[0]);inp.value=''});
   sl.addEventListener('dragover',e=>{e.preventDefault();sl.classList.add('over')});
   sl.addEventListener('dragleave',()=>sl.classList.remove('over'));
@@ -3298,6 +3332,191 @@ async function saveFile(name,blob){
   setTimeout(()=>URL.revokeObjectURL(a.href),60000);toast('Saved '+name);
 }
 
+
+/* ☁ PoolDrive: pick PDFs from the user's pooled Google Drive and back up there.
+   PoolDrive (dhbhojani12-create.github.io/PoolDrive) runs on the same site, so its Google sign-ins in
+   localStorage are shared. Nothing here changes PoolDrive's settings except refreshed sign-ins. */
+const PD={K:'pooldrive.accounts.v1',C:'pooldrive.cfg.v1',API:'https://www.googleapis.com/drive/v3/',
+  UP:'https://www.googleapis.com/upload/drive/v3/files',FOLDER:'application/vnd.google-apps.folder',
+  PATH:['PDF App Backup','PDF Pair backups'],KEEP:5,state:'',busy:false};
+PD.accs=()=>{try{return JSON.parse(localStorage.getItem(PD.K))||[]}catch(e){return []}};
+PD.cfg=()=>{try{return JSON.parse(localStorage.getItem(PD.C))||{}}catch(e){return {}}};
+PD.frame=(()=>{try{return window.self!==window.top}catch(e){return true}})();
+PD.has=()=>!PD.frame&&PD.accs().length>0&&!!PD.cfg().clientId;
+PD.isLive=a=>!!(a&&a.token&&a.exp>Date.now()+30000);
+PD.live=()=>PD.accs().filter(PD.isLive);
+PD.free=a=>a.limit?Math.max(0,a.limit-(a.usage||0)):Infinity;
+PD.put=a=>{const all=PD.accs(),c=all.find(x=>x.email===a.email);if(c){Object.assign(c,a);localStorage.setItem(PD.K,JSON.stringify(all))}};
+PD.opt=()=>Object.assign({on:false,pdfs:false},LS.get('pdb:cfg')||{});
+PD.setOpt=o=>LS.set('pdb:cfg',Object.assign(PD.opt(),o));
+PD.qs=o=>new URLSearchParams(o).toString();
+PD.q=s=>String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+class PDAuth extends Error{constructor(a){super('Sign-in expired for '+(a&&a.email));this.acc=a}}
+PD.api=async(a,path,opts={})=>{
+  if(!PD.isLive(a))throw new PDAuth(a);
+  const r=await fetch(path.startsWith('http')?path:PD.API+path,Object.assign({},opts,{headers:Object.assign({Authorization:'Bearer '+a.token},opts.headers||{})}));
+  if(r.status===401){a.exp=0;PD.put({email:a.email,exp:0});throw new PDAuth(a)}
+  if(!r.ok){let m='Google Drive error '+r.status;try{m=(await r.json()).error.message||m}catch(e){}throw new Error(m)}
+  return opts.raw?r:(r.status===204?null:r.json());
+};
+PD.gis=()=>new Promise((res,rej)=>{
+  if(window.google&&google.accounts&&google.accounts.oauth2)return res();
+  let sc=$('#pdGis');if(!sc){sc=document.createElement('script');sc.id='pdGis';sc.src='https://accounts.google.com/gsi/client';document.head.append(sc)}
+  let n=0;const t=setInterval(()=>{if(window.google&&google.accounts&&google.accounts.oauth2){clearInterval(t);res()}else if(++n>80){clearInterval(t);rej(new Error('Google sign-in could not load'))}},100);
+});
+// one tap per account (browsers allow one sign-in window per click)
+PD.reconnect=async a=>{
+  await PD.gis();const SC='https://www.googleapis.com/auth/drive';
+  const r=await new Promise((res,rej)=>{google.accounts.oauth2.initTokenClient({client_id:PD.cfg().clientId,scope:SC,prompt:'',hint:a.email,login_hint:a.email,
+    callback:x=>x.error?rej(new Error(x.error)):res(x),error_callback:e=>rej(new Error(e.type==='popup_closed'?'Sign-in window was closed':(e.message||e.type)))}).requestAccessToken({prompt:'',hint:a.email,login_hint:a.email})});
+  const t={email:a.email,token:r.access_token,exp:Date.now()+r.expires_in*1000};
+  const me=await PD.api(t,'about?fields=user(emailAddress),storageQuota(limit,usage)');
+  if(me.user.emailAddress!==a.email)throw new Error('You picked '+me.user.emailAddress+'. Choose '+a.email);
+  t.limit=me.storageQuota.limit?+me.storageQuota.limit:0;t.usage=+me.storageQuota.usage||0;PD.put(t);return t;
+};
+PD.deadHtml=()=>{const d=PD.accs().filter(a=>!PD.isLive(a));return d.length?'<div class="pddead"><span>Sign-in expired for '+d.length+' account'+(d.length>1?'s':'')+'. Tap to reconnect:</span>'+d.map(a=>'<button class="btn ghost" data-pdre="'+esc(a.email)+'" style="font-size:12px;padding:4px 8px">'+esc(a.email.split('@')[0])+'</button>').join('')+'</div>':''};
+async function pdReconnectBtn(email,after){try{await PD.reconnect(PD.accs().find(a=>a.email===email));toast('Reconnected '+email);after&&after()}catch(e){toast(e.message||String(e))}}
+PD.list=async(a,id,extra)=>{const out=[];let tok;
+  do{const p={q:"'"+id+"' in parents and trashed=false"+(extra||''),fields:'nextPageToken,files(id,name,mimeType,size,modifiedTime,parents,appProperties)',pageSize:1000};if(tok)p.pageToken=tok;
+    const r=await PD.api(a,'files?'+PD.qs(p));out.push(...r.files);tok=r.nextPageToken}while(tok);return out};
+// folder ids for a path in one account, created when missing (make=true)
+PD.path=async(a,names,make)=>{let id='root';
+  for(const n of names){const r=await PD.api(a,'files?'+PD.qs({q:"name='"+PD.q(n)+"' and '"+id+"' in parents and mimeType='"+PD.FOLDER+"' and trashed=false",fields:'files(id)',pageSize:1}));
+    if(r.files.length)id=r.files[0].id;
+    else if(make)id=(await PD.api(a,'files?fields=id',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,mimeType:PD.FOLDER,parents:[id]})})).id;
+    else return null}
+  return id};
+PD.upload=async(a,parent,name,blob,type)=>{
+  const b='pdp'+Math.random().toString(36).slice(2);
+  const body=new Blob(['--'+b+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'+JSON.stringify({name,parents:[parent]})+'\r\n--'+b+'\r\nContent-Type: '+type+'\r\n\r\n',blob,'\r\n--'+b+'--']);
+  return PD.api(a,PD.UP+'?uploadType=multipart&fields=id',{method:'POST',headers:{'Content-Type':'multipart/related; boundary='+b},body});
+};
+
+/* ---- picker: browse PoolDrive (all accounts merged), PDFs only ---- */
+let PK=null;
+function pdPick(side){
+  PK={side,stack:[{name:'All files',refs:null}],items:[],sel:null,q:'',seq:0};
+  let el=$('#pdp');if(el)el.remove();
+  el=document.createElement('div');el.id='pdp';
+  el.innerHTML='<div class="pcard" role="dialog" aria-label="Pick a PDF from PoolDrive"><div class="pdh"><div class="r1"><h3>Pick the '+(side==='q'?'QUESTIONS':'ANSWERS')+' PDF</h3><button class="ib" data-pk="x" aria-label="Close">×</button></div>'+
+    '<input type="search" id="pdQ" placeholder="Search PDFs in all accounts" autocomplete="off"><div class="pdcr" id="pdCr"></div></div><div id="pdDead"></div><div class="pdlst" id="pdL"></div>'+
+    '<div class="pdft"><span id="pdInfo">Showing PDFs only</span><button class="btn ghost" data-pk="x">Cancel</button><button class="btn" data-pk="use" disabled>Use this PDF</button></div></div>';
+  document.body.append(el);
+  el.addEventListener('pointerdown',e=>{if(e.target===el)pdClose()});
+  el.addEventListener('click',pdClick);
+  let tm;$('#pdQ').addEventListener('input',e=>{clearTimeout(tm);tm=setTimeout(()=>{PK.q=e.target.value.trim();pdLoad()},350)});
+  pdLoad();
+}
+function pdClose(){const el=$('#pdp');if(el)el.remove();PK=null}
+async function pdLoad(){
+  if(!PK)return;const seq=++PK.seq;PK.sel=null;
+  $('#pdDead').innerHTML=PD.deadHtml();
+  const top=PK.stack[PK.stack.length-1];
+  $('#pdCr').innerHTML=PK.q?'<b>Search: “'+esc(PK.q)+'”</b>':PK.stack.map((x,i)=>i===PK.stack.length-1?'<b>'+esc(x.name)+'</b>':'<button data-cr="'+i+'">'+esc(x.name)+'</button><span>›</span>').join('');
+  $('#pdL').innerHTML='<div class="pdmsg">Loading…</div>';pdFoot();
+  const live=PD.live();
+  if(!live.length){$('#pdL').innerHTML='<div class="pdmsg">Reconnect an account above to see your files.</div>';return}
+  const res=await Promise.allSettled((PK.q?live.map(a=>({a})):(top.refs||live.map(a=>({email:a.email,id:'root'}))).map(r=>({a:live.find(x=>x.email===r.email),id:r.id})).filter(r=>r.a)).map(async r=>{
+    if(PK.q){const x=await PD.api(r.a,'files?'+PD.qs({q:"name contains '"+PD.q(PK.q)+"' and mimeType='application/pdf' and trashed=false",fields:'files(id,name,mimeType,size,modifiedTime)',pageSize:100}));return x.files.map(f=>Object.assign(f,{email:r.a.email}))}
+    return (await PD.list(r.a,r.id," and (mimeType='"+PD.FOLDER+"' or mimeType='application/pdf')")).map(f=>Object.assign(f,{email:r.a.email}))}));
+  if(!PK||seq!==PK.seq)return;
+  const folders=new Map(),pdfs=[];
+  for(const x of res){if(x.status!=='fulfilled')continue;for(const f of x.value){
+    if(f.mimeType===PD.FOLDER){const e=folders.get(f.name)||{name:f.name,refs:[]};e.refs.push({email:f.email,id:f.id});folders.set(f.name,e)}else pdfs.push(f)}}
+  const cmp=(a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'});
+  PK.items=[...[...folders.values()].sort(cmp).map(f=>Object.assign(f,{dir:true})),...pdfs.sort(cmp)];
+  $('#pdL').innerHTML=PK.items.length?PK.items.map((f,i)=>f.dir
+    ?'<button class="pdit" data-i="'+i+'"><svg width="24" height="24" viewBox="0 0 24 24" fill="#f4b400" aria-hidden="true"><path d="M10 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8l-2-2z"/></svg><span class="pdnm">'+esc(f.name)+'</span><small>›</small></button>'
+    :'<button class="pdit" data-i="'+i+'"><span class="pdfic">PDF</span><span class="pdnm">'+esc(f.name)+'</span><small>'+(f.size?fmtSz(+f.size):'')+'</small></button>').join('')
+    :'<div class="pdmsg">'+(PK.q?'No PDFs named “'+esc(PK.q)+'”.':'No PDFs or folders here.')+'</div>';
+}
+const fmtSz=b=>b>=1048576?(b/1048576).toFixed(1)+' MB':Math.max(1,Math.round(b/1024))+' KB';
+function pdFoot(){if(!PK)return;const f=PK.sel!=null&&PK.items[PK.sel];$('[data-pk="use"]').disabled=!f;$('#pdInfo').textContent=f?f.name+' · '+(f.size?fmtSz(+f.size):''):'Showing PDFs only, from all your PoolDrive accounts'}
+async function pdClick(e){
+  const t=e.target;
+  const re=t.closest('[data-pdre]');if(re)return pdReconnectBtn(re.dataset.pdre,pdLoad);
+  const k=t.closest('[data-pk]');if(k){if(k.dataset.pk==='x')return pdClose();if(k.dataset.pk==='use')return pdUse()}
+  const cr=t.closest('[data-cr]');if(cr){PK.stack=PK.stack.slice(0,+cr.dataset.cr+1);return pdLoad()}
+  const it=t.closest('.pdit');if(!it)return;const f=PK.items[+it.dataset.i];
+  if(f.dir){PK.q='';$('#pdQ').value='';PK.stack.push({name:f.name,refs:f.refs});return pdLoad()}
+  if(PK.sel===+it.dataset.i)return pdUse();   // second tap on the same PDF = use it
+  $$('.pdit.on',$('#pdL')).forEach(x=>x.classList.remove('on'));it.classList.add('on');PK.sel=+it.dataset.i;pdFoot();
+}
+async function pdUse(){
+  const f=PK&&PK.items[PK.sel];if(!f||f.dir)return;
+  const b=$('[data-pk="use"]');b.disabled=true;b.textContent='Downloading…';
+  try{const a=PD.accs().find(x=>x.email===f.email);
+    const r=await PD.api(a,'files/'+f.id+'?alt=media',{raw:true});
+    const file=new File([await r.blob()],f.name,{type:'application/pdf'});
+    const side=PK.side;pdClose();slotTake[side](file);toast('Added from PoolDrive: '+f.name);
+  }catch(e){b.disabled=false;b.textContent='Use this PDF';toast(e instanceof PDAuth?'Reconnect '+e.acc.email+' first':'Could not download: '+(e.message||e));if(e instanceof PDAuth)pdLoad()}
+}
+function pdSlotUI(){const on=PD.has();$$('.pdslot').forEach(b=>b.hidden=!on||(b.dataset.pd==='a'&&$('#slot-a').classList.contains('off')))}
+$$('.pdslot').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();pdPick(b.dataset.pd)}));
+new MutationObserver(pdSlotUI).observe($('#open'),{attributes:true,attributeFilter:['hidden']});
+pdSlotUI();
+
+/* ---- backup to PoolDrive: marks every 3 hours (+ each PDF once, if chosen); keeps the last 5 ---- */
+async function pdTarget(need){   // the account that already holds the backup folder, if it has room; else the one with most space
+  const live=PD.live();if(!live.length)return null;
+  for(const a of live){try{const id=await PD.path(a,PD.PATH,false);if(id&&PD.free(a)>need+5e6)return {a,id}}catch(e){}}
+  const a=live.slice().sort((x,y)=>PD.free(y)-PD.free(x))[0];return {a,id:await PD.path(a,PD.PATH,true)};
+}
+function pdDue(){const o=PD.opt();return PD.has()&&o.on&&!PD.busy&&(!o.last||Date.now()-o.last.at>=EVERY)}
+async function pdRun(manual){
+  if(PD.busy)return false;
+  if(!PD.live().length){PD.state='signin';updBk();if(manual)toast('Reconnect a PoolDrive account first');return false}
+  PD.busy=true;PD.state='busy';updBk();
+  try{
+    const o=PD.opt(),snap=snapshot(),n=countQ(snap);
+    const up=LS.get('pdb:up')||{};let pdfs=0;
+    if(o.pdfs){   // each PDF only once
+      const all=[];for(const set of LIB.sets)for(const sd of ['q','a'])for(const f0 of set.files[sd])if(!all.find(x=>x.id===f0.id))all.push(f0);
+      const todo=all.filter(f0=>!up[f0.id]);
+      for(let i=0;i<todo.length;i++){const f0=todo[i];const b0=await idbGet('blob:'+f0.id);if(!b0)continue;
+        if(manual)toast('Uploading PDFs to PoolDrive… '+(i+1)+' of '+todo.length);
+        const tg=await pdTarget(b0.size);if(!tg)throw new PDAuth(null);
+        const dir=await PD.path(tg.a,[...PD.PATH,'PDFs'],true);
+        const nm=String(f0.name||'file').replace(/\.pdf$/i,'').replace(/[()]/g,'')+' ('+f0.id+').pdf';
+        await PD.upload(tg.a,dir,nm,b0,'application/pdf');up[f0.id]=1;LS.set('pdb:up',up);pdfs++;tg.a.usage=(tg.a.usage||0)+b0.size;PD.put({email:tg.a.email,usage:tg.a.usage})}
+    }
+    snap.pdBlobs=Object.keys(up);
+    const body=JSON.stringify(snap),tg=await pdTarget(body.length);
+    const check=o.last&&o.last.n>5&&n<o.last.n*.7;   // far fewer questions than last time: keep the good backups
+    await PD.upload(tg.a,tg.id,'PDF Pair backup '+(check?'(check) ':'')+stamp()+'.json',new Blob([body],{type:'application/json'}),'application/json');
+    if(!check){   // keep the newest 5
+      const old=(await PD.list(tg.a,tg.id," and name contains 'PDF Pair backup 2'")).sort((x,y)=>y.name.localeCompare(x.name));
+      for(const f of old.slice(PD.KEEP))await PD.api(tg.a,'files/'+f.id+'?fields=id',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({trashed:true})});
+    }
+    PD.setOpt({last:{at:Date.now(),n}});PD.state=check?'warn':'ok';
+    if(manual)toast(check?'Fewer questions than last time, so it was saved as a separate "check" backup. Your earlier backups were kept.':'Backed up to PoolDrive'+(pdfs?' with '+pdfs+' new PDF'+(pdfs>1?'s':''):''));
+    return true;
+  }catch(e){console.error(e);PD.state=e instanceof PDAuth?'signin':'err';if(manual)toast(e instanceof PDAuth?'Sign-in expired. Reconnect and try again.':'PoolDrive backup failed: '+(e.message||e));return false}
+  finally{PD.busy=false;updBk()}
+}
+async function pdBackups(){   // newest first, from every account
+  const out=[];await Promise.allSettled(PD.live().map(async a=>{const id=await PD.path(a,PD.PATH,false);if(!id)return;
+    (await PD.list(a,id," and name contains 'PDF Pair backup'")).forEach(f=>out.push(Object.assign(f,{email:a.email})))}));
+  return out.sort((x,y)=>(y.modifiedTime||'').localeCompare(x.modifiedTime||'')).slice(0,10);
+}
+async function pdRestore(f){
+  toast('Downloading the backup…');
+  const a=PD.accs().find(x=>x.email===f.email);
+  const snap=await (await PD.api(a,'files/'+f.id+'?alt=media',{raw:true})).json();
+  if(!snap||snap.app!=='PDF Pair'||!snap.projects)throw new Error('this file is not a PDF Pair backup');
+  let files=null;const need=[];
+  for(const id of snap.pdBlobs||[])if(!(await idbGet('blob:'+id)))need.push(id);
+  if(need.length){files={blobs:{}};let i=0;
+    for(const id of need){toast('Getting PDFs from PoolDrive… '+(++i)+' of '+need.length);
+      for(const b of PD.live()){const r=await PD.api(b,'files?'+PD.qs({q:"name contains '("+PD.q(id)+").pdf' and trashed=false",fields:'files(id,name)',pageSize:1}));
+        if(r.files.length){const blob=await (await PD.api(b,'files/'+r.files[0].id+'?alt=media',{raw:true})).blob();files.blobs[id]=new File([blob],id+'.pdf',{type:'application/pdf'});break}}}}
+  bkConfirm={snap,files};renderBk();
+}
+setInterval(()=>{if(pdDue()&&PD.live().length)pdRun(false);else if(pdDue()&&PD.state!=='signin'){PD.state='signin';updBk()}},60e3);
+document.addEventListener('visibilitychange',()=>{const o=PD.opt();if(document.visibilityState==='hidden'&&PD.has()&&o.on&&PD.live().length&&(!o.last||Date.now()-o.last.at>3600e3))pdRun(false)});
+setTimeout(()=>{if(pdDue()&&PD.live().length)pdRun(false)},8000);
+
+
 /* ---------- backup: auto (to a folder, every 3 hours) and manual ---------- */
 const AB={dir:null,state:'off',last:LS.get('pp:ab')};
 const inFrame=(()=>{try{return window.self!==window.top}catch(e){return true}})();
@@ -3347,6 +3566,7 @@ async function autoRun(force){
 function updBk(){
   const d=$('#bkDot');let c=null;
   if(AB.dir)c=AB.state==='on'?'ok':'warn';
+  if(PD.has()&&PD.opt().on)c=PD.state==='signin'||PD.state==='err'||PD.state==='warn'?'warn':(c||'ok');
   else if(!AB.last||Date.now()-AB.last.at>3*864e5)c='warn';
   d.hidden=!c;d.classList.toggle('warn',c==='warn');
   $('#bBk').title=AB.dir?(AB.state==='on'?'Auto backup on. Last: '+when(AB.last&&AB.last.at):'Auto backup paused. Click to allow the folder again'):'Backup and restore'+(c?'. No recent backup':'');
@@ -3368,7 +3588,21 @@ function renderBk(){
     h+='<div class="cfm">Backup from <b>'+when(c.snap.at)+'</b> with <b>'+countQ(c.snap)+' questions</b> in '+nset+' set'+(nset===1?'':'s')+(c.files?', including the PDFs':'')+'.<br>Restoring adds the sets in this backup and updates their marks. <b>Your other sets stay as they are.</b></div>';
     h+='<div class="row2"><button class="btn ghost" data-b="cancel">Cancel</button><button class="btn" data-b="restore">Restore</button></div>';
   }else{
-    if(canFolder){
+    if(PD.has()){const o=PD.opt(),c='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 9.5 4.5 4.5 0 0 0 7 18z"/></svg>';
+      h+='<div class="pdb"><h5>'+c+'PoolDrive backup</h5>';
+      if(PD.busy)h+='<p class="stt">Backing up to PoolDrive…</p>';
+      else if(PD.state==='signin'&&o.on)h+='<p class="stt"><b>Sign-in expired.</b> Reconnect to keep backing up to PoolDrive.</p>';
+      else if(o.on)h+='<p class="stt"><b>Auto backup to PoolDrive is on</b>, every 3 hours into “PDF App Backup › PDF Pair backups”. Keeps the last 5.<br>Last: '+when(o.last&&o.last.at)+(o.last?' · Next: '+when(o.last.at+EVERY):'')+'</p>';
+      else h+='<p class="stt">Back up your marks to PoolDrive every 3 hours, on the laptop and on your phone. Keeps the last 5.</p>';
+      h+='<label><input type="checkbox" data-b="pd-pdfs"'+(o.pdfs?' checked':'')+'><span><b>PDFs too</b>: each PDF is uploaded only once</span></label>';
+      h+=PD.deadHtml().replace('class="pddead"','class="pddead" style="border-radius:7px;margin:0 0 8px"');
+      h+='<div class="row2">'+(o.on?'':'<button class="btn" data-b="pd-on">Turn on</button>')+'<button class="btn'+(o.on?'':' ghost')+'" data-b="pd-now">Back up now</button><button class="btn ghost" data-b="pd-list">Restore…</button>'+(o.on?'<button class="btn ghost" data-b="pd-off">Turn off</button>':'')+'</div>';
+      if(PD.list_)h+='<div class="pdlist">'+(PD.list_.length?PD.list_.map((f,i)=>'<button class="it" data-b="pd-r'+i+'">'+esc(f.name.replace(/\.json$/,''))+'<small>'+esc(f.email.split('@')[0])+(f.size?' · '+fmtSz(+f.size):'')+'</small></button>').join(''):'<p class="stt">No PoolDrive backups yet.</p>')+'</div>';
+      h+='</div>';
+    }
+    pop.classList.toggle('pdon',PD.has());
+    if(PD.has()&&PD.opt().on&&!AB.dir){}   // PoolDrive backup is on: no need to suggest a folder
+    else if(canFolder){
       if(!AB.dir)h+='<p class="stt">Turn on <b>auto backup</b>: pick a folder, ideally inside your Google Drive folder, and your marks are saved there every 3 hours while PDF Pair is open.</p><div class="row2"><button class="btn" data-b="pick">Choose folder…</button></div>';
       else if(AB.state==='on')h+='<p class="stt"><b>Auto backup is on</b>, every 3 hours to “'+AB.dir.name.replace(/[<&]/g,'')+'”.<br>Last: '+when(AB.last&&AB.last.at)+(AB.last&&AB.last.where==='folder'?' · Next: '+when(AB.last.at+EVERY):'')+'</p>';
       else if(AB.state==='warn')h+='<p class="stt"><b>Check your backup folder.</b> The last auto backup had far fewer questions, so it was saved as a separate “check” file and the earlier backup was kept.</p><div class="row2"><button class="btn" data-b="now">Back up now anyway</button></div>';
@@ -3383,10 +3617,17 @@ function renderBk(){
   }
   pop.innerHTML=h;placeBk();
   $$('[data-b]',pop).forEach(b=>b.addEventListener('click',()=>bkAction(b.dataset.b)));
+  $$('[data-pdre]',pop).forEach(b=>b.addEventListener('click',()=>pdReconnectBtn(b.dataset.pdre,()=>{PD.state='';if(PD.opt().on&&pdDue())pdRun(true);else renderBk()})));
   const fi=$('#bkFile',pop);if(fi)fi.addEventListener('change',()=>{const f=fi.files[0];if(f)readBackup(f)});
 }
 async function bkAction(a){
   try{
+    if(a==='pd-on'){PD.setOpt({on:true});await pdRun(true);return}
+    if(a==='pd-off'){PD.setOpt({on:false});PD.state='';toast('PoolDrive backup is off. Your backups there stay.');renderBk();return}
+    if(a==='pd-now'){await pdRun(true);return}
+    if(a==='pd-pdfs'){PD.setOpt({pdfs:!PD.opt().pdfs});renderBk();return}
+    if(a==='pd-list'){PD.list_=null;toast('Looking for backups in PoolDrive…');PD.list_=await pdBackups();renderBk();return}
+    if(/^pd-r\d+$/.test(a)){const f=PD.list_&&PD.list_[+a.slice(4)];PD.list_=null;if(f)await pdRestore(f);return}
     if(DFS&&(a==='pick'||a==='allow')){const info=await DFS.pick();if(!info)return;AB.dir=deskDir(info);await idbPut('dir',null);AB.state='on';if(await autoRun(true))toast('Auto backup is on. Saved to “'+info.name+'”. It will not ask again')}
     else if(a==='pick'){const d=await window.showDirectoryPicker({mode:'readwrite',id:'pdfpair-backup'});AB.dir=d;await idbPut('dir',d);AB.state='on';if(await autoRun(true))toast('Auto backup is on. Saved to “'+d.name+'”');}
     else if(a==='allow'){if(await perm(true)){AB.state='on';await autoRun(false);toast('Auto backup is running again')}else toast('The folder was not allowed, so auto backup stays paused')}
