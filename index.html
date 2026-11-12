@@ -374,13 +374,13 @@ body.t-hl .ov{cursor:var(--hlcur,text);touch-action:none}
 #pdp .pdft span{flex:1;font-size:12.5px;color:var(--mut)}
 #pdp .pdmsg{padding:30px 18px;text-align:center;color:var(--mut);font-size:13.5px}
 #pdp .pddead{padding:10px 18px;background:#fff6e5;color:#7a4b00;font-size:12.5px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-.bkpop .pdb{border:1px solid #c7c9f5;background:#f4f4ff;border-radius:9px;padding:10px;margin:0 0 10px}
-.bkpop .pdb h5{margin:0 0 4px;font-size:13px;display:flex;align-items:center;gap:6px;color:#3730a3}
+.bkpop .pdb{border:1px solid rgba(99,102,241,.4);background:rgba(99,102,241,.08);border-radius:9px;padding:10px;margin:0 0 10px}
+.bkpop .pdb h5{margin:0 0 4px;font-size:13px;display:flex;align-items:center;gap:6px;color:color-mix(in srgb,#4f46e5 65%,var(--ink))}
 .bkpop .pdb .stt{margin:0 0 8px}
 .bkpop .pdb label{display:flex;gap:6px;align-items:flex-start;font-size:12px;margin:0 0 8px;color:var(--ink)}
 .bkpop .pdb .row2{flex-wrap:wrap;margin:0}
 .bkpop .pdb .row2 .btn{font-size:12px;padding:6px 10px}
-.bkpop .pdbar{height:8px;border-radius:99px;background:#dfe1fb;overflow:hidden}
+.bkpop .pdbar{height:8px;border-radius:99px;background:rgba(99,102,241,.2);overflow:hidden}
 .bkpop .pdbar i{display:block;height:100%;background:#4f46e5;border-radius:99px;transition:width .25s}
 .bkpop .pdbar.run i{width:35%;animation:pdrun 1.1s ease-in-out infinite}
 @keyframes pdrun{0%{margin-left:-35%}100%{margin-left:100%}}
@@ -3582,7 +3582,8 @@ async function pdRun(manual,kind){
 async function pdBackups(){   // newest first, from every account
   const out=[];await Promise.allSettled(PD.live().map(async a=>{const id=await PD.path(a,PD.PATH,false);if(!id)return;
     (await PD.list(a,id," and name contains 'PDF Pair' and mimeType='application/json'")).forEach(f=>out.push(Object.assign(f,{email:a.email})))}));
-  return out.sort((x,y)=>(y.modifiedTime||'').localeCompare(x.modifiedTime||'')).slice(0,10);
+  const seen=new Set();   // same backup can be listed twice: show it once
+  return out.sort((x,y)=>(y.modifiedTime||'').localeCompare(x.modifiedTime||'')).filter(f=>{const k=f.email+'|'+f.name+'|'+f.size;if(seen.has(f.id)||seen.has(k))return false;seen.add(f.id);seen.add(k);return true}).slice(0,10);
 }
 async function pdRestore(f){
   toast('Downloading the backup…');
@@ -5397,7 +5398,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='12 Nov 08:43';   // build label, so you can check both devices have the same version
+const APPV='12 Nov 09:17';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)
