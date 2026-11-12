@@ -1171,7 +1171,8 @@ const COLORS=['rgba(255,212,0,.45)','rgba(90,214,109,.42)','rgba(255,111,165,.38
 const SIZES=[.014,.022,.032];
 try{['gem:key','gem:model','gem:models'].forEach(k=>localStorage.removeItem(k))}catch(e){}   // Auto-mark was removed: clear its saved Gemini key
 const LS={get(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null}catch(e){return null}},
-          set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+          set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}
+            if(k.startsWith('pp:')&&k!=='pp:ab'&&k!=='pp:prefs'&&window.pdTouched)window.pdTouched()}};   // marks changed: PoolDrive sync
 
 if(window.pdfjsLib){pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';}
 
@@ -2158,7 +2159,7 @@ function savePosNow(){clearTimeout(pt0);if(!key||posLock||!(P.q.pages.length||P.
 
 /* ---------- files (IndexedDB keeps the last pair so it reopens) ---------- */
 function idb(){return new Promise((res,rej)=>{try{const r=indexedDB.open('pdfpair',1);r.onupgradeneeded=()=>r.result.createObjectStore('files');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}})}
-async function idbPut(k,v){try{const db=await idb();await new Promise((res,rej)=>{const t=db.transaction('files','readwrite');t.objectStore('files').put(v,k);t.oncomplete=res;t.onerror=()=>rej(t.error)})}catch(e){}}
+async function idbPut(k,v){if(typeof k==='string'&&/^(blob|img):/.test(k)&&window.pdTouched)setTimeout(window.pdTouched,0);try{const db=await idb();await new Promise((res,rej)=>{const t=db.transaction('files','readwrite');t.objectStore('files').put(v,k);t.oncomplete=res;t.onerror=()=>rej(t.error)})}catch(e){}}
 async function idbGet(k){try{const db=await idb();return await new Promise(res=>{const r=db.transaction('files').objectStore('files').get(k);r.onsuccess=()=>res(r.result||null);r.onerror=()=>res(null)})}catch(e){return null}}
 
 /* ---------- library of sets ---------- */
@@ -3496,7 +3497,10 @@ async function pdTarget(need){   // the account that already holds the backup fo
 PD.prog=null;let pdPaintT=0;
 function pdPaint(){if(pdPaintT)return;pdPaintT=setTimeout(()=>{pdPaintT=0;updBk()},250)}   // at most 4 redraws a second
 function pdDue(){const o=PD.opt();return PD.has()&&o.on&&!PD.busy&&(!o.last||Date.now()-o.last.at>=EVERY)}
-async function pdRun(manual){
+PD.dev=()=>{let d=LS.get('pdb:dev');if(!d){d=(/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent)?'Phone':(window.ppDesktop?'Desktop app':'Laptop'))+' '+Math.random().toString(36).slice(2,6);LS.set('pdb:dev',d)}return d};
+PD.latestName=()=>'PDF Pair latest – '+PD.dev()+'.json';
+async function pdRun(manual,kind){
+  kind=kind||'history';
   if(PD.busy)return false;
   if(!PD.live().length){PD.state='signin';updBk();if(manual)toast('Reconnect a PoolDrive account first');return false}
   PD.busy=true;PD.state='busy';PD.prog={phase:'start'};updBk();
@@ -3505,12 +3509,16 @@ async function pdRun(manual){
     const up=LS.get('pdb:up')||{};let pdfs=0;
     if(o.pdfs){   // each PDF only once
       const all=[];for(const set of LIB.sets)for(const sd of ['q','a'])for(const f0 of set.files[sd])if(!all.find(x=>x.id===f0.id))all.push(f0);
+      for(const k in snap.projects){const pj=snap.projects[k];for(const m of (pj&&pj.imgs)||[])if(!all.find(x=>x.id==='img:'+m.id))all.push({id:'img:'+m.id,name:'Picture',size:0,img:m.id})}   // placed pictures too
       const todo=all.filter(f0=>!up[f0.id]);
       const total=todo.reduce((t,f0)=>t+(+f0.size||0),0);
       PD.prog={phase:'pdfs',i:0,n:todo.length,name:'',done:0,cur:0,total,skipped:all.length-todo.length};pdPaint();
       let tg=null,dir=null;   // reuse the same account and folder while it has room
       for(let i=0;i<todo.length;i++){const f0=todo[i];const b0=await idbGet('blob:'+f0.id);
         PD.prog.i=i+1;PD.prog.name=f0.name||'PDF';PD.prog.cur=0;pdPaint();
+        if(f0.img){const bi=await idbGet('img:'+f0.img);if(bi){const ta=await pdTarget(bi.size);if(!ta)throw new PDAuth(null);
+          const pd=await PD.path(ta.a,[...PD.PATH,'Pictures'],true);await PD.upload(ta.a,pd,'(img-'+f0.img+')'+(bi.type==='image/jpeg'?'.jpg':'.png'),bi,bi.type||'image/png')}
+          up[f0.id]=1;LS.set('pdb:up',up);continue}
         if(!b0){PD.prog.done+=(+f0.size||0);continue}
         if(!tg||!PD.isLive(tg.a)||PD.free(tg.a)<b0.size+5e6){tg=await pdTarget(b0.size);if(!tg)throw new PDAuth(null);dir=await PD.path(tg.a,[...PD.PATH,'PDFs'],true)}
         const nm=String(f0.name||'file').replace(/\.pdf$/i,'').replace(/[()]/g,'')+' ('+f0.id+').pdf';
@@ -3519,15 +3527,25 @@ async function pdRun(manual){
         tg.a.usage=(tg.a.usage||0)+b0.size;PD.put({email:tg.a.email,usage:tg.a.usage});pdPaint()}
     }
     PD.prog={phase:'marks'};pdPaint();
-    snap.pdBlobs=Object.keys(up);
+    snap.pdBlobs=Object.keys(up).filter(k=>!k.startsWith('img:'));snap.pdImgs=Object.keys(up).filter(k=>k.startsWith('img:')).map(k=>k.slice(4));
     const body=JSON.stringify(snap),tg=await pdTarget(body.length);
     const check=o.last&&o.last.n>5&&n<o.last.n*.7;   // far fewer questions than last time: keep the good backups
+    if(kind==='latest'){   // the always-up-to-date copy for this device: one file, updated in place (Drive keeps its old versions)
+      if(check){PD.state='warn';PD.prog=null;return false}
+      const L=o.latest,blob=new Blob([body],{type:'application/json'});let done=false;
+      if(L&&L.id){const la=PD.accs().find(x=>x.email===L.email);
+        if(la&&PD.isLive(la)){try{await PD.api(la,PD.UP+'/'+L.id+'?uploadType=media&fields=id',{method:'PATCH',headers:{'Content-Type':'application/json'},body:blob});done=true}catch(e){if(e instanceof PDAuth)throw e}}}
+      if(!done){const r=await PD.upload(tg.a,tg.id,PD.latestName(),blob,'application/json');PD.setOpt({latest:{id:r.id,email:tg.a.email,at:Date.now()}})}
+      else PD.setOpt({latest:Object.assign({},L,{at:Date.now()})});
+      PD.dirty=false;PD.firstDirty=0;PD.state='ok';PD.prog=null;return true;
+    }
     await PD.upload(tg.a,tg.id,'PDF Pair backup '+(check?'(check) ':'')+stamp()+'.json',new Blob([body],{type:'application/json'}),'application/json');
     if(!check){   // keep the newest 5
       const old=(await PD.list(tg.a,tg.id," and name contains 'PDF Pair backup 2'")).sort((x,y)=>y.name.localeCompare(x.name));
       for(const f of old.slice(PD.KEEP))await PD.api(tg.a,'files/'+f.id+'?fields=id',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({trashed:true})});
     }
     PD.setOpt({last:{at:Date.now(),n}});PD.state=check?'warn':'ok';PD.prog=null;
+    if(!check&&(PD.dirty||!PD.opt().latest)){PD.dirty=true;setTimeout(()=>pdFlush(),1000)}   // also refresh the up-to-date copy
     if(manual)toast(check?'Fewer questions than last time, so it was saved as a separate "check" backup. Your earlier backups were kept.':'Backed up to PoolDrive'+(pdfs?' with '+pdfs+' new PDF'+(pdfs>1?'s':''):''));
     return true;
   }catch(e){console.error(e);PD.state=e instanceof PDAuth?'signin':'err';if(manual)toast(e instanceof PDAuth?'Sign-in expired. Reconnect and try again.':'PoolDrive backup failed: '+(e.message||e));return false}
@@ -3535,7 +3553,7 @@ async function pdRun(manual){
 }
 async function pdBackups(){   // newest first, from every account
   const out=[];await Promise.allSettled(PD.live().map(async a=>{const id=await PD.path(a,PD.PATH,false);if(!id)return;
-    (await PD.list(a,id," and name contains 'PDF Pair backup'")).forEach(f=>out.push(Object.assign(f,{email:a.email})))}));
+    (await PD.list(a,id," and name contains 'PDF Pair' and mimeType='application/json'")).forEach(f=>out.push(Object.assign(f,{email:a.email})))}));
   return out.sort((x,y)=>(y.modifiedTime||'').localeCompare(x.modifiedTime||'')).slice(0,10);
 }
 async function pdRestore(f){
@@ -3549,10 +3567,23 @@ async function pdRestore(f){
     for(const id of need){toast('Getting PDFs from PoolDrive… '+(++i)+' of '+need.length);
       for(const b of PD.live()){const r=await PD.api(b,'files?'+PD.qs({q:"name contains '("+PD.q(id)+").pdf' and trashed=false",fields:'files(id,name)',pageSize:1}));
         if(r.files.length){const blob=await (await PD.api(b,'files/'+r.files[0].id+'?alt=media',{raw:true})).blob();files.blobs[id]=new File([blob],id+'.pdf',{type:'application/pdf'});break}}}}
+  const needI=[];for(const id of snap.pdImgs||[])if(!(await idbGet('img:'+id)))needI.push(id);
+  if(needI.length){files=files||{};files.imgs={};
+    for(const id of needI)for(const b of PD.live()){const r=await PD.api(b,'files?'+PD.qs({q:"name contains '(img-"+PD.q(id)+")' and trashed=false",fields:'files(id,mimeType)',pageSize:1}));
+      if(r.files.length){const blob=await (await PD.api(b,'files/'+r.files[0].id+'?alt=media',{raw:true})).blob();files.imgs[id]=new Blob([blob],{type:r.files[0].mimeType||'image/png'});break}}}
   bkConfirm={snap,files};renderBk();
 }
+// every change (marks, new PDFs, pictures) is saved to PoolDrive about a minute later
+PD.dirty=false;PD.firstDirty=0;PD.dt=0;
+window.pdTouched=()=>{if(!PD.has()||!PD.opt().on)return;PD.dirty=true;const now=Date.now();if(!PD.firstDirty)PD.firstDirty=now;
+  clearTimeout(PD.dt);PD.dt=setTimeout(pdFlush,now-PD.firstDirty>5*60e3?2000:60e3)};
+async function pdFlush(){clearTimeout(PD.dt);if(!PD.dirty||!PD.has()||!PD.opt().on)return;
+  if(PD.busy){PD.dt=setTimeout(pdFlush,30e3);return}
+  if(!PD.live().length){PD.state='signin';updBk();return}
+  await pdRun(false,'latest');updBk()}
 setInterval(()=>{if(pdDue()&&PD.live().length)pdRun(false);else if(pdDue()&&PD.state!=='signin'){PD.state='signin';updBk()}},60e3);
-document.addEventListener('visibilitychange',()=>{const o=PD.opt();if(document.visibilityState==='hidden'&&PD.has()&&o.on&&PD.live().length&&(!o.last||Date.now()-o.last.at>3600e3))pdRun(false)});
+document.addEventListener('visibilitychange',()=>{const o=PD.opt();if(document.visibilityState!=='hidden'||!PD.has()||!o.on||!PD.live().length)return;
+  if(PD.dirty)pdFlush();else if(!o.last||Date.now()-o.last.at>3600e3)pdRun(false)});
 setTimeout(()=>{if(pdDue()&&PD.live().length)pdRun(false)},8000);
 
 
@@ -3648,9 +3679,9 @@ function renderBk(){
         h+='</div>';}
       else{
       if(PD.state==='signin'&&o.on)h+='<p class="stt"><b>Sign-in expired.</b> Reconnect to keep backing up to PoolDrive.</p>';
-      else if(o.on)h+='<p class="stt"><b>Auto backup to PoolDrive is on</b>, every 3 hours into “PDF App Backup › PDF Pair backups”. Keeps the last 5.<br>Last: '+when(o.last&&o.last.at)+(o.last?' · Next: '+when(o.last.at+EVERY):'')+'</p>';
-      else h+='<p class="stt">Back up your marks to PoolDrive every 3 hours, on the laptop and on your phone. Keeps the last 5.</p>';
-      h+='<label><input type="checkbox" data-b="pd-pdfs"'+(o.pdfs?' checked':'')+'><span><b>PDFs too</b>: each PDF is uploaded only once</span></label>';
+      else if(o.on)h+='<p class="stt"><b>'+(PD.dirty?'Saving your latest changes in a moment…':'✓ Up to date in PoolDrive')+'</b><br>Every change'+(o.pdfs?', new PDF and picture':'')+' is saved about a minute later'+(o.latest?' (last: '+when(o.latest.at)+')':'')+'. A dated copy is also kept every 3 hours (last 5).</p>';
+      else h+='<p class="stt">Keep PoolDrive up to date: every change is saved there about a minute later, plus a dated copy every 3 hours (last 5). Works on the laptop and on your phone.</p>';
+      h+='<label><input type="checkbox" data-b="pd-pdfs"'+(o.pdfs?' checked':'')+'><span><b>PDFs and pictures too</b>: each is uploaded once; new or changed PDFs go up automatically</span></label>';
       h+=PD.deadHtml().replace('class="pddead"','class="pddead" style="border-radius:7px;margin:0 0 8px"');
       h+='<div class="row2">'+(o.on?'':'<button class="btn" data-b="pd-on">Turn on</button>')+'<button class="btn'+(o.on?'':' ghost')+'" data-b="pd-now">Back up now</button><button class="btn ghost" data-b="pd-list">Restore…</button>'+(o.on?'<button class="btn ghost" data-b="pd-off">Turn off</button>':'')+'</div>';
       if(PD.list_)h+='<div class="pdlist">'+(PD.list_.length?PD.list_.map((f,i)=>'<button class="it" data-b="pd-r'+i+'">'+esc(f.name.replace(/\.json$/,''))+'<small>'+esc(f.email.split('@')[0])+(f.size?' · '+fmtSz(+f.size):'')+'</small></button>').join(''):'<p class="stt">No PoolDrive backups yet.</p>')+'</div>';
@@ -3673,7 +3704,7 @@ function renderBk(){
   }
   pop.innerHTML=h;placeBk();
   $$('[data-b]',pop).forEach(b=>b.addEventListener('click',()=>bkAction(b.dataset.b)));
-  $$('[data-pdre]',pop).forEach(b=>b.addEventListener('click',()=>pdReconnectBtn(b.dataset.pdre,()=>{PD.state='';if(PD.opt().on&&pdDue())pdRun(true);else renderBk()})));
+  $$('[data-pdre]',pop).forEach(b=>b.addEventListener('click',()=>pdReconnectBtn(b.dataset.pdre,()=>{PD.state='';if(PD.opt().on&&pdDue())pdRun(true);else if(PD.dirty)pdFlush();else renderBk()})));
   const fi=$('#bkFile',pop);if(fi)fi.addEventListener('change',()=>{const f=fi.files[0];if(f)readBackup(f)});
 }
 async function bkAction(a){
