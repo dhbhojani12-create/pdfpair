@@ -392,7 +392,7 @@ body.t-hl .ov{cursor:var(--hlcur,text);touch-action:none}
 .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
 .priv{margin-right:auto;font-size:11.5px;color:var(--mut);align-self:center}
 
-#toast{position:absolute;left:50%;bottom:calc(72px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:45;background:var(--bar);color:#fff;padding:8px 14px;border-radius:8px;font-size:13px;box-shadow:0 6px 18px rgba(0,0,0,.25);pointer-events:none;opacity:0;transition:opacity .2s;max-width:calc(100% - 32px);text-align:center}
+#toast{position:absolute;left:50%;bottom:calc(72px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:60;background:var(--bar);color:#fff;padding:8px 14px;border-radius:8px;font-size:13px;box-shadow:0 6px 18px rgba(0,0,0,.25);pointer-events:none;opacity:0;transition:opacity .2s;max-width:calc(100% - 32px);text-align:center}
 #toast.show{opacity:1}
 
 /* search, groups, selection, tag box */
@@ -3587,22 +3587,28 @@ async function pdBackups(){   // newest first, from every account
   const seen=new Set();   // same backup can be listed twice: show it once
   return out.sort((x,y)=>(y.modifiedTime||'').localeCompare(x.modifiedTime||'')).filter(f=>{const k=f.email+'|'+f.name+'|'+f.size;if(seen.has(f.id)||seen.has(k))return false;seen.add(f.id);seen.add(k);return true}).slice(0,10);
 }
+function pdSay(m,err){PD.rst={m,err:!!err};if(!err)toast(m);renderBk()}   // restore progress, shown inside the Backup box
 async function pdRestore(f){
-  toast('Downloading the backup…');
+  pdSay('Downloading the backup…');
   const a=PD.accs().find(x=>x.email===f.email);
   const snap=await (await PD.api(a,'files/'+f.id+'?alt=media',{raw:true})).json();
   if(!snap||snap.app!=='PDF Pair'||!snap.projects)throw new Error('this file is not a PDF Pair backup');
   let files=null;const need=[];
   for(const id of snap.pdBlobs||[])if(!(await idbGet('blob:'+id)))need.push(id);
   if(need.length){files={blobs:{}};let i=0;
-    for(const id of need){toast('Getting PDFs from PoolDrive… '+(++i)+' of '+need.length);
-      for(const b of PD.live()){const r=await PD.api(b,'files?'+PD.qs({q:"name contains '("+PD.q(id)+").pdf' and trashed=false",fields:'files(id,name)',pageSize:1}));
-        if(r.files.length){const blob=await (await PD.api(b,'files/'+r.files[0].id+'?alt=media',{raw:true})).blob();files.blobs[id]=new File([blob],id+'.pdf',{type:'application/pdf'});break}}}}
+    pdSay('Looking for '+need.length+' PDF'+(need.length>1?'s':'')+' in PoolDrive…');
+    const where={};   // one folder listing per account instead of one search per PDF
+    await Promise.allSettled(PD.live().map(async b=>{const d=await PD.path(b,[...PD.PATH,'PDFs'],false);if(!d)return;
+      for(const x of await PD.list(b,d)){const m=/\(([^()]+)\)\.pdf$/i.exec(x.name);if(m&&!where[m[1]])where[m[1]]={b,id:x.id}}}));
+    const got=need.filter(id=>where[id]);
+    for(const id of got){pdSay('Getting PDFs from PoolDrive… '+(++i)+' of '+got.length);
+      const w=where[id],blob=await (await PD.api(w.b,'files/'+w.id+'?alt=media',{raw:true})).blob();files.blobs[id]=new File([blob],id+'.pdf',{type:'application/pdf'})}
+    files.missing=need.length-got.length}
   const needI=[];for(const id of snap.pdImgs||[])if(!(await idbGet('img:'+id)))needI.push(id);
   if(needI.length){files=files||{};files.imgs={};
     for(const id of needI)for(const b of PD.live()){const r=await PD.api(b,'files?'+PD.qs({q:"name contains '(img-"+PD.q(id)+")' and trashed=false",fields:'files(id,mimeType)',pageSize:1}));
       if(r.files.length){const blob=await (await PD.api(b,'files/'+r.files[0].id+'?alt=media',{raw:true})).blob();files.imgs[id]=new Blob([blob],{type:r.files[0].mimeType||'image/png'});break}}}
-  bkConfirm={snap,files};renderBk();
+  PD.rst=null;bkConfirm={snap,files};renderBk();
 }
 // every change (marks, new PDFs, pictures) is saved to PoolDrive about a minute later
 PD.dirty=false;PD.firstDirty=0;PD.dt=0;
@@ -3700,7 +3706,7 @@ function renderBk(){
   if(bkConfirm){
     const c=bkConfirm;
     const nset=c.snap.projects.lib&&c.snap.projects.lib.sets?c.snap.projects.lib.sets.length:Object.keys(c.snap.projects).filter(k=>k!=='lib').length;
-    h+='<div class="cfm">Backup from <b>'+when(c.snap.at)+'</b> with <b>'+countQ(c.snap)+' questions</b> in '+nset+' set'+(nset===1?'':'s')+(c.files?', including the PDFs':'')+'.<br>Restoring adds the sets in this backup and updates their marks. <b>Your other sets stay as they are.</b></div>';
+    h+='<div class="cfm">Backup from <b>'+when(c.snap.at)+'</b> with <b>'+countQ(c.snap)+' questions</b> in '+nset+' set'+(nset===1?'':'s')+(c.files?', including the PDFs':'')+'.'+(c.files&&c.files.missing?' <b>'+c.files.missing+' PDF'+(c.files.missing>1?'s are':' is')+' not in PoolDrive</b>, so '+(c.files.missing>1?'those sets open':'that set opens')+' without '+(c.files.missing>1?'their':'its')+' PDF until you add it again.':'')+'<br>Restoring adds the sets in this backup and updates their marks. <b>Your other sets stay as they are.</b></div>';
     h+='<div class="row2"><button class="btn ghost" data-b="cancel">Cancel</button><button class="btn" data-b="restore">Restore</button></div>';
   }else{
     if(PD.has()){const o=PD.opt(),c='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 9.5 4.5 4.5 0 0 0 7 18z"/></svg>';
@@ -3718,6 +3724,7 @@ function renderBk(){
       h+='<label><input type="checkbox" data-b="pd-pdfs"'+(o.pdfs?' checked':'')+'><span><b>PDFs and pictures too</b>: each is uploaded once; new or changed PDFs go up automatically</span></label>';
       h+=PD.deadHtml().replace('class="pddead"','class="pddead" style="border-radius:7px;margin:0 0 8px"');
       h+='<div class="row2">'+(o.on?'':'<button class="btn" data-b="pd-on">Turn on</button>')+'<button class="btn'+(o.on?'':' ghost')+'" data-b="pd-now">Back up now</button><button class="btn ghost" data-b="pd-list">Restore…</button>'+(o.on?'<button class="btn ghost" data-b="pd-off">Turn off</button>':'')+'</div>';
+      if(PD.rst)h+='<p class="stt" style="margin:8px 0 0;'+(PD.rst.err?'color:#c0392b':'')+'"><b>'+esc(PD.rst.m)+'</b></p>'+(PD.rst.err?'':'<div class="pdbar run"><i></i></div>');
       if(PD.list_){const lb=f=>{const m=/^PDF Pair latest – (.+?)( \w{4})?\.json$/.exec(f.name);return m?'Latest from '+(m[2]&&m[1]+m[2]===PD.dev()?'this '+m[1].toLowerCase():m[1]):(/\(check\)/.test(f.name)?'Check copy':'Dated copy')};
         h+='<div class="pdlist">'+(PD.list_.length?PD.list_.map((f,i)=>'<button class="it" data-b="pd-r'+i+'">'+esc(lb(f))+' · '+esc(when(Date.parse(f.modifiedTime)))+'<small>'+esc(f.email.split('@')[0])+(f.size?' · '+fmtSz(+f.size):'')+'</small></button>').join(''):'<p class="stt">No PoolDrive backups yet.</p>')+
           (PD.missed&&PD.missed.length?'<p class="stt" style="margin:6px 0 0"><b>Not checked:</b> '+esc(PD.missed.join(', '))+' (sign-in expired). Reconnect in PoolDrive to see backups saved there.</p>':'')+'</div>'}
@@ -3749,8 +3756,9 @@ async function bkAction(a){
     if(a==='pd-off'){PD.setOpt({on:false});PD.state='';toast('PoolDrive backup is off. Your backups there stay.');renderBk();return}
     if(a==='pd-now'){await pdRun(true);return}
     if(a==='pd-pdfs'){PD.setOpt({pdfs:!PD.opt().pdfs});renderBk();return}
-    if(a==='pd-list'){PD.list_=null;toast('Looking for backups in PoolDrive…');PD.list_=await pdBackups();renderBk();return}
-    if(/^pd-r\d+$/.test(a)){const f=PD.list_&&PD.list_[+a.slice(4)];PD.list_=null;if(f)await pdRestore(f);return}
+    if(a==='pd-list'){PD.list_=null;PD.rst=null;toast('Looking for backups in PoolDrive…');PD.list_=await pdBackups();renderBk();return}
+    if(/^pd-r\d+$/.test(a)){const f=PD.list_&&PD.list_[+a.slice(4)];if(!f)return;PD.list_=null;
+      try{await pdRestore(f)}catch(e){console.error(e);pdSay((e instanceof PDAuth?'Sign-in for '+(f.email||'').split('@')[0]+' expired. Reconnect it in PoolDrive, then try again.':'Could not restore: '+(e&&e.message||e)),true)}return}
     if(DFS&&(a==='pick'||a==='allow')){const info=await DFS.pick();if(!info)return;AB.dir=deskDir(info);await idbPut('dir',null);AB.state='on';if(await autoRun(true))toast('Auto backup is on. Saved to “'+info.name+'”. It will not ask again')}
     else if(a==='pick'){const d=await window.showDirectoryPicker({mode:'readwrite',id:'pdfpair-backup'});AB.dir=d;await idbPut('dir',d);AB.state='on';if(await autoRun(true))toast('Auto backup is on. Saved to “'+d.name+'”');}
     else if(a==='allow'){if(await perm(true)){AB.state='on';await autoRun(false);toast('Auto backup is running again')}else toast('The folder was not allowed, so auto backup stays paused')}
@@ -5402,7 +5410,7 @@ $('#list').addEventListener('scroll',()=>{$('#tvSug').hidden=true},{passive:true
 
 /* ---------- link a phone as a touch highlighter (Firebase Realtime Database over plain HTTPS) ---------- */
 const SYNC_DEFAULT='https://pdfpair-default-rtdb.asia-southeast1.firebasedatabase.app';   // your Firebase database (only highlights and the current page go here)
-const APPV='12 Nov 09:24';   // build label, so you can check both devices have the same version
+const APPV='13 Nov 01:52';   // build label, so you can check both devices have the same version
 const SY={url:()=>(prefs.syncUrl||SYNC_DEFAULT).replace(/\/+$/,''),room:()=>prefs.room||'',role:()=>prefs.linkRole||''};
 const syncOk=()=>!!(SY.url()&&SY.room()&&SY.role());
 // rough count of data this device sends and receives, per month (Firebase's own figures are in its console)

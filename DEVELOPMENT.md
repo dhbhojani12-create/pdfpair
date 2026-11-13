@@ -187,3 +187,8 @@ PoolDrive (`dhbhojani12-create/PoolDrive`, https://dhbhojani12-create.github.io/
 - Before listing, expired sign-ins are renewed, so backups in every account show (before, accounts with an expired 1-hour sign-in were silently skipped).
 - Each entry now says what it is and when, in local time: "Latest from Laptop · today 2:50 PM", "Dated copy · …". File names use UTC time, which was confusing.
 - If an account still can't be checked, the list says which one.
+
+## PoolDrive restore: visible progress and errors (13 Nov)
+- Clicking a backup in the PoolDrive restore list seemed to do nothing: progress and errors were shown only as toasts, and toasts sat behind the Library (z-index 45 vs 46). Toasts are now above the Library (z-index 60), and restore progress/errors are also shown inside the Backup box.
+- PDFs for a restore are found with one folder listing per account (PoolDrive "PDFs" folder) instead of one search per PDF, so big libraries restore much faster.
+- The confirm box says how many PDFs are not in PoolDrive (when "PDFs and pictures too" was off when backing up).
